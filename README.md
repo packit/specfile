@@ -22,7 +22,7 @@ There is a special section internally called `%package`, often also referred to 
 
 Tag represents a single item of metadata of a package. It has a well-defined name and a value. Tags are defined in `%package` sections.
 
-For the purposes of this library, a tag can have associated comments. These are comment lines that are in a spec file directly above the tag definition.
+For the purposes of this library, a tag can have associated comments. These are consecutive comment lines directly above the tag definition in a spec file.
 
 ## Examples and use cases
 
@@ -91,10 +91,10 @@ with specfile1.sections() as sections1, with specfile2.sections() as sections2:
 with specfile.tags() as tags:
     # name of the first tag
     print(tags[0].name)
-    # expanded value of the first tag
-    print(tags[0].value)
     # raw value of the first tag
-    print(tags[0].raw_value)
+    print(tags[0].value)
+    # expanded value of the first tag
+    print(tags[0].expanded_value)
     # comments associated with the first tag
     print(tags[0].comments)
     # value of a tag by name
