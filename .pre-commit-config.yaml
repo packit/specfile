@@ -47,7 +47,8 @@ repos:
     hooks:
       - id: mypy
         args: [--no-strict-optional, --ignore-missing-imports]
-        additional_dependencies: [types-pkg_resources, types-requests]
+        additional_dependencies:
+          [types-pkg_resources, types-requests, types-python-dateutil]
   - repo: https://github.com/packit/pre-commit-hooks
     rev: b11abc61e8f5fe73297437148cd3ed15806883a0
     hooks:

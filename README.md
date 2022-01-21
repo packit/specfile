@@ -84,7 +84,7 @@ with specfile1.sections() as sections1, with specfile2.sections() as sections2:
     sections2.changelog[:] = sections1.changelog
 ```
 
-### Mid-level manipulation - tags
+### Mid-level manipulation - tags and changelog
 
 ```python
 # accessing tags in preamble
@@ -104,6 +104,15 @@ with specfile.tags() as tags:
 # accessing tags in subpackages
 with specfile.tags('package devel') as tags:
     print(tags.requires)
+
+# working with changelog
+with specfile.changelog() as changelog:
+    # most recent changelog entry
+    print(changelog[-1])
+    # making changes
+    changelog[1].content.append('- another line')
+    # removing the oldest entry
+    del changelog[0]
 ```
 
 ### High-level manipulation
@@ -132,12 +141,12 @@ specfile.set_version_and_release('2.1', preserve_macros=True)
 # adding a new entry, author is determined using rpmdev-packager (if available)
 specfile.add_changelog_entry('New upstream release 2.1')
 
-# adding a new entry, specifying author and date explicitly
+# adding a new entry, specifying author and timestamp explicitly
 specfile.add_changelog_entry(
     'New upstream release 2.1',
     author='Nikola Forró',
     email='nforro@redhat.com',
-    date=datetime.date(2021, 11, 20),
+    timestamp=datetime.date(2021, 11, 20),
 )
 ```
 
