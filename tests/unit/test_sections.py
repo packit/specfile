@@ -3,7 +3,7 @@
 
 import pytest
 
-from specfile.sections import Sections, Section
+from specfile.sections import Section, Sections
 
 
 def test_find():

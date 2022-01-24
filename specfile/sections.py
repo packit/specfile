@@ -3,12 +3,10 @@
 
 import collections
 import re
-
-from typing import Optional, List
-
+from typing import List, Optional
 
 # valid section names as defined in build/parseSpec.c in RPM source
-SECTION_NAMES = [
+SECTION_NAMES = {
     "package",
     "prep",
     "generate_build_requires",
@@ -43,7 +41,7 @@ SECTION_NAMES = [
     "end",
     "patchlist",
     "sourcelist",
-]
+}
 
 
 # name for the implicit "preamble" section
@@ -52,7 +50,7 @@ PREAMBLE = "package"
 
 class Section(collections.UserList):
     """
-    Class that represents spec file section.
+    Class that represents a spec file section.
 
     Attributes:
         name: Name of the section (without the leading '%').
@@ -75,7 +73,7 @@ class Section(collections.UserList):
 
     def __repr__(self) -> str:
         data = repr(self.data)
-        return f"Section({self.name}, {data})"
+        return f"Section('{self.name}', {data})"
 
     def __copy__(self) -> "Section":
         return Section(self.name, self.data)
@@ -103,11 +101,6 @@ class Sections(collections.UserList):
     Attributes:
         data: List of individual sections. Preamble is expected to always be the first.
     """
-
-    def __init__(self, data: Optional[List[Section]] = None) -> None:
-        super().__init__()
-        if data is not None:
-            self.data = data.copy()
 
     def __str__(self) -> str:
         return "".join(str(i) for i in self.data)
@@ -142,12 +135,10 @@ class Sections(collections.UserList):
             raise AttributeError(name)
 
     def find(self, name: str) -> int:
-        try:
-            return next(
-                iter(i for i in range(len(self.data)) if self.data[i].name == name)
-            )
-        except StopIteration:
-            raise ValueError
+        for i, section in enumerate(self.data):
+            if section.name == name:
+                return i
+        raise ValueError
 
     @staticmethod
     def parse(s: str) -> "Sections":
@@ -158,7 +149,7 @@ class Sections(collections.UserList):
             s: String to parse.
 
         Returns:
-            Constructed instance of Sections class.
+            Constructed instance of `Sections` class.
         """
         section_name_regexes = [
             re.compile(fr"^%{re.escape(n)}\b.*") for n in SECTION_NAMES
