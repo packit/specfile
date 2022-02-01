@@ -402,7 +402,7 @@ class Comments(collections.UserList):
             comments.insert(0, Comment(*reversed(m.groups())))
         return Comments(comments, preceding_lines)
 
-    def reassemble(self) -> List[str]:
+    def get_raw_data(self) -> List[str]:
         return self._preceding_lines + [str(i) for i in self.data]
 
 
@@ -584,7 +584,7 @@ class Tags(collections.UserList):
                 buffer.append(line)
         return Tags(data, buffer)
 
-    def reassemble(self) -> List[str]:
+    def get_raw_section_data(self) -> List[str]:
         """
         Reconstructs section data from tags.
 
@@ -593,7 +593,7 @@ class Tags(collections.UserList):
         """
         result = []
         for tag in self.data:
-            result.extend(tag.comments.reassemble())
+            result.extend(tag.comments.get_raw_data())
             result.append(f"{tag.name}{tag._separator}{tag.value}")
         result.extend(self._remainder)
         return result
