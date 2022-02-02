@@ -334,6 +334,20 @@ class Comments(collections.UserList):
         return item in self.data
 
     @overload
+    def __getitem__(self, i: int) -> Comment:
+        pass
+
+    @overload
+    def __getitem__(self, i: slice) -> "Comments":
+        pass
+
+    def __getitem__(self, i):
+        if isinstance(i, slice):
+            return Comments(self.data[i], self._preceding_lines)
+        else:
+            return self.data[i]
+
+    @overload
     def __setitem__(self, i: int, item: Union[Comment, str]) -> None:
         pass
 
@@ -507,6 +521,20 @@ class Tags(collections.UserList):
         data = repr(self.data)
         remainder = repr(self._remainder)
         return f"Tags({data}, {remainder})"
+
+    @overload
+    def __getitem__(self, i: int) -> Tag:
+        pass
+
+    @overload
+    def __getitem__(self, i: slice) -> "Tags":
+        pass
+
+    def __getitem__(self, i):
+        if isinstance(i, slice):
+            return Tags(self.data[i], self._remainder)
+        else:
+            return self.data[i]
 
     def __getattr__(self, name: str) -> Tag:
         try:

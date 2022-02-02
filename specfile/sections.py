@@ -3,7 +3,7 @@
 
 import collections
 import re
-from typing import List, Optional
+from typing import List, Optional, overload
 
 # valid section names as defined in build/parseSpec.c in RPM source
 SECTION_NAMES = {
@@ -77,6 +77,20 @@ class Section(collections.UserList):
 
     def __copy__(self) -> "Section":
         return Section(self.name, self.data)
+
+    @overload
+    def __getitem__(self, i: int) -> str:
+        pass
+
+    @overload
+    def __getitem__(self, i: slice) -> "Section":
+        pass
+
+    def __getitem__(self, i):
+        if isinstance(i, slice):
+            return Section(self.name, self.data[i])
+        else:
+            return self.data[i]
 
 
 class Sections(collections.UserList):
