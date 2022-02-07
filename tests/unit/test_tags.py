@@ -72,7 +72,7 @@ def test_parse():
     assert not tags.epoch.valid
 
 
-def test_reassemble():
+def test_get_raw_section_data():
     tags = Tags(
         [
             Tag(
@@ -100,7 +100,7 @@ def test_reassemble():
         ],
         ["%endif"],
     )
-    assert tags.reassemble() == [
+    assert tags.get_raw_section_data() == [
         "%global ver_major 1",
         "%global ver_minor 0",
         "",

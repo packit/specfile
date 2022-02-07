@@ -334,6 +334,20 @@ class Comments(collections.UserList):
         return item in self.data
 
     @overload
+    def __getitem__(self, i: int) -> Comment:
+        pass
+
+    @overload
+    def __getitem__(self, i: slice) -> "Comments":
+        pass
+
+    def __getitem__(self, i):
+        if isinstance(i, slice):
+            return Comments(self.data[i], self._preceding_lines)
+        else:
+            return self.data[i]
+
+    @overload
     def __setitem__(self, i: int, item: Union[Comment, str]) -> None:
         pass
 
@@ -402,7 +416,7 @@ class Comments(collections.UserList):
             comments.insert(0, Comment(*reversed(m.groups())))
         return Comments(comments, preceding_lines)
 
-    def reassemble(self) -> List[str]:
+    def get_raw_data(self) -> List[str]:
         return self._preceding_lines + [str(i) for i in self.data]
 
 
@@ -508,6 +522,20 @@ class Tags(collections.UserList):
         remainder = repr(self._remainder)
         return f"Tags({data}, {remainder})"
 
+    @overload
+    def __getitem__(self, i: int) -> Tag:
+        pass
+
+    @overload
+    def __getitem__(self, i: slice) -> "Tags":
+        pass
+
+    def __getitem__(self, i):
+        if isinstance(i, slice):
+            return Tags(self.data[i], self._remainder)
+        else:
+            return self.data[i]
+
     def __getattr__(self, name: str) -> Tag:
         try:
             return self.data[self.find(name)]
@@ -584,7 +612,7 @@ class Tags(collections.UserList):
                 buffer.append(line)
         return Tags(data, buffer)
 
-    def reassemble(self) -> List[str]:
+    def get_raw_section_data(self) -> List[str]:
         """
         Reconstructs section data from tags.
 
@@ -593,7 +621,7 @@ class Tags(collections.UserList):
         """
         result = []
         for tag in self.data:
-            result.extend(tag.comments.reassemble())
+            result.extend(tag.comments.get_raw_data())
             result.append(f"{tag.name}{tag._separator}{tag.value}")
         result.extend(self._remainder)
         return result

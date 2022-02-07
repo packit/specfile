@@ -114,7 +114,7 @@ class Specfile:
             try:
                 yield tags
             finally:
-                raw_section.data = tags.reassemble()
+                raw_section.data = tags.get_raw_section_data()
 
     @contextlib.contextmanager
     def changelog(self) -> Iterator[Optional[Changelog]]:
