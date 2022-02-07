@@ -166,7 +166,7 @@ class Sections(collections.UserList):
             Constructed instance of `Sections` class.
         """
         section_name_regexes = [
-            re.compile(fr"^%{re.escape(n)}\b.*") for n in SECTION_NAMES
+            re.compile(rf"^%{re.escape(n)}\b.*") for n in SECTION_NAMES
         ]
         section_starts = []
         lines = s.splitlines()
