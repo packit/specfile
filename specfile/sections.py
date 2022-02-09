@@ -9,7 +9,7 @@ from typing import List, Optional, overload
 SECTION_NAMES = {
     "package",
     "prep",
-    "generate_build_requires",
+    "generate_buildrequires",
     "build",
     "install",
     "check",
