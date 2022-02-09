@@ -583,7 +583,7 @@ class Tags(collections.UserList):
         def regex_pattern(tag):
             name = re.escape(tag)
             index = r"\d?" if tag in ["Source", "Patch"] else ""
-            return fr"^(?P<n>{name}{index})(?P<s>\s*:\s*)(?P<v>.+)"
+            return rf"^(?P<n>{name}{index})(?P<s>\s*:\s*)(?P<v>.+)"
 
         tag_regexes = [re.compile(regex_pattern(t), re.IGNORECASE) for t in TAG_NAMES]
         data = []
