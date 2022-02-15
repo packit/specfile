@@ -1,0 +1,16 @@
+---
+- project:
+    check:
+      jobs:
+        - pre-commit
+        - specfile-tests-rpm-deps
+    gate:
+      jobs:
+        - pre-commit
+
+- job:
+    name: specfile-tests-rpm-deps
+    parent: base
+    description: Run tests with dependencies installed as RPMs
+    pre-run: files/install-requirements-rpms.yaml
+    run: files/zuul-tests.yaml
