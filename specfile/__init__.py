@@ -5,11 +5,15 @@
 A library for parsing and manipulating RPM spec files
 """
 
-from pkg_resources import DistributionNotFound, get_distribution
+try:
+    from importlib.metadata import PackageNotFoundError, distribution
+except ImportError:
+    from importlib_metadata import PackageNotFoundError  # type: ignore
+    from importlib_metadata import distribution  # type: ignore
 
 try:
-    __version__ = get_distribution(__name__).version
-except DistributionNotFound:
+    __version__ = distribution(__name__).version
+except PackageNotFoundError:
     # package is not installed
     pass
 
