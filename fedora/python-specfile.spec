@@ -1,22 +1,18 @@
-%{?!python3_pkgversion:%global python3_pkgversion 3}
-
-%global srcname specfile
-
 %global desc %{expand:
 Python library for parsing and manipulating RPM spec files.
 Main focus is on modifying existing spec files, any change should result
 in a minimal diff.}
 
 
-Name:           python-%{srcname}
-Version:        0.1.0
+Name:           python-specfile
+Version:        0.1.1
 Release:        1%{?dist}
 
 Summary:        A library for parsing and manipulating RPM spec files
 License:        MIT
 URL:            https://github.com/packit/specfile
 
-Source0:        %{pypi_source}
+Source0:        https://github.com/packit/specfile/archive/%{version}/specfile-%{version}.tar.gz
 
 BuildArch:      noarch
 
@@ -27,13 +23,11 @@ BuildRequires:  python%{python3_pkgversion}-devel
 %{desc}
 
 
-%package -n python%{python3_pkgversion}-%{srcname}
+%package -n python%{python3_pkgversion}-specfile
 Summary:        %{summary}
 
-%{?python_provide:%python_provide python3-%{srcname}}
 
-
-%description -n python%{python3_pkgversion}-%{srcname}
+%description -n python%{python3_pkgversion}-specfile
 %{desc}
 
 
@@ -42,7 +36,7 @@ Summary:        %{summary}
 
 
 %prep
-%autosetup -p1 -n %{srcname}-%{version}
+%autosetup -p1 -n specfile-%{version}
 
 
 %build
@@ -51,18 +45,20 @@ Summary:        %{summary}
 
 %install
 %pyproject_install
-%pyproject_save_files %{srcname}
+%pyproject_save_files specfile
 
 
 %check
 %pytest
 
 
-%files -n python%{python3_pkgversion}-%{srcname} -f %{pyproject_files}
-%license LICENSE
+%files -n python%{python3_pkgversion}-specfile -f %{pyproject_files}
 %doc README.md
 
 
 %changelog
+* Mon Feb 21 2022 Nikola Forró <nforro@redhat.com> - 0.1.1-1
+- New upstream release 0.1.1
+
 * Tue Feb 08 2022 Nikola Forró <nforro@redhat.com> - 0.1.0-1
 - Initial package

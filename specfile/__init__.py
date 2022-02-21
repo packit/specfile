@@ -5,6 +5,8 @@
 A library for parsing and manipulating RPM spec files
 """
 
+from specfile.specfile import Specfile
+
 try:
     from importlib.metadata import PackageNotFoundError, distribution
 except ImportError:
@@ -17,7 +19,6 @@ except PackageNotFoundError:
     # package is not installed
     pass
 
-
 __all__ = [
-    "specfile",
+    Specfile.__name__,
 ]

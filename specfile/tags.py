@@ -582,7 +582,7 @@ class Tags(collections.UserList):
 
         def regex_pattern(tag):
             name = re.escape(tag)
-            index = r"\d?" if tag in ["Source", "Patch"] else ""
+            index = r"\d*" if tag in ["Source", "Patch"] else ""
             return rf"^(?P<n>{name}{index})(?P<s>\s*:\s*)(?P<v>.+)"
 
         tag_regexes = [re.compile(regex_pattern(t), re.IGNORECASE) for t in TAG_NAMES]
@@ -593,8 +593,13 @@ class Tags(collections.UserList):
             m = next((m for m in (r.match(line) for r in tag_regexes) if m), None)
             if m:
                 # find out if any line in the parsed section matches the same regex
+                tag_regex = re.compile(regex_pattern(m.group("n")))
                 e = next(
-                    (e for e in (m.re.match(pl) for pl in parsed_section or []) if e),
+                    (
+                        e
+                        for e in (tag_regex.match(pl) for pl in parsed_section or [])
+                        if e
+                    ),
                     None,
                 )
                 expanded_value = e.group("v") if e else None
