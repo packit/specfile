@@ -3,8 +3,11 @@
 
 from pathlib import Path
 
+import pytest
 import rpm
+from flexmock import flexmock
 
+from specfile.exceptions import MacroRemovalException
 from specfile.rpm import RPM, Macro, MacroLevel, Macros
 
 
@@ -82,15 +85,22 @@ def test_macros_remove():
     assert Macros.dump() == macros
 
 
+def test_macros_remove_failure():
+    # Expansion and removal of built-in macros is broken before rpm 4.17,
+    # ensure that we are not stuck in an infinite loop
+    rpm.reloadConfig()
+    rpm.addMacro("foo", "bar")
+    flexmock(rpm).should_receive("expandMacro").with_args("%foo").and_raise(rpm.error)
+    with pytest.raises(MacroRemovalException):
+        Macros.remove("foo")
+
+
 def test_macros_define():
     rpm.reloadConfig()
     macros = Macros.dump()
     Macros.define("test", "1")
-    # redefine builtin macro
-    Macros.define("echo", "2")
     assert set(Macros.dump()).difference(macros) == {
         Macro("test", None, "1", -1, False),
-        Macro("echo", None, "2", -1, False),
     }
 
 

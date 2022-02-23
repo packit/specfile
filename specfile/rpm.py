@@ -13,7 +13,9 @@ from typing import Iterator, List, Optional, Tuple
 
 import rpm
 
-from specfile.exceptions import RPMException
+from specfile.exceptions import MacroRemovalException, RPMException
+
+MAX_REMOVAL_RETRIES = 20
 
 
 @contextlib.contextmanager
@@ -180,15 +182,28 @@ class Macros:
 
         Args:
             macro: Macro name.
+
+        Raises:
+            MacroRemovalException, if there were too many unsuccessful
+                retries to remove the macro.
         """
-        while True:
+        # Ideally, we would loop until the macro is defined, however in rpm
+        # 4.16, expanding parametrized macros may throw an exception
+        # which would result in an infinite loop. Limit the number of iterations.
+        retry = 0
+        while retry < MAX_REMOVAL_RETRIES:
             rpm.delMacro(macro)
             try:
                 if cls.expand(f"%{macro}") == f"%{macro}":
                     break
             except RPMException:
                 # the macro can't be expanded, but it still exists
+                retry += 1
                 continue
+        else:
+            raise MacroRemovalException(
+                f"Max attempts for removal ({MAX_REMOVAL_RETRIES}) exceeded"
+            )
 
     @classmethod
     def define(cls, macro: str, body: str) -> None:
