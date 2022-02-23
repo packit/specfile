@@ -1,0 +1,10 @@
+---
+- name: Install generic RPM packages
+  dnf:
+    name:
+      - make
+      - git
+      - dnf-utils
+      - python3-pip
+      - rpmdevtools
+  become: true

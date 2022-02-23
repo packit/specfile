@@ -1,0 +1,7 @@
+---
+- name: Install test RPM dependencies
+  dnf:
+    name:
+      - python3-flexmock
+      - python3-pytest
+  become: true

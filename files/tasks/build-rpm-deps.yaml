@@ -1,0 +1,6 @@
+---
+- name: Install build RPM dependencies
+  command: dnf -y builddep fedora/python-specfile.spec
+  args:
+    chdir: "{{ project_dir }}"
+  become: true
