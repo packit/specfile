@@ -1,0 +1,24 @@
+---
+- project:
+    check:
+      jobs:
+        - pre-commit
+        - specfile-tests-rpm-deps
+        - specfile-tests-pip-deps
+    gate:
+      jobs:
+        - pre-commit
+
+- job:
+    name: specfile-tests-rpm-deps
+    parent: base
+    description: Run tests with dependencies installed as RPMs
+    pre-run: files/install-requirements-rpms.yaml
+    run: files/zuul-tests.yaml
+
+- job:
+    name: specfile-tests-pip-deps
+    parent: base
+    description: Run tests with dependencies installed from PyPI
+    pre-run: files/install-requirements-pip.yaml
+    run: files/zuul-tests.yaml

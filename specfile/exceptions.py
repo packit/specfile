@@ -23,3 +23,7 @@ class RPMException(SpecfileException):
             if line.startswith("error:"):
                 return line.split("error: ")[1]
         return "\n" + b"".join(self.stderr).decode()
+
+
+class MacroRemovalException(SpecfileException):
+    """Exception related to failed removal of RPM macros."""

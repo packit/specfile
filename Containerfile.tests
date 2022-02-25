@@ -1,0 +1,10 @@
+FROM quay.io/packit/base
+
+COPY files/tasks/*.yaml /files/tasks/
+COPY files/*.yaml /files/
+COPY fedora/*.spec /fedora/
+
+RUN ansible-playbook -v -c local -i localhost, /files/install-requirements-rpms.yaml
+RUN ansible-playbook -v -c local -i localhost, /files/local-tests-requirements.yaml
+
+WORKDIR /src
