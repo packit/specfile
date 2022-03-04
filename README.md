@@ -153,11 +153,20 @@ specfile.add_changelog_entry(
 #### Sources and patches
 
 ```python
-print(specfile.sources)
-print(specfile.patches)
-print(specfile.sources[0].filename)
-specfile.sources.append('tests.tar.gz')
-specfile.patches[0] = 'downstream.patch'
+with specfile.sources() as sources:
+    # expanded location of the first source
+    print(sources[0].expanded_location)
+    # adding a source
+    sources.append('tests.tar.gz')
+
+with specfile.patches() as patches:
+    # modifying location of the first patch
+    patches[0].location = 'downstream.patch'
+    # removing comments associated with the last patch
+    patches[-1].comments.clear()
+    # adding and removing patches
+    patches.append('another.patch')
+    del patches[2]
 
 # fetching non-local sources (including patches)
 specfile.download_remote_sources()
