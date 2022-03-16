@@ -54,5 +54,5 @@ repos:
     hooks:
       - id: check-rebase
         args:
-          - git://github.com/packit/specfile.git
+          - https://github.com/packit/specfile.git
         stages: [manual, push]
