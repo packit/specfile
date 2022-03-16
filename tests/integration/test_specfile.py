@@ -2,9 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import datetime
-import shutil
 import subprocess
-from pathlib import Path
 
 import pytest
 from flexmock import flexmock
@@ -13,16 +11,41 @@ from specfile.exceptions import SpecfileException
 from specfile.sections import Section
 from specfile.specfile import Specfile
 
-TESTS_DIR = Path(__file__).parent
-DATA_DIR = TESTS_DIR / "data"
-SPECFILE = DATA_DIR / "test.spec"
+
+def test_sources(spec_minimal):
+    spec = Specfile(spec_minimal)
+    source = "test.tar.gz"
+    with spec.sources() as sources:
+        assert not sources
+        sources.append(source)
+        assert sources.count(source) == len(sources) == 1
+    with spec.tags() as tags:
+        assert [source] == [t.value for t in tags if t.name.startswith("Source")]
+    with spec.sources() as sources:
+        sources.remove(source)
+        assert not sources
+        sources.insert(0, source)
+        assert sources[0].location == source
+        sources.clear()
+        assert not sources
 
 
-@pytest.fixture(scope="function")
-def specfile(tmp_path):
-    specfile_path = tmp_path / "test.spec"
-    shutil.copyfile(SPECFILE, specfile_path)
-    return specfile_path
+def test_patches(spec_patchlist):
+    spec = Specfile(spec_patchlist)
+    patch = "test.patch"
+    with spec.patches() as patches:
+        patches.insert(0, patch)
+        assert patches[0].location == patch
+        assert patches[1].index == 1
+    with spec.tags() as tags:
+        assert len([t for t in tags if t.name.startswith("Patch")]) == 2
+    with spec.patches() as patches:
+        patches.remove(patch)
+        patches.insert(1, patch)
+        patches[1].comments.append("test")
+    with spec.sections() as sections:
+        assert len([sl for sl in sections.patchlist if sl]) == 4
+        assert sections.patchlist[0] == "# test"
 
 
 @pytest.mark.parametrize(
@@ -91,7 +114,7 @@ def specfile(tmp_path):
     ],
 )
 def test_add_changelog_entry(
-    specfile, rpmdev_packager_available, entry, author, email, timestamp, result
+    spec_minimal, rpmdev_packager_available, entry, author, email, timestamp, result
 ):
     if not rpmdev_packager_available:
         flexmock(subprocess).should_receive("check_output").with_args(
@@ -101,7 +124,7 @@ def test_add_changelog_entry(
         flexmock(subprocess).should_receive("check_output").with_args(
             "rpmdev-packager"
         ).and_return(b"John Doe <john@doe.net>")
-    spec = Specfile(specfile)
+    spec = Specfile(spec_minimal)
     if not rpmdev_packager_available:
         with pytest.raises(SpecfileException):
             spec.add_changelog_entry(entry, author, email, timestamp)

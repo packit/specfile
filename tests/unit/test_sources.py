@@ -68,7 +68,7 @@ def test_sources_deduplicate_tag_names(tags, deduplicated_tags):
         Tags([Tag(t, "test", "test", ": ", Comments()) for t in tags]), []
     )
     sources._deduplicate_tag_names()
-    assert [t.name for t in sources.tags] == deduplicated_tags
+    assert [t.name for t in sources._tags] == deduplicated_tags
 
 
 @pytest.mark.parametrize(
