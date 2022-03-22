@@ -5,6 +5,8 @@ import collections
 import re
 from typing import List, Optional, overload
 
+from typing_extensions import SupportsIndex
+
 # valid section names as defined in build/parseSpec.c in RPM source
 SECTION_NAMES = {
     "package",
@@ -79,7 +81,7 @@ class Section(collections.UserList):
         return Section(self.name, self.data)
 
     @overload
-    def __getitem__(self, i: int) -> str:
+    def __getitem__(self, i: SupportsIndex) -> str:
         pass
 
     @overload

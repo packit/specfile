@@ -5,6 +5,8 @@ import collections
 import re
 from typing import Any, Iterable, List, Optional, Union, overload
 
+from typing_extensions import SupportsIndex
+
 from specfile.sections import Section
 
 # valid tag names extracted from lib/rpmtag.h in RPM source
@@ -334,7 +336,7 @@ class Comments(collections.UserList):
         return item in self.data
 
     @overload
-    def __getitem__(self, i: int) -> Comment:
+    def __getitem__(self, i: SupportsIndex) -> Comment:
         pass
 
     @overload
@@ -348,7 +350,7 @@ class Comments(collections.UserList):
             return self.data[i]
 
     @overload
-    def __setitem__(self, i: int, item: Union[Comment, str]) -> None:
+    def __setitem__(self, i: SupportsIndex, item: Union[Comment, str]) -> None:
         pass
 
     @overload
@@ -523,7 +525,7 @@ class Tags(collections.UserList):
         return f"Tags({data}, {remainder})"
 
     @overload
-    def __getitem__(self, i: int) -> Tag:
+    def __getitem__(self, i: SupportsIndex) -> Tag:
         pass
 
     @overload
