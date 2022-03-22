@@ -61,7 +61,7 @@ class Section(collections.UserList):
 
     def __init__(self, name: str, data: Optional[List[str]] = None) -> None:
         super().__init__()
-        if not name or name.split()[0] not in SECTION_NAMES:
+        if not name or name.split()[0].lower() not in SECTION_NAMES:
             raise ValueError(f"Invalid section name: '{name}'")
         self.name = name
         if data is not None:
@@ -135,7 +135,7 @@ class Sections(collections.UserList):
             raise AttributeError(name)
 
     def __setattr__(self, name: str, value: List[str]) -> None:
-        if name.split()[0] not in SECTION_NAMES:
+        if name.split()[0].lower() not in SECTION_NAMES:
             return super().__setattr__(name, value)
         try:
             self.data[self.find(name)].data = value
@@ -143,7 +143,7 @@ class Sections(collections.UserList):
             raise AttributeError(name)
 
     def __delattr__(self, name: str) -> None:
-        if name.split()[0] not in SECTION_NAMES:
+        if name.split()[0].lower() not in SECTION_NAMES:
             return super().__delattr__(name)
         try:
             del self.data[self.find(name)]
@@ -151,8 +151,9 @@ class Sections(collections.UserList):
             raise AttributeError(name)
 
     def find(self, name: str) -> int:
+        name = name.lower()
         for i, section in enumerate(self.data):
-            if section.name == name:
+            if section.name.lower() == name:
                 return i
         raise ValueError
 
@@ -168,7 +169,7 @@ class Sections(collections.UserList):
             Constructed instance of `Sections` class.
         """
         section_name_regexes = [
-            re.compile(rf"^%{re.escape(n)}\b.*") for n in SECTION_NAMES
+            re.compile(rf"^%{re.escape(n)}\b.*", re.IGNORECASE) for n in SECTION_NAMES
         ]
         section_starts = []
         lines = s.splitlines()
