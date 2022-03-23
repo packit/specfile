@@ -7,8 +7,16 @@ from specfile.sections import Section, Sections
 
 
 def test_find():
-    sections = Sections([Section("package"), Section("prep"), Section("changelog")])
+    sections = Sections(
+        [
+            Section("package"),
+            Section("prep"),
+            Section("changelog"),
+            Section("pAckage foo"),
+        ]
+    )
     assert sections.find("prep") == 1
+    assert sections.find("package foo") == 3
     with pytest.raises(ValueError):
         sections.find("install")
 
@@ -23,3 +31,12 @@ def test_parse():
     assert sections[2].name == "package x"
     assert not sections[2]
     assert sections[-1].name == "changelog"
+
+
+def test_parse_case_insensitive():
+    sections = Sections.parse("0\n\n%Prep\n0\n1\n2\n\n%pAckage x\nRequires: bar")
+    assert sections[0][0] == "0"
+    assert sections[1].name == "Prep"
+    assert sections.prep == ["0", "1", "2", ""]
+    assert sections[2].name == "pAckage x"
+    assert sections[2] == ["Requires: bar"]
