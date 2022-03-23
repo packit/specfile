@@ -1,0 +1,113 @@
+---
+specfile_path: fedora/python-specfile.spec
+
+# add or remove files that should be synced
+files_to_sync:
+  - fedora/python-specfile.spec
+  - .packit.yaml
+
+# name in upstream package repository or registry (e.g. in PyPI)
+upstream_package_name: specfile
+# downstream (Fedora) RPM package name
+downstream_package_name: python-specfile
+
+copy_upstream_release_description: true
+
+actions:
+  # we need this b/c `git archive` doesn't put all the metadata in the tarball:
+  #   LookupError: setuptools-scm was unable to detect version for '/builddir/build/BUILD/ogr-0.11.1'.
+  #   Make sure you're either building from a fully intact git repository or PyPI tarballs.
+  create-archive:
+    - python3 setup.py sdist --dist-dir ./fedora/
+    - bash -c "ls -1t ./fedora/*.tar.gz | head -n 1"
+  get-current-version: python3 setup.py --version
+
+srpm_build_deps:
+  - python3-pip # "python3 setup.py --version" needs it
+  - python3-setuptools_scm
+
+jobs:
+  - job: propose_downstream
+    trigger: release
+    metadata:
+      dist_git_branches:
+        - fedora-all
+  - job: propose_downstream
+    trigger: release
+    specfile_path: epel/python-specfile.spec
+    files_to_sync:
+      - epel/python-specfile.spec
+      - .packit.yaml
+    metadata:
+      dist_git_branches:
+        - epel-8
+
+  - job: copr_build
+    trigger: pull_request
+    identifier: fedora
+    metadata:
+      targets:
+        - fedora-all
+  - &copr_build_pr_epel
+    job: copr_build
+    trigger: pull_request
+    specfile_path: epel/python-specfile.spec
+    identifier: epel
+    actions:
+      create-archive:
+        - python3 setup.py sdist --dist-dir ./epel/
+        - bash -c "ls -1t ./epel/*.tar.gz | head -n 1"
+      get-current-version: python3 setup.py --version
+    metadata:
+      targets:
+        - epel-8
+
+  - job: copr_build
+    trigger: commit
+    metadata:
+      branch: main
+      targets:
+        - fedora-all
+      project: packit-dev
+      list_on_homepage: True
+      preserve_project: True
+  - <<: *copr_build_pr_epel
+    trigger: commit
+    metadata:
+      branch: main
+      targets:
+        - epel-8
+      project: packit-dev
+      list_on_homepage: True
+      preserve_project: True
+
+  - job: copr_build
+    trigger: release
+    metadata:
+      targets:
+        - fedora-all
+      project: packit-releases
+      list_on_homepage: True
+      preserve_project: True
+  - <<: *copr_build_pr_epel
+    trigger: release
+    metadata:
+      targets:
+        - epel-8
+      project: packit-releases
+      list_on_homepage: True
+      preserve_project: True
+
+  # downstream automation:
+  - job: koji_build
+    trigger: commit
+    metadata:
+      dist_git_branches:
+        - fedora-all
+        - epel-8
+  - job: bodhi_update
+    trigger: commit
+    metadata:
+      dist_git_branches:
+        - fedora-stable # rawhide updates are created automatically
+        - epel-8
