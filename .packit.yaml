@@ -44,7 +44,6 @@ jobs:
 
   - job: copr_build
     trigger: pull_request
-    identifier: fedora
     metadata:
       targets:
         - fedora-all
@@ -52,7 +51,6 @@ jobs:
     job: copr_build
     trigger: pull_request
     specfile_path: epel/python-specfile.spec
-    identifier: epel
     actions:
       create-archive:
         - python3 setup.py sdist --dist-dir ./epel/
