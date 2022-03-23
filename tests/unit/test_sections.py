@@ -1,6 +1,8 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
+import copy
+
 import pytest
 
 from specfile.sections import Section, Sections
@@ -48,3 +50,9 @@ def test_parse_case_insensitive():
     assert sections.prep == ["0", "1", "2", ""]
     assert sections[2].name == "pAckage x"
     assert sections[2] == ["Requires: bar"]
+
+
+def test_copy_sections():
+    sections = Sections([Section("package"), Section("package bar")])
+    sections_copy = copy.deepcopy(sections)
+    assert sections == sections_copy
