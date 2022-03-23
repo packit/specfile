@@ -75,7 +75,7 @@ with specfile.sections() as sections:
     # swapping two sections
     sections[1], sections[2] = sections[2], sections[1]
     # accessing a section with arguments
-    print(getattr(sections, 'package devel'))
+    print(sections.get('package devel'))
     # inserting a line into a section
     sections.build.insert(0, 'export VERBOSE=1')
 

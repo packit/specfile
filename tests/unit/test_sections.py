@@ -21,6 +21,14 @@ def test_find():
         sections.find("install")
 
 
+def test_get():
+    sections = Sections([Section("package"), Section("package bar")])
+    assert sections.get("package") == []
+    assert sections.get("package bar") == []
+    with pytest.raises(ValueError):
+        sections.get("package foo")
+
+
 def test_parse():
     sections = Sections.parse(
         "0\n\n%prep\n0\n1\n2\n\n%package x\n%files y\n0\n%changelog"

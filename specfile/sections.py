@@ -130,7 +130,7 @@ class Sections(collections.UserList):
 
     def __getattr__(self, name: str) -> Section:
         try:
-            return self.data[self.find(name)]
+            return self.get(name)
         except ValueError:
             raise AttributeError(name)
 
@@ -149,6 +149,9 @@ class Sections(collections.UserList):
             del self.data[self.find(name)]
         except ValueError:
             raise AttributeError(name)
+
+    def get(self, name: str) -> Section:
+        return self.data[self.find(name)]
 
     def find(self, name: str) -> int:
         name = name.lower()
