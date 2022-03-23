@@ -12,7 +12,7 @@ Summary:        A library for parsing and manipulating RPM spec files
 License:        MIT
 URL:            https://github.com/packit/specfile
 
-Source0:        https://github.com/packit/specfile/archive/%{version}/specfile-%{version}.tar.gz
+Source0:        %{pypi_source specfile}
 
 BuildArch:      noarch
 
