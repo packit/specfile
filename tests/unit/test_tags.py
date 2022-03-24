@@ -1,6 +1,8 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
+import copy
+
 import pytest
 
 from specfile.sections import Section
@@ -115,3 +117,13 @@ def test_get_raw_section_data():
         "Epoch:   1",
         "%endif",
     ]
+
+
+def test_copy_tags():
+    tags = Tags(
+        [
+            Tag("Name", "test", "test", ": ", []),
+        ]
+    )
+    tags_copy = copy.deepcopy(tags)
+    assert tags == tags_copy

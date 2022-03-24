@@ -129,6 +129,8 @@ class Sections(collections.UserList):
         return Sections(self.data)
 
     def __getattr__(self, name: str) -> Section:
+        if name.split()[0].lower() not in SECTION_NAMES:
+            return super().__getattribute__(name)
         try:
             return self.get(name)
         except ValueError:

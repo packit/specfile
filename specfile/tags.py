@@ -463,6 +463,17 @@ class Tag:
         self._separator = separator
         self.comments = comments.copy()
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Tag):
+            return NotImplemented
+        return (
+            self.name == other.name
+            and self.value == other.value
+            and self._expanded_value == other._expanded_value
+            and self._separator == other._separator
+            and self.comments == other.comments
+        )
+
     def __repr__(self) -> str:
         comments = repr(self.comments)
         return (
@@ -539,6 +550,8 @@ class Tags(collections.UserList):
             return self.data[i]
 
     def __getattr__(self, name: str) -> Tag:
+        if name.capitalize().rstrip("0123456789") not in TAG_NAMES:
+            return super().__getattribute__(name)
         try:
             return self.data[self.find(name)]
         except ValueError:
