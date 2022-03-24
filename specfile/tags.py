@@ -463,6 +463,17 @@ class Tag:
         self._separator = separator
         self.comments = comments.copy()
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Tag):
+            return NotImplemented
+        return (
+            self.name == other.name
+            and self.value == other.value
+            and self._expanded_value == other._expanded_value
+            and self._separator == other._separator
+            and self.comments == other.comments
+        )
+
     def __repr__(self) -> str:
         comments = repr(self.comments)
         return (
