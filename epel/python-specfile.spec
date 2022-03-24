@@ -12,11 +12,14 @@ Summary:        A library for parsing and manipulating RPM spec files
 License:        MIT
 URL:            https://github.com/packit/specfile
 
-Source0:        https://github.com/packit/specfile/archive/%{version}/specfile-%{version}.tar.gz
+Source0:        %{pypi_source specfile}
 
 BuildArch:      noarch
 
 BuildRequires:  python%{python3_pkgversion}-devel
+BuildRequires:  %{py3_dist setuptools setuptools-scm setuptools-scm-git-archive}
+BuildRequires:  %{py3_dist arrow importlib-metadata rpm typing-extensions}
+BuildRequires:  %{py3_dist flexmock pytest}
 
 
 %description
@@ -31,29 +34,29 @@ Summary:        %{summary}
 %{desc}
 
 
-%generate_buildrequires
-%pyproject_buildrequires -x testing
-
-
 %prep
 %autosetup -p1 -n specfile-%{version}
+# Remove bundled egg-info
+rm -rf specfile.egg-info
 
 
 %build
-%pyproject_wheel
+%py3_build
 
 
 %install
-%pyproject_install
-%pyproject_save_files specfile
+%py3_install
 
 
 %check
 %pytest
 
 
-%files -n python%{python3_pkgversion}-specfile -f %{pyproject_files}
+%files -n python%{python3_pkgversion}-specfile
+%license LICENSE
 %doc README.md
+%{python3_sitelib}/specfile
+%{python3_sitelib}/specfile-%{version}-py%{python3_version}.egg-info
 
 
 %changelog
