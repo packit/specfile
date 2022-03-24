@@ -550,6 +550,8 @@ class Tags(collections.UserList):
             return self.data[i]
 
     def __getattr__(self, name: str) -> Tag:
+        if name.capitalize().rstrip("0123456789") not in TAG_NAMES:
+            return super().__getattribute__(name)
         try:
             return self.data[self.find(name)]
         except ValueError:
