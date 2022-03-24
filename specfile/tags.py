@@ -5,9 +5,8 @@ import collections
 import re
 from typing import Any, Iterable, List, Optional, Union, overload
 
-from typing_extensions import SupportsIndex
-
 from specfile.sections import Section
+from specfile.types import SupportsIndex
 
 # valid tag names extracted from lib/rpmtag.h in RPM source
 TAG_NAMES = {
