@@ -5,7 +5,7 @@ import collections
 import re
 from typing import List, Optional, overload
 
-from typing_extensions import SupportsIndex
+from specfile.types import SupportsIndex
 
 # valid section names as defined in build/parseSpec.c in RPM source
 SECTION_NAMES = {

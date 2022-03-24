@@ -39,7 +39,7 @@ class ChangelogEntry:
         """Whether the timestamp present in the entry header is extended (date and time)."""
         try:
             arrow.get(self.header, "ddd MMM DD YYYY")
-        except arrow.parser.ParserMatchError:
+        except arrow.parser.ParserError:
             return True
         else:
             return False
