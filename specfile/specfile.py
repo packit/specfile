@@ -14,6 +14,8 @@ from specfile.changelog import Changelog, ChangelogEntry
 from specfile.exceptions import SpecfileException
 from specfile.rpm import RPM, Macros
 from specfile.sections import Sections
+from specfile.sourcelist import Sourcelist
+from specfile.sources import Patches, Sources
 from specfile.tags import Tags
 
 
@@ -135,6 +137,56 @@ class Specfile:
                     yield changelog
                 finally:
                     section.data = changelog.get_raw_section_data()
+
+    @contextlib.contextmanager
+    def sources(self, allow_duplicates: bool = False) -> Iterator[Sources]:
+        """
+        Context manager for accessing sources.
+
+        Args:
+            allow_duplicates: Whether to allow duplicate entries when adding new sources.
+
+        Yields:
+            Spec file sources as `Sources` object.
+        """
+        with self.sections() as sections, self.tags() as tags:
+            sourcelists = [
+                (s, Sourcelist.parse(s)) for s in sections if s.name == "sourcelist"
+            ]
+            try:
+                yield Sources(
+                    tags,
+                    list(zip(*sourcelists))[1] if sourcelists else [],
+                    allow_duplicates,
+                )
+            finally:
+                for section, sourcelist in sourcelists:
+                    section.data = sourcelist.get_raw_section_data()
+
+    @contextlib.contextmanager
+    def patches(self, allow_duplicates: bool = False) -> Iterator[Patches]:
+        """
+        Context manager for accessing patches.
+
+        Args:
+            allow_duplicates: Whether to allow duplicate entries when adding new patches.
+
+        Yields:
+            Spec file patches as `Patches` object.
+        """
+        with self.sections() as sections, self.tags() as tags:
+            patchlists = [
+                (s, Sourcelist.parse(s)) for s in sections if s.name == "patchlist"
+            ]
+            try:
+                yield Patches(
+                    tags,
+                    list(zip(*patchlists))[1] if patchlists else [],
+                    allow_duplicates,
+                )
+            finally:
+                for section, patchlist in patchlists:
+                    section.data = patchlist.get_raw_section_data()
 
     def add_changelog_entry(
         self,
