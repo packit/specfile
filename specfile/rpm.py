@@ -7,6 +7,7 @@ import os
 import re
 import sys
 import tempfile
+import urllib.parse
 from enum import IntEnum
 from pathlib import Path
 from typing import Iterator, List, Optional, Tuple
@@ -237,6 +238,52 @@ class Macros:
 
 class RPM:
     @staticmethod
+    @contextlib.contextmanager
+    def make_dummy_sources(sources: List[str], sourcedir: Path) -> Iterator[List[Path]]:
+        """
+        Context manager for creating temporary dummy sources to enable a spec file
+        to be fully parsed by RPM.
+
+        Args:
+            sources: List of all sources (including patches) in a spec file.
+            sourcedir: Path to sources and patches.
+
+        Yields:
+            List of paths to each created dummy source.
+        """
+        # based on rpmFileIsCompressed() in rpmio/rpmfileutil.c in RPM source
+        SIGNATURES = [
+            (".bz2", b"BZh"),
+            (".zip", b"PK00"),
+            (".xz", b"\xfd\x37\x7a\x58\x5a\x00"),
+            (".zst", b"\x28\xb5\x2f"),
+            (".lz", b"LZIP"),
+            (".lrz", b"LRZI"),
+            (".gz", b"\x1f\x8b"),
+            (".7z", b"7z\xbc\xaf\x27\x1c"),
+        ]
+        # number of bytes that RPM reads to determine the file type
+        MAGIC_LENGTH = 13
+        dummy_sources = []
+        for source in sources:
+            filename = Path(urllib.parse.urlsplit(source).path).name
+            if not filename:
+                continue
+            path = sourcedir / filename
+            if path.is_file():
+                continue
+            dummy_sources.append(path)
+            for ext, magic in SIGNATURES:
+                if filename.endswith(ext):
+                    path.write_bytes(magic.ljust(MAGIC_LENGTH, b"\x00"))
+                    break
+            else:
+                path.write_bytes(MAGIC_LENGTH * b"\x00")
+        yield dummy_sources
+        for path in dummy_sources:
+            path.unlink()
+
+    @staticmethod
     def parse(
         content: str, sourcedir: Path, macros: Optional[List[Tuple[str, str]]] = None
     ) -> rpm.spec:
@@ -258,11 +305,16 @@ class RPM:
         for name, value in macros or []:
             Macros.define(name, value)
         Macros.define("_sourcedir", str(sourcedir))
-        with tempfile.NamedTemporaryFile() as spec:
-            spec.write(content.encode())
-            spec.flush()
+        with tempfile.NamedTemporaryFile() as tmp:
+            tmp.write(content.encode())
+            tmp.flush()
             try:
                 with capture_stderr() as stderr:
-                    return rpm.spec(spec.name, rpm.RPMSPEC_ANYARCH)
+                    # do a non-build parse first
+                    spec = rpm.spec(tmp.name, rpm.RPMSPEC_ANYARCH | rpm.RPMSPEC_FORCE)
+                with RPM.make_dummy_sources([s for s, _, _ in spec.sources], sourcedir):
+                    with capture_stderr() as stderr:
+                        # do a full parse with dummy sources
+                        return rpm.spec(tmp.name, rpm.RPMSPEC_ANYARCH)
             except ValueError as e:
                 raise RPMException(stderr=stderr) from e

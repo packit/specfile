@@ -12,6 +12,17 @@ from specfile.sections import Section
 from specfile.specfile import Specfile
 
 
+def test_parse(spec_multiple_sources):
+    spec = Specfile(spec_multiple_sources)
+    prep = spec._spec.prep
+    # remove all sources
+    for path in spec.sourcedir.iterdir():
+        if not path.samefile(spec.path):
+            path.unlink()
+    spec = Specfile(spec_multiple_sources)
+    assert spec._spec.prep == prep
+
+
 def test_sources(spec_minimal):
     spec = Specfile(spec_minimal)
     source = "test.tar.gz"
