@@ -84,7 +84,7 @@ with specfile1.sections() as sections1, with specfile2.sections() as sections2:
     sections2.changelog[:] = sections1.changelog
 ```
 
-### Mid-level manipulation - tags and changelog
+### Mid-level manipulation - tags, changelog and prep
 
 ```python
 # accessing tags in preamble
@@ -113,6 +113,22 @@ with specfile.changelog() as changelog:
     changelog[1].content.append('- another line')
     # removing the oldest entry
     del changelog[0]
+
+# working with macros in %prep section, supports %setup, %patch, %autosetup and %autopatch
+from specfile.prep import AutosetupMacro
+
+with specfile.prep() as prep:
+    # name of the first macro
+    print(prep.macros[0].name)
+    # options of the last macro
+    print(prep.macros[-1].options)
+    # checking if %autosetup is being used
+    print('%autosetup' in prep.macros)
+    print(AutosetupMacro in prep.macros)
+    # adding a new %patch macro
+    prep.add_patch_macro(28, p=1, b='.test')
+    # removing an existing %patch macro
+    prep.remove_patch_macro(0)
 ```
 
 ### High-level manipulation
