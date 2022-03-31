@@ -1,6 +1,7 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
+import collections
 import re
 import urllib.parse
 from abc import ABC, abstractmethod
@@ -185,8 +186,8 @@ class ListSource(Source):
         return self._source.comments
 
 
-class Sources:
-    """Class that represents a list of all sources."""
+class Sources(collections.abc.MutableSequence):
+    """Class that represents a sequence of all sources."""
 
     PREFIX = "Source"
 
@@ -216,7 +217,7 @@ class Sources:
         # don't have to reimplement __repr__()
         return f"{self.__class__.__name__}({tags}, {sourcelists}, {allow_duplicates})"
 
-    def __contains__(self, location: str) -> bool:
+    def __contains__(self, location: object) -> bool:
         items = self._get_items()
         if not items:
             return False
@@ -346,15 +347,6 @@ class Sources:
                     ts0, ts0.index + 1
                 )
 
-    def append(self, location: str) -> None:
-        """
-        Adds a new source.
-
-        Args:
-            location: Location of the new source.
-        """
-        self.insert(len(self), location)
-
     def insert(self, i: int, location: str) -> None:
         """
         Inserts a new source at a specified index.
@@ -409,11 +401,6 @@ class Sources:
             if source.location == location:
                 del container[index]
 
-    def clear(self) -> None:
-        """Removes all sources."""
-        for _, container, index in reversed(self._get_items()):
-            del container[index]
-
     def count(self, location: str) -> int:
         """
         Counts sources by location.
@@ -429,19 +416,9 @@ class Sources:
             return 0
         return len([s for s in list(zip(*items))[0] if s.location == location])
 
-    def extend(self, locations: List[str]) -> None:
-        """
-        Extends the sources by a list of locations.
-
-        Args:
-            locations: List of locations of the sources to be added.
-        """
-        for location in locations:
-            self.append(location)
-
 
 class Patches(Sources):
-    """Class that represents a list of all patches."""
+    """Class that represents a sequence of all patches."""
 
     PREFIX = "Patch"
 
