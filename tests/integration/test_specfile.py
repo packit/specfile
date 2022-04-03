@@ -8,6 +8,7 @@ import pytest
 from flexmock import flexmock
 
 from specfile.exceptions import SpecfileException
+from specfile.prep import AutopatchMacro, AutosetupMacro, PatchMacro, SetupMacro
 from specfile.sections import Section
 from specfile.specfile import Specfile
 
@@ -21,6 +22,34 @@ def test_parse(spec_multiple_sources):
             path.unlink()
     spec = Specfile(spec_multiple_sources)
     assert spec._spec.prep == prep
+
+
+def test_prep_traditional(spec_traditional):
+    spec = Specfile(spec_traditional)
+    with spec.prep() as prep:
+        assert AutosetupMacro not in prep.macros
+        assert AutopatchMacro not in prep.macros
+        assert isinstance(prep.macros[0], SetupMacro)
+        for i, m in enumerate(prep.macros[1:]):
+            assert isinstance(m, PatchMacro)
+            assert m.index == i
+            assert m.options.p == 1
+        prep.remove_patch_macro(0)
+        assert len([m for m in prep.macros if isinstance(m, PatchMacro)]) == 2
+        prep.add_patch_macro(0, p=2, b=".test")
+        assert len(prep.macros) == 4
+    with spec.sections() as sections:
+        assert sections.prep[1] == "%patch0 -p2 -b .test"
+
+
+def test_prep_autosetup(spec_autosetup):
+    spec = Specfile(spec_autosetup)
+    with spec.prep() as prep:
+        assert len(prep.macros) == 1
+        assert AutosetupMacro in prep.macros
+        assert SetupMacro not in prep.macros
+        assert PatchMacro not in prep.macros
+        assert prep.macros[0].options.p == 1
 
 
 def test_sources(spec_minimal):
