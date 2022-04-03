@@ -21,42 +21,42 @@ class Source(ABC):
     @abstractmethod
     def number(self) -> int:
         """Source number."""
-        pass
+        ...
 
     @property  # type: ignore
     @abstractmethod
     def location(self) -> str:
         """Literal location of the source as stored in the spec file."""
-        pass
+        ...
 
     @location.setter  # type: ignore
     @abstractmethod
     def location(self, value: str) -> None:
-        pass
+        ...
 
     @property  # type: ignore
     @abstractmethod
     def expanded_location(self) -> str:
         """Location of the source after expanding macros."""
-        pass
+        ...
 
     @property  # type: ignore
     @abstractmethod
     def filename(self) -> str:
         """Literal filename of the source."""
-        pass
+        ...
 
     @property  # type: ignore
     @abstractmethod
     def expanded_filename(self) -> str:
         """Filename of the source after expanding macros."""
-        pass
+        ...
 
     @property  # type: ignore
     @abstractmethod
     def comments(self) -> Comments:
         """List of comments associated with the source."""
-        pass
+        ...
 
 
 class TagSource(Source):
