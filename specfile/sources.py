@@ -189,7 +189,7 @@ class ListSource(Source):
 class Sources(collections.abc.MutableSequence):
     """Class that represents a sequence of all sources."""
 
-    PREFIX = "Source"
+    PREFIX: str = "Source"
 
     def __init__(
         self, tags: Tags, sourcelists: List[Sourcelist], allow_duplicates: bool = False
@@ -420,7 +420,7 @@ class Sources(collections.abc.MutableSequence):
 class Patches(Sources):
     """Class that represents a sequence of all patches."""
 
-    PREFIX = "Patch"
+    PREFIX: str = "Patch"
 
     def _get_initial_tag_setup(self) -> Tuple[int, str, str]:
         """
