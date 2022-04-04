@@ -13,6 +13,9 @@ downstream_package_name: python-specfile
 
 copy_upstream_release_description: true
 
+upstream_project_url: https://github.com/packit/specfile
+issue_repository: https://github.com/packit/specfile
+
 actions:
   # we need this b/c `git archive` doesn't put all the metadata in the tarball:
   #   LookupError: setuptools-scm was unable to detect version for '/builddir/build/BUILD/ogr-0.11.1'.
