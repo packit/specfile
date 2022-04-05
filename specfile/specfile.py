@@ -12,6 +12,7 @@ import arrow
 
 from specfile.changelog import Changelog, ChangelogEntry
 from specfile.exceptions import SpecfileException
+from specfile.prep import Prep
 from specfile.rpm import RPM, Macros
 from specfile.sections import Sections
 from specfile.sourcelist import Sourcelist
@@ -137,6 +138,22 @@ class Specfile:
                     yield changelog
                 finally:
                     section.data = changelog.get_raw_section_data()
+
+    @contextlib.contextmanager
+    def prep(self) -> Iterator[Optional[Prep]]:
+        """
+        Context manager for accessing %prep section.
+
+        Yields:
+            Spec file %prep section as `Prep` object.
+        """
+        with self.sections() as sections:
+            try:
+                section = sections.prep
+            except AttributeError:
+                yield None
+            else:
+                yield Prep(section)
 
     @contextlib.contextmanager
     def sources(self, allow_duplicates: bool = False) -> Iterator[Sources]:
