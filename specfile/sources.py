@@ -192,7 +192,11 @@ class Sources(collections.abc.MutableSequence):
     PREFIX: str = "Source"
 
     def __init__(
-        self, tags: Tags, sourcelists: List[Sourcelist], allow_duplicates: bool = False
+        self,
+        tags: Tags,
+        sourcelists: List[Sourcelist],
+        allow_duplicates: bool = False,
+        default_source_number_digits: int = 1,
     ) -> None:
         """
         Constructs a `Sources` object.
@@ -201,6 +205,7 @@ class Sources(collections.abc.MutableSequence):
             tags: All spec file tags.
             sourcelists: List of all %sourcelist sections.
             allow_duplicates: Whether to allow duplicate entries when adding new sources.
+            default_source_number_digits: Default number of digits in a source number.
 
         Returns:
             Constructed instance of `Sources` class.
@@ -208,6 +213,7 @@ class Sources(collections.abc.MutableSequence):
         self._tags = tags
         self._sourcelists = sourcelists
         self._allow_duplicates = allow_duplicates
+        self._default_source_number_digits = default_source_number_digits
 
     def __repr__(self) -> str:
         tags = repr(self._tags)
@@ -215,7 +221,10 @@ class Sources(collections.abc.MutableSequence):
         allow_duplicates = repr(self._allow_duplicates)
         # determine class name dynamically so that inherited classes
         # don't have to reimplement __repr__()
-        return f"{self.__class__.__name__}({tags}, {sourcelists}, {allow_duplicates})"
+        return (
+            f"{self.__class__.__name__}({tags}, {sourcelists}, {allow_duplicates}, "
+            f"{self._default_source_number_digits})"
+        )
 
     def __contains__(self, location: object) -> bool:
         items = self._get_items()
@@ -338,7 +347,8 @@ class Sources(collections.abc.MutableSequence):
             Tuple in the form of (index, name, separator).
         """
         prefix = self.PREFIX.capitalize()
-        return len(self._tags) if self._tags else 0, f"{prefix}{number}", ": "
+        suffix = f"{number:0{self._default_source_number_digits}}"
+        return len(self._tags) if self._tags else 0, f"{prefix}{suffix}", ": "
 
     def _deduplicate_tag_names(self) -> None:
         """Eliminates duplicate numbers in source tag names."""
