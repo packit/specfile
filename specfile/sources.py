@@ -6,7 +6,7 @@ import re
 import urllib.parse
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Iterable, List, Optional, Tuple, Union, overload
+from typing import Iterable, List, Optional, Tuple, Union, cast, overload
 
 from specfile.exceptions import SpecfileException
 from specfile.rpm import Macros
@@ -266,7 +266,7 @@ class Sources(collections.abc.MutableSequence):
             _, container, index = items[i]
             del container[index]
 
-    def _get_tags(self) -> List[Tuple[Source, Union[Tags, Sourcelist], int]]:
+    def _get_tags(self) -> List[Tuple[TagSource, Tags, int]]:
         """
         Gets all tag sources.
 
@@ -292,7 +292,9 @@ class Sources(collections.abc.MutableSequence):
             representing a source, container is the container the source
             is part of and index is its index within that container.
         """
-        result = self._get_tags()
+        result = cast(
+            List[Tuple[Source, Union[Tags, Sourcelist], int]], self._get_tags()
+        )
         last_number = result[-1][0].number if result else -1
         result.extend(
             (ListSource(sl[i], last_number + 1 + i), sl, i)
@@ -323,17 +325,20 @@ class Sources(collections.abc.MutableSequence):
             return name, reference._tag._separator + " " * diff
         return name, reference._tag._separator[:diff] or ":"
 
-    def _get_initial_tag_setup(self) -> Tuple[int, str, str]:
+    def _get_initial_tag_setup(self, number: int = 0) -> Tuple[int, str, str]:
         """
         Determines the initial placement, name and separator of
         a new source tag. The placement is expressed as an index
         in the list of all tags.
 
+        Args:
+            number: Initial source number, defaults to 0.
+
         Returns:
             Tuple in the form of (index, name, separator).
         """
         prefix = self.PREFIX.capitalize()
-        return len(self._tags) if self._tags else 0, f"{prefix}0", ": "
+        return len(self._tags) if self._tags else 0, f"{prefix}{number}", ": "
 
     def _deduplicate_tag_names(self) -> None:
         """Eliminates duplicate numbers in source tag names."""
@@ -390,6 +395,42 @@ class Sources(collections.abc.MutableSequence):
                 Tag(name, location, Macros.expand(location), separator, Comments()),
             )
 
+    def insert_numbered(self, number: int, location: str) -> int:
+        """
+        Inserts a new source with the specified number.
+
+        Args:
+            number: Number of the new source.
+            location: Location of the new source.
+
+        Returns:
+            Index of the newly inserted source.
+
+        Raises:
+            SpecfileException if duplicates are disallowed and there
+            already is a source with the same location.
+        """
+        if not self._allow_duplicates and location in self:
+            raise SpecfileException(f"Source '{location}' already exists")
+        tags = self._get_tags()
+        if tags:
+            # find the nearest source tag
+            i, (source, _, index) = min(
+                enumerate(tags), key=lambda t: abs(t[1][0].number - number)
+            )
+            if source.number < number:
+                i += 1
+                index += 1
+            name, separator = self._get_tag_format(source, number)
+        else:
+            i = 0
+            index, name, separator = self._get_initial_tag_setup(number)
+        self._tags.insert(
+            index, Tag(name, location, Macros.expand(location), separator, Comments())
+        )
+        self._deduplicate_tag_names()
+        return i
+
     def remove(self, location: str) -> None:
         """
         Removes sources by location.
@@ -422,11 +463,14 @@ class Patches(Sources):
 
     PREFIX: str = "Patch"
 
-    def _get_initial_tag_setup(self) -> Tuple[int, str, str]:
+    def _get_initial_tag_setup(self, number: int = 0) -> Tuple[int, str, str]:
         """
         Determines the initial placement, name and separator of
         a new source tag. The placement is expressed as an index
         in the list of all tags.
+
+        Args:
+            number: Initial source number, defaults to 0.
 
         Returns:
             Tuple in the form of (index, name, separator).
@@ -438,6 +482,6 @@ class Patches(Sources):
                 if t.name.capitalize().startswith("Source")
             ][-1]
         except IndexError:
-            return super()._get_initial_tag_setup()
+            return super()._get_initial_tag_setup(number)
         name, separator = self._get_tag_format(source, 0)
         return index + 1, name, separator

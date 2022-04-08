@@ -39,17 +39,17 @@ def test_sources_get_tag_format(ref_name, ref_separator, number, name, separator
 
 
 @pytest.mark.parametrize(
-    "tags, index",
+    "tags, number, index",
     [
-        (["Name", "Version"], 2),
-        ([], 0),
+        (["Name", "Version"], 0, 2),
+        ([], 999, 0),
     ],
 )
-def test_sources_get_initial_tag_setup(tags, index):
+def test_sources_get_initial_tag_setup(tags, number, index):
     sources = Sources(
         Tags([Tag(t, "test", "test", ": ", Comments()) for t in tags]), []
     )
-    assert sources._get_initial_tag_setup() == (index, "Source0", ": ")
+    assert sources._get_initial_tag_setup(number) == (index, f"Source{number}", ": ")
 
 
 @pytest.mark.parametrize(
@@ -174,6 +174,89 @@ def test_sources_insert(tags, sourcelists, index, location, number, cls):
 
 
 @pytest.mark.parametrize(
+    "tags, number, location, index",
+    [
+        ([("Name", "test"), ("Version", "0.1")], 28, "test", 0),
+        (
+            [
+                ("Name", "test"),
+                ("Version", "0.1"),
+                ("Source0", "source0"),
+                ("Source1", "source1"),
+                ("Source28", "source28"),
+                ("Source999", "source999"),
+            ],
+            0,
+            "test",
+            0,
+        ),
+        (
+            [
+                ("Name", "test"),
+                ("Version", "0.1"),
+                ("Source0", "source0"),
+                ("Source1", "source1"),
+                ("Source28", "source28"),
+                ("Source999", "source999"),
+            ],
+            2,
+            "test",
+            2,
+        ),
+        (
+            [
+                ("Name", "test"),
+                ("Version", "0.1"),
+                ("Source0", "source0"),
+                ("Source1", "source1"),
+                ("Source28", "source28"),
+                ("Source999", "source999"),
+            ],
+            42,
+            "test",
+            3,
+        ),
+        (
+            [
+                ("Name", "test"),
+                ("Version", "0.1"),
+                ("Source0", "source0"),
+                ("Source1", "source1"),
+                ("Source28", "source28"),
+                ("Source999", "source999"),
+            ],
+            1000,
+            "test",
+            4,
+        ),
+        (
+            [
+                ("Name", "test"),
+                ("Version", "0.1"),
+                ("Source28", "source28"),
+                ("Source42", "source42"),
+                ("Source5", "source5"),
+                ("Source", "source"),
+            ],
+            37,
+            "test",
+            1,
+        ),
+    ],
+)
+def test_sources_insert_numbered(tags, number, location, index):
+    sources = Sources(Tags([Tag(t, v, v, ": ", Comments()) for t, v in tags]), [])
+    if location in [v for t, v in tags if t.startswith(Sources.PREFIX)]:
+        with pytest.raises(SpecfileException):
+            sources.insert_numbered(number, location)
+    else:
+        assert sources.insert_numbered(number, location) == index
+        assert isinstance(sources[index], TagSource)
+        assert sources[index].number == number
+        assert sources[index].location == location
+
+
+@pytest.mark.parametrize(
     "ref_name, ref_separator, number, name, separator",
     [
         ("Patch99", ":      ", 100, "Patch100", ":     "),
@@ -188,17 +271,19 @@ def test_patches_get_tag_format(ref_name, ref_separator, number, name, separator
 
 
 @pytest.mark.parametrize(
-    "tags, index",
+    "tags, number, index",
     [
-        (["Name", "Version", "Source0"], 3),
-        (["Name", "Version", "Source0", "BuildRequires"], 3),
-        (["Name", "Version"], 2),
-        ([], 0),
+        (["Name", "Version", "Source0"], 0, 3),
+        (["Name", "Version", "Source0", "BuildRequires"], 1, 3),
+        (["Name", "Version"], 2, 2),
+        ([], 999, 0),
     ],
 )
-def test_patches_get_initial_tag_setup(tags, index):
+def test_patches_get_initial_tag_setup(tags, number, index):
     patches = Patches(
         Tags([Tag(t, "test", "test", ": ", Comments()) for t in tags]), []
     )
-    flexmock(patches).should_receive("_get_tag_format").and_return("Patch0", ": ")
-    assert patches._get_initial_tag_setup() == (index, "Patch0", ": ")
+    flexmock(patches).should_receive("_get_tag_format").and_return(
+        f"Patch{number}", ": "
+    )
+    assert patches._get_initial_tag_setup(number) == (index, f"Patch{number}", ": ")
