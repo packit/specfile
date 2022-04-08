@@ -62,23 +62,25 @@ class Source(ABC):
 class TagSource(Source):
     """Class that represents a source backed by a spec file tag."""
 
-    def __init__(self, tag: Tag) -> None:
+    def __init__(self, tag: Tag, number: Optional[int] = None) -> None:
         """
         Constructs a `TagSource` object.
 
         Args:
             tag: Tag that this source represents.
+            number: Source number (in the case of implicit numbering).
 
         Returns:
             Constructed instance of `TagSource` class.
         """
         self._tag = tag
+        self._number = number
 
     def __repr__(self) -> str:
         tag = repr(self._tag)
-        return f"TagSource({tag})"
+        return f"TagSource({tag}, {self._number})"
 
-    def _get_number(self) -> Optional[str]:
+    def _extract_number(self) -> Optional[str]:
         """
         Extracts source number from tag name.
 
@@ -93,12 +95,14 @@ class TagSource(Source):
     @property
     def number(self) -> int:
         """Source number."""
-        return int(self._get_number() or 0)
+        return self._number or int(self._extract_number() or 0)
 
     @property
     def number_digits(self) -> int:
         """Number of digits in the source number."""
-        return len(self._get_number() or "")
+        if self._number:
+            return 0
+        return len(self._extract_number() or "")
 
     @property
     def location(self) -> str:
@@ -196,6 +200,7 @@ class Sources(collections.abc.MutableSequence):
         tags: Tags,
         sourcelists: List[Sourcelist],
         allow_duplicates: bool = False,
+        default_to_implicit_numbering: bool = False,
         default_source_number_digits: int = 1,
     ) -> None:
         """
@@ -205,6 +210,7 @@ class Sources(collections.abc.MutableSequence):
             tags: All spec file tags.
             sourcelists: List of all %sourcelist sections.
             allow_duplicates: Whether to allow duplicate entries when adding new sources.
+            default_to_implicit_numbering: Use implicit numbering (no source numbers) by default.
             default_source_number_digits: Default number of digits in a source number.
 
         Returns:
@@ -213,17 +219,19 @@ class Sources(collections.abc.MutableSequence):
         self._tags = tags
         self._sourcelists = sourcelists
         self._allow_duplicates = allow_duplicates
+        self._default_to_implicit_numbering = default_to_implicit_numbering
         self._default_source_number_digits = default_source_number_digits
 
     def __repr__(self) -> str:
         tags = repr(self._tags)
         sourcelists = repr(self._sourcelists)
         allow_duplicates = repr(self._allow_duplicates)
+        default_to_implicit_numbering = repr(self._default_to_implicit_numbering)
         # determine class name dynamically so that inherited classes
         # don't have to reimplement __repr__()
         return (
             f"{self.__class__.__name__}({tags}, {sourcelists}, {allow_duplicates}, "
-            f"{self._default_source_number_digits})"
+            f"{default_to_implicit_numbering}, {self._default_source_number_digits})"
         )
 
     def __contains__(self, location: object) -> bool:
@@ -285,11 +293,19 @@ class Sources(collections.abc.MutableSequence):
             container is the container the tag is part of and index
             is its index within that container.
         """
-        return [
-            (TagSource(t), self._tags, i)
-            for i, t in enumerate(self._tags)
-            if t.name.capitalize().startswith(self.PREFIX.capitalize())
-        ]
+        result = []
+        last_number = -1
+        for i, tag in enumerate(self._tags):
+            if tag.name.capitalize() == self.PREFIX.capitalize():
+                last_number += 1
+                ts = TagSource(tag, last_number)
+            elif tag.name.capitalize().startswith(self.PREFIX.capitalize()):
+                ts = TagSource(tag)
+                last_number = ts.number
+            else:
+                continue
+            result.append((ts, self._tags, i))
+        return result
 
     def _get_items(self) -> List[Tuple[Source, Union[Tags, Sourcelist], int]]:
         """
@@ -312,6 +328,21 @@ class Sources(collections.abc.MutableSequence):
         )
         return result
 
+    def _detect_implicit_numbering(self) -> bool:
+        """
+        Tries to detect if implicit numbering is being used, i.e. Source/Patch
+        tags don't have numbers.
+
+        Returns:
+            True if implicit numbering is being/should be used, False otherwise.
+        """
+        tags = self._get_tags()
+        if any(t._number is None for t, _, _ in tags):
+            return False
+        if len(tags) <= 1:
+            return self._default_to_implicit_numbering
+        return True
+
     def _get_tag_format(self, reference: TagSource, number: int) -> Tuple[str, str]:
         """
         Determines name and separator of a new source tag based on
@@ -328,7 +359,11 @@ class Sources(collections.abc.MutableSequence):
             Tuple in the form of (name, separator).
         """
         prefix = self.PREFIX.capitalize()
-        name = f"{prefix}{number:0{reference.number_digits}}"
+        if self._detect_implicit_numbering():
+            suffix = ""
+        else:
+            suffix = f"{number:0{reference.number_digits}}"
+        name = f"{prefix}{suffix}"
         diff = len(reference._tag.name) - len(name)
         if diff >= 0:
             return name, reference._tag._separator + " " * diff
@@ -347,7 +382,10 @@ class Sources(collections.abc.MutableSequence):
             Tuple in the form of (index, name, separator).
         """
         prefix = self.PREFIX.capitalize()
-        suffix = f"{number:0{self._default_source_number_digits}}"
+        if self._default_to_implicit_numbering:
+            suffix = ""
+        else:
+            suffix = f"{number:0{self._default_source_number_digits}}"
         return len(self._tags) if self._tags else 0, f"{prefix}{suffix}", ": "
 
     def _deduplicate_tag_names(self) -> None:
