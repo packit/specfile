@@ -32,6 +32,12 @@ Source can be local, specified by a filename, or remote, specified by a URL. Loc
 
 Sources defined by tags can be explicitly numbered, e.g. `Source0` or `Patch999`, otherwise implicit numbering takes place and source numbers are auto-assigned in a sequential manner.
 
+### Prep macros
+
+Prep macros are macros that often appear in (and only in, they don't make sense anywhere else) `%prep` section.
+
+4 such macros are recognized by this library, [`%setup`](https://rpm-packaging-guide.github.io/#setup), [`%patch`](http://ftp.rpm.org/max-rpm/s1-rpm-inside-macros.html#S2-RPM-INSIDE-PATCH-MACRO), [`%autosetup`](https://rpm-software-management.github.io/rpm/manual/autosetup.html#autosetup-description) and [`%autopatch`](https://rpm-software-management.github.io/rpm/manual/autosetup.html#autopatch). A typical spec file uses either `%autosetup` or a combination of `%setup` and `%patch` or `%autopatch`.
+
 ## Examples and use cases
 
 The following examples should cover use cases required by [packit](https://github.com/packit/research/blob/main/specfile/README.md).
