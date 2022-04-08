@@ -19,8 +19,8 @@ class Source(ABC):
 
     @property  # type: ignore
     @abstractmethod
-    def index(self) -> int:
-        """Numeric index of the source."""
+    def number(self) -> int:
+        """Source number."""
         pass
 
     @property  # type: ignore
@@ -78,12 +78,12 @@ class TagSource(Source):
         tag = repr(self._tag)
         return f"TagSource({tag})"
 
-    def _get_index(self) -> Optional[str]:
+    def _get_number(self) -> Optional[str]:
         """
-        Extracts numeric index from tag name.
+        Extracts source number from tag name.
 
         Returns:
-            Extracted index or None if there isn't one.
+            Extracted number or None if there isn't one.
         """
         tokens = re.split(r"(\d+)", self._tag.name, maxsplit=1)
         if len(tokens) > 1:
@@ -91,14 +91,14 @@ class TagSource(Source):
         return None
 
     @property
-    def index(self) -> int:
-        """Numeric index of the source."""
-        return int(self._get_index() or 0)
+    def number(self) -> int:
+        """Source number."""
+        return int(self._get_number() or 0)
 
     @property
-    def index_digits(self) -> int:
-        """Number of digits the index is formed by."""
-        return len(self._get_index() or "")
+    def number_digits(self) -> int:
+        """Number of digits in the source number."""
+        return len(self._get_number() or "")
 
     @property
     def location(self) -> str:
@@ -133,28 +133,28 @@ class TagSource(Source):
 class ListSource(Source):
     """Class that represents a source backed by a line in a %sourcelist/%patchlist section."""
 
-    def __init__(self, source: SourcelistEntry, index: int) -> None:
+    def __init__(self, source: SourcelistEntry, number: int) -> None:
         """
         Constructs a `ListSource` object.
 
         Args:
             source: Sourcelist entry that this source represents.
-            index: Global index of the source.
+            number: Source number.
 
         Returns:
             Constructed instance of `ListSource` class.
         """
         self._source = source
-        self._index = index
+        self._number = number
 
     def __repr__(self) -> str:
         source = repr(self._source)
-        return f"ListSource({source}, {self._index})"
+        return f"ListSource({source}, {self._number})"
 
     @property
-    def index(self) -> int:
-        """Numeric index of the source."""
-        return self._index
+    def number(self) -> int:
+        """Source number."""
+        return self._number
 
     @property
     def location(self) -> str:
@@ -293,31 +293,31 @@ class Sources(collections.abc.MutableSequence):
             is part of and index is its index within that container.
         """
         result = self._get_tags()
-        last_index = result[-1][0].index if result else -1
+        last_number = result[-1][0].number if result else -1
         result.extend(
-            (ListSource(sl[i], last_index + 1 + i), sl, i)
+            (ListSource(sl[i], last_number + 1 + i), sl, i)
             for sl in self._sourcelists
             for i in range(len(sl))
         )
         return result
 
-    def _get_tag_format(self, reference: TagSource, index: int) -> Tuple[str, str]:
+    def _get_tag_format(self, reference: TagSource, number: int) -> Tuple[str, str]:
         """
         Determines name and separator of a new source tag based on
-        a reference tag and the requested index.
+        a reference tag and the requested source number.
 
         The new name has the same number of digits as the reference
         and the length of the separator is adjusted accordingly.
 
         Args:
             reference: Reference tag source.
-            index: Requested index.
+            number: Requested source number.
 
         Returns:
             Tuple in the form of (name, separator).
         """
         prefix = self.PREFIX.capitalize()
-        name = f"{prefix}{index:0{reference.index_digits}}"
+        name = f"{prefix}{number:0{reference.number_digits}}"
         diff = len(reference._tag.name) - len(name)
         if diff >= 0:
             return name, reference._tag._separator + " " * diff
@@ -336,15 +336,15 @@ class Sources(collections.abc.MutableSequence):
         return len(self._tags) if self._tags else 0, f"{prefix}0", ": "
 
     def _deduplicate_tag_names(self) -> None:
-        """Eliminates duplicate indexes in source tag names."""
+        """Eliminates duplicate numbers in source tag names."""
         tags = self._get_tags()
         if not tags:
             return
-        tag_sources = sorted(list(zip(*tags))[0], key=lambda ts: ts.index)
+        tag_sources = sorted(list(zip(*tags))[0], key=lambda ts: ts.number)
         for ts0, ts1 in zip(tag_sources, tag_sources[1:]):
-            if ts1.index <= ts0.index:
+            if ts1.number <= ts0.number:
                 ts1._tag.name, ts1._tag._separator = self._get_tag_format(
-                    ts0, ts0.index + 1
+                    ts0, ts0.number + 1
                 )
 
     def insert(self, i: int, location: str) -> None:
@@ -368,12 +368,12 @@ class Sources(collections.abc.MutableSequence):
             if i == len(items):
                 source, container, index = items[-1]
                 index += 1
-                source_index = source.index + 1
+                number = source.number + 1
             else:
                 source, container, index = items[i]
-                source_index = source.index
+                number = source.number
             if isinstance(source, TagSource):
-                name, separator = self._get_tag_format(source, source_index)
+                name, separator = self._get_tag_format(source, number)
                 container.insert(
                     index,
                     Tag(name, location, Macros.expand(location), separator, Comments()),

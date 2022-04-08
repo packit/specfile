@@ -11,7 +11,7 @@ from specfile.tags import Comments, Tag, Tags
 
 
 @pytest.mark.parametrize(
-    "tag_name, index",
+    "tag_name, number",
     [
         ("Source", None),
         ("Source0", "0"),
@@ -20,22 +20,22 @@ from specfile.tags import Comments, Tag, Tags
         ("Patch99999", "99999"),
     ],
 )
-def test_tag_source_get_index(tag_name, index):
+def test_tag_source_get_number(tag_name, number):
     ts = TagSource(Tag(tag_name, "", "", "", Comments()))
-    assert ts._get_index() == index
+    assert ts._get_number() == number
 
 
 @pytest.mark.parametrize(
-    "ref_name, ref_separator, index, name, separator",
+    "ref_name, ref_separator, number, name, separator",
     [
         ("Source", ": ", 28, "Source28", ":"),
         ("Source0001", ":      ", 2, "Source0002", ":      "),
     ],
 )
-def test_sources_get_tag_format(ref_name, ref_separator, index, name, separator):
+def test_sources_get_tag_format(ref_name, ref_separator, number, name, separator):
     sources = Sources(None, [])
     reference = TagSource(Tag(ref_name, "", "", ref_separator, Comments()))
-    assert sources._get_tag_format(reference, index) == (name, separator)
+    assert sources._get_tag_format(reference, number) == (name, separator)
 
 
 @pytest.mark.parametrize(
@@ -72,7 +72,7 @@ def test_sources_deduplicate_tag_names(tags, deduplicated_tags):
 
 
 @pytest.mark.parametrize(
-    "tags, sourcelists, index, location, source_index, cls",
+    "tags, sourcelists, index, location, number, cls",
     [
         ([("Name", "test"), ("Version", "0.1")], [], 0, "test", 0, TagSource),
         ([("Name", "test"), ("Version", "0.1")], [[]], 0, "test", 0, ListSource),
@@ -151,7 +151,7 @@ def test_sources_deduplicate_tag_names(tags, deduplicated_tags):
         ),
     ],
 )
-def test_sources_insert(tags, sourcelists, index, location, source_index, cls):
+def test_sources_insert(tags, sourcelists, index, location, number, cls):
     sources = Sources(
         Tags([Tag(t, v, v, ": ", Comments()) for t, v in tags]),
         [
@@ -169,22 +169,22 @@ def test_sources_insert(tags, sourcelists, index, location, source_index, cls):
         if index >= len(sources):
             index = len(sources) - 1
         assert isinstance(sources[index], cls)
-        assert sources[index].index == source_index
+        assert sources[index].number == number
         assert sources[index].location == location
 
 
 @pytest.mark.parametrize(
-    "ref_name, ref_separator, index, name, separator",
+    "ref_name, ref_separator, number, name, separator",
     [
         ("Patch99", ":      ", 100, "Patch100", ":     "),
         ("Patch9999", ":  ", 28, "Patch0028", ":  "),
         ("Source2", ":     ", 0, "Patch0", ":      "),
     ],
 )
-def test_patches_get_tag_format(ref_name, ref_separator, index, name, separator):
+def test_patches_get_tag_format(ref_name, ref_separator, number, name, separator):
     patches = Patches(None, [])
     reference = TagSource(Tag(ref_name, "", "", ref_separator, Comments()))
-    assert patches._get_tag_format(reference, index) == (name, separator)
+    assert patches._get_tag_format(reference, number) == (name, separator)
 
 
 @pytest.mark.parametrize(

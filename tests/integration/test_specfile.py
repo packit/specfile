@@ -76,7 +76,7 @@ def test_patches(spec_patchlist):
     with spec.patches() as patches:
         patches.insert(0, patch)
         assert patches[0].location == patch
-        assert patches[1].index == 1
+        assert patches[1].number == 1
     with spec.tags() as tags:
         assert len([t for t in tags if t.name.startswith("Patch")]) == 2
     with spec.patches() as patches:
