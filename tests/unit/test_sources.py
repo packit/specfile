@@ -33,7 +33,7 @@ def test_tag_source_get_number(tag_name, number):
     ],
 )
 def test_sources_get_tag_format(ref_name, ref_separator, number, name, separator):
-    sources = Sources(None, [])
+    sources = Sources(Tags(), [])
     reference = TagSource(Tag(ref_name, "", "", ref_separator, Comments()))
     assert sources._get_tag_format(reference, number) == (name, separator)
 
@@ -265,7 +265,7 @@ def test_sources_insert_numbered(tags, number, location, index):
     ],
 )
 def test_patches_get_tag_format(ref_name, ref_separator, number, name, separator):
-    patches = Patches(None, [])
+    patches = Patches(Tags(), [])
     reference = TagSource(Tag(ref_name, "", "", ref_separator, Comments()))
     assert patches._get_tag_format(reference, number) == (name, separator)
 
