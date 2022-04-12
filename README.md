@@ -183,6 +183,8 @@ with specfile.patches() as patches:
     # adding and removing patches
     patches.append('another.patch')
     del patches[2]
+    # inserting a patch with a specific number
+    patches.insert_numbered(999, 'final.patch')
 
 # fetching non-local sources (including patches)
 specfile.download_remote_sources()

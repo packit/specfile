@@ -6,7 +6,7 @@ import re
 import urllib.parse
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Iterable, List, Optional, Tuple, Union, overload
+from typing import Iterable, List, Optional, Tuple, Union, cast, overload
 
 from specfile.exceptions import SpecfileException
 from specfile.rpm import Macros
@@ -19,44 +19,44 @@ class Source(ABC):
 
     @property  # type: ignore
     @abstractmethod
-    def index(self) -> int:
-        """Numeric index of the source."""
-        pass
+    def number(self) -> int:
+        """Source number."""
+        ...
 
     @property  # type: ignore
     @abstractmethod
     def location(self) -> str:
         """Literal location of the source as stored in the spec file."""
-        pass
+        ...
 
     @location.setter  # type: ignore
     @abstractmethod
     def location(self, value: str) -> None:
-        pass
+        ...
 
     @property  # type: ignore
     @abstractmethod
     def expanded_location(self) -> str:
         """Location of the source after expanding macros."""
-        pass
+        ...
 
     @property  # type: ignore
     @abstractmethod
     def filename(self) -> str:
         """Literal filename of the source."""
-        pass
+        ...
 
     @property  # type: ignore
     @abstractmethod
     def expanded_filename(self) -> str:
         """Filename of the source after expanding macros."""
-        pass
+        ...
 
     @property  # type: ignore
     @abstractmethod
     def comments(self) -> Comments:
         """List of comments associated with the source."""
-        pass
+        ...
 
 
 class TagSource(Source):
@@ -78,12 +78,12 @@ class TagSource(Source):
         tag = repr(self._tag)
         return f"TagSource({tag})"
 
-    def _get_index(self) -> Optional[str]:
+    def _get_number(self) -> Optional[str]:
         """
-        Extracts numeric index from tag name.
+        Extracts source number from tag name.
 
         Returns:
-            Extracted index or None if there isn't one.
+            Extracted number or None if there isn't one.
         """
         tokens = re.split(r"(\d+)", self._tag.name, maxsplit=1)
         if len(tokens) > 1:
@@ -91,14 +91,14 @@ class TagSource(Source):
         return None
 
     @property
-    def index(self) -> int:
-        """Numeric index of the source."""
-        return int(self._get_index() or 0)
+    def number(self) -> int:
+        """Source number."""
+        return int(self._get_number() or 0)
 
     @property
-    def index_digits(self) -> int:
-        """Number of digits the index is formed by."""
-        return len(self._get_index() or "")
+    def number_digits(self) -> int:
+        """Number of digits in the source number."""
+        return len(self._get_number() or "")
 
     @property
     def location(self) -> str:
@@ -133,28 +133,28 @@ class TagSource(Source):
 class ListSource(Source):
     """Class that represents a source backed by a line in a %sourcelist/%patchlist section."""
 
-    def __init__(self, source: SourcelistEntry, index: int) -> None:
+    def __init__(self, source: SourcelistEntry, number: int) -> None:
         """
         Constructs a `ListSource` object.
 
         Args:
             source: Sourcelist entry that this source represents.
-            index: Global index of the source.
+            number: Source number.
 
         Returns:
             Constructed instance of `ListSource` class.
         """
         self._source = source
-        self._index = index
+        self._number = number
 
     def __repr__(self) -> str:
         source = repr(self._source)
-        return f"ListSource({source}, {self._index})"
+        return f"ListSource({source}, {self._number})"
 
     @property
-    def index(self) -> int:
-        """Numeric index of the source."""
-        return self._index
+    def number(self) -> int:
+        """Source number."""
+        return self._number
 
     @property
     def location(self) -> str:
@@ -189,10 +189,14 @@ class ListSource(Source):
 class Sources(collections.abc.MutableSequence):
     """Class that represents a sequence of all sources."""
 
-    PREFIX = "Source"
+    PREFIX: str = "Source"
 
     def __init__(
-        self, tags: Tags, sourcelists: List[Sourcelist], allow_duplicates: bool = False
+        self,
+        tags: Tags,
+        sourcelists: List[Sourcelist],
+        allow_duplicates: bool = False,
+        default_source_number_digits: int = 1,
     ) -> None:
         """
         Constructs a `Sources` object.
@@ -201,6 +205,7 @@ class Sources(collections.abc.MutableSequence):
             tags: All spec file tags.
             sourcelists: List of all %sourcelist sections.
             allow_duplicates: Whether to allow duplicate entries when adding new sources.
+            default_source_number_digits: Default number of digits in a source number.
 
         Returns:
             Constructed instance of `Sources` class.
@@ -208,6 +213,7 @@ class Sources(collections.abc.MutableSequence):
         self._tags = tags
         self._sourcelists = sourcelists
         self._allow_duplicates = allow_duplicates
+        self._default_source_number_digits = default_source_number_digits
 
     def __repr__(self) -> str:
         tags = repr(self._tags)
@@ -215,7 +221,10 @@ class Sources(collections.abc.MutableSequence):
         allow_duplicates = repr(self._allow_duplicates)
         # determine class name dynamically so that inherited classes
         # don't have to reimplement __repr__()
-        return f"{self.__class__.__name__}({tags}, {sourcelists}, {allow_duplicates})"
+        return (
+            f"{self.__class__.__name__}({tags}, {sourcelists}, {allow_duplicates}, "
+            f"{self._default_source_number_digits})"
+        )
 
     def __contains__(self, location: object) -> bool:
         items = self._get_items()
@@ -266,7 +275,7 @@ class Sources(collections.abc.MutableSequence):
             _, container, index = items[i]
             del container[index]
 
-    def _get_tags(self) -> List[Tuple[Source, Union[Tags, Sourcelist], int]]:
+    def _get_tags(self) -> List[Tuple[TagSource, Tags, int]]:
         """
         Gets all tag sources.
 
@@ -292,59 +301,65 @@ class Sources(collections.abc.MutableSequence):
             representing a source, container is the container the source
             is part of and index is its index within that container.
         """
-        result = self._get_tags()
-        last_index = result[-1][0].index if result else -1
+        result = cast(
+            List[Tuple[Source, Union[Tags, Sourcelist], int]], self._get_tags()
+        )
+        last_number = result[-1][0].number if result else -1
         result.extend(
-            (ListSource(sl[i], last_index + 1 + i), sl, i)
+            (ListSource(sl[i], last_number + 1 + i), sl, i)
             for sl in self._sourcelists
             for i in range(len(sl))
         )
         return result
 
-    def _get_tag_format(self, reference: TagSource, index: int) -> Tuple[str, str]:
+    def _get_tag_format(self, reference: TagSource, number: int) -> Tuple[str, str]:
         """
         Determines name and separator of a new source tag based on
-        a reference tag and the requested index.
+        a reference tag and the requested source number.
 
         The new name has the same number of digits as the reference
         and the length of the separator is adjusted accordingly.
 
         Args:
             reference: Reference tag source.
-            index: Requested index.
+            number: Requested source number.
 
         Returns:
             Tuple in the form of (name, separator).
         """
         prefix = self.PREFIX.capitalize()
-        name = f"{prefix}{index:0{reference.index_digits}}"
+        name = f"{prefix}{number:0{reference.number_digits}}"
         diff = len(reference._tag.name) - len(name)
         if diff >= 0:
             return name, reference._tag._separator + " " * diff
         return name, reference._tag._separator[:diff] or ":"
 
-    def _get_initial_tag_setup(self) -> Tuple[int, str, str]:
+    def _get_initial_tag_setup(self, number: int = 0) -> Tuple[int, str, str]:
         """
         Determines the initial placement, name and separator of
         a new source tag. The placement is expressed as an index
         in the list of all tags.
 
+        Args:
+            number: Initial source number, defaults to 0.
+
         Returns:
             Tuple in the form of (index, name, separator).
         """
         prefix = self.PREFIX.capitalize()
-        return len(self._tags) if self._tags else 0, f"{prefix}0", ": "
+        suffix = f"{number:0{self._default_source_number_digits}}"
+        return len(self._tags) if self._tags else 0, f"{prefix}{suffix}", ": "
 
     def _deduplicate_tag_names(self) -> None:
-        """Eliminates duplicate indexes in source tag names."""
+        """Eliminates duplicate numbers in source tag names."""
         tags = self._get_tags()
         if not tags:
             return
-        tag_sources = sorted(list(zip(*tags))[0], key=lambda ts: ts.index)
+        tag_sources = sorted(list(zip(*tags))[0], key=lambda ts: ts.number)
         for ts0, ts1 in zip(tag_sources, tag_sources[1:]):
-            if ts1.index <= ts0.index:
+            if ts1.number <= ts0.number:
                 ts1._tag.name, ts1._tag._separator = self._get_tag_format(
-                    ts0, ts0.index + 1
+                    ts0, ts0.number + 1
                 )
 
     def insert(self, i: int, location: str) -> None:
@@ -368,12 +383,12 @@ class Sources(collections.abc.MutableSequence):
             if i == len(items):
                 source, container, index = items[-1]
                 index += 1
-                source_index = source.index + 1
+                number = source.number + 1
             else:
                 source, container, index = items[i]
-                source_index = source.index
+                number = source.number
             if isinstance(source, TagSource):
-                name, separator = self._get_tag_format(source, source_index)
+                name, separator = self._get_tag_format(source, number)
                 container.insert(
                     index,
                     Tag(name, location, Macros.expand(location), separator, Comments()),
@@ -389,6 +404,42 @@ class Sources(collections.abc.MutableSequence):
                 index,
                 Tag(name, location, Macros.expand(location), separator, Comments()),
             )
+
+    def insert_numbered(self, number: int, location: str) -> int:
+        """
+        Inserts a new source with the specified number.
+
+        Args:
+            number: Number of the new source.
+            location: Location of the new source.
+
+        Returns:
+            Index of the newly inserted source.
+
+        Raises:
+            SpecfileException if duplicates are disallowed and there
+            already is a source with the same location.
+        """
+        if not self._allow_duplicates and location in self:
+            raise SpecfileException(f"Source '{location}' already exists")
+        tags = self._get_tags()
+        if tags:
+            # find the nearest source tag
+            i, (source, _, index) = min(
+                enumerate(tags), key=lambda t: abs(t[1][0].number - number)
+            )
+            if source.number < number:
+                i += 1
+                index += 1
+            name, separator = self._get_tag_format(source, number)
+        else:
+            i = 0
+            index, name, separator = self._get_initial_tag_setup(number)
+        self._tags.insert(
+            index, Tag(name, location, Macros.expand(location), separator, Comments())
+        )
+        self._deduplicate_tag_names()
+        return i
 
     def remove(self, location: str) -> None:
         """
@@ -420,13 +471,16 @@ class Sources(collections.abc.MutableSequence):
 class Patches(Sources):
     """Class that represents a sequence of all patches."""
 
-    PREFIX = "Patch"
+    PREFIX: str = "Patch"
 
-    def _get_initial_tag_setup(self) -> Tuple[int, str, str]:
+    def _get_initial_tag_setup(self, number: int = 0) -> Tuple[int, str, str]:
         """
         Determines the initial placement, name and separator of
         a new source tag. The placement is expressed as an index
         in the list of all tags.
+
+        Args:
+            number: Initial source number, defaults to 0.
 
         Returns:
             Tuple in the form of (index, name, separator).
@@ -438,6 +492,6 @@ class Patches(Sources):
                 if t.name.capitalize().startswith("Source")
             ][-1]
         except IndexError:
-            return super()._get_initial_tag_setup()
+            return super()._get_initial_tag_setup(number)
         name, separator = self._get_tag_format(source, 0)
         return index + 1, name, separator

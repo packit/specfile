@@ -156,12 +156,15 @@ class Specfile:
                 yield Prep(section)
 
     @contextlib.contextmanager
-    def sources(self, allow_duplicates: bool = False) -> Iterator[Sources]:
+    def sources(
+        self, allow_duplicates: bool = False, default_source_number_digits: int = 1
+    ) -> Iterator[Sources]:
         """
         Context manager for accessing sources.
 
         Args:
             allow_duplicates: Whether to allow duplicate entries when adding new sources.
+            default_source_number_digits: Default number of digits in a source number.
 
         Yields:
             Spec file sources as `Sources` object.
@@ -175,18 +178,22 @@ class Specfile:
                     tags,
                     list(zip(*sourcelists))[1] if sourcelists else [],
                     allow_duplicates,
+                    default_source_number_digits,
                 )
             finally:
                 for section, sourcelist in sourcelists:
                     section.data = sourcelist.get_raw_section_data()
 
     @contextlib.contextmanager
-    def patches(self, allow_duplicates: bool = False) -> Iterator[Patches]:
+    def patches(
+        self, allow_duplicates: bool = False, default_source_number_digits: int = 1
+    ) -> Iterator[Patches]:
         """
         Context manager for accessing patches.
 
         Args:
             allow_duplicates: Whether to allow duplicate entries when adding new patches.
+            default_source_number_digits: Default number of digits in a source number.
 
         Yields:
             Spec file patches as `Patches` object.
@@ -200,6 +207,7 @@ class Specfile:
                     tags,
                     list(zip(*patchlists))[1] if patchlists else [],
                     allow_duplicates,
+                    default_source_number_digits,
                 )
             finally:
                 for section, patchlist in patchlists:
