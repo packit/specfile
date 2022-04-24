@@ -134,14 +134,16 @@ from specfile.prep import AutosetupMacro
 with specfile.prep() as prep:
     # name of the first macro
     print(prep.macros[0].name)
-    # options of the last macro
-    print(prep.macros[-1].options)
     # checking if %autosetup is being used
-    print('%autosetup' in prep.macros)
-    print(AutosetupMacro in prep.macros)
+    print('%autosetup' in prep)
+    print(AutosetupMacro in prep)
+    # changing macro options
+    prep.autosetup.options.n = '%{srcname}-%{version}'
     # adding a new %patch macro
     prep.add_patch_macro(28, p=1, b='.test')
-    # removing an existing %patch macro
+    # removing an existing %patch macro by name
+    del prep.patch0
+    # this works for both '%patch0' and '%patch -P0'
     prep.remove_patch_macro(0)
 ```
 

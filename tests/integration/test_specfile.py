@@ -31,16 +31,21 @@ def test_prep_traditional(spec_traditional):
         assert AutosetupMacro not in prep.macros
         assert AutopatchMacro not in prep.macros
         assert isinstance(prep.macros[0], SetupMacro)
+        assert prep.macros[0] == prep.setup
         for i, m in enumerate(prep.macros[1:]):
             assert isinstance(m, PatchMacro)
-            assert m.index == i
+            assert m.number == i
             assert m.options.p == 1
         prep.remove_patch_macro(0)
         assert len([m for m in prep.macros if isinstance(m, PatchMacro)]) == 2
         prep.add_patch_macro(0, p=2, b=".test")
         assert len(prep.macros) == 4
+        assert prep.patch0.options.p == 2
+        assert prep.patch0.options.b == ".test"
+        prep.patch0.options.b = ".test2"
+        prep.patch0.options.E = True
     with spec.sections() as sections:
-        assert sections.prep[1] == "%patch0 -p2 -b .test"
+        assert sections.prep[1] == "%patch0 -p2 -b .test2 -E"
 
 
 def test_prep_autosetup(spec_autosetup):
@@ -50,7 +55,22 @@ def test_prep_autosetup(spec_autosetup):
         assert AutosetupMacro in prep.macros
         assert SetupMacro not in prep.macros
         assert PatchMacro not in prep.macros
-        assert prep.macros[0].options.p == 1
+        assert prep.autosetup.options.p == 1
+
+
+def test_prep_autopatch(spec_autopatch):
+    spec = Specfile(spec_autopatch)
+    with spec.prep() as prep:
+        assert len(prep.macros) == 4
+        assert prep.macros[1].options.M == 2
+        assert prep.macros[2].options.positional == [3]
+        assert prep.macros[3].options.m == 4
+        del prep.macros[1]
+        del prep.macros[2]
+        prep.autopatch.options.positional = list(range(7))
+    with spec.sections() as sections:
+        assert sections.prep[0] == "%autosetup -N"
+        assert sections.prep[3] == "%autopatch -p1 0 1 2 3 4 5 6"
 
 
 def test_sources(spec_minimal):
