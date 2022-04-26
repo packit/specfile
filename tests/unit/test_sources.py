@@ -20,9 +20,63 @@ from specfile.tags import Comments, Tag, Tags
         ("Patch99999", "99999"),
     ],
 )
-def test_tag_source_get_number(tag_name, number):
+def test_tag_source_extract_number(tag_name, number):
     ts = TagSource(Tag(tag_name, "", "", "", Comments()))
-    assert ts._get_number() == number
+    assert ts._extract_number() == number
+
+
+@pytest.mark.parametrize(
+    "tags, default, result",
+    [
+        (
+            [
+                ("Name", "test"),
+                ("Version", "0.1"),
+                ("Source0", "source0"),
+                ("Source1", "source1"),
+                ("Source2", "source2"),
+            ],
+            True,
+            False,
+        ),
+        (
+            [
+                ("Name", "test"),
+                ("Version", "0.1"),
+                ("Source", "source0"),
+                ("Source", "source1"),
+                ("Source", "source2"),
+            ],
+            False,
+            True,
+        ),
+        (
+            [
+                ("Name", "test"),
+                ("Version", "0.1"),
+                ("Source", "source0"),
+            ],
+            False,
+            False,
+        ),
+        (
+            [
+                ("Name", "test"),
+                ("Version", "0.1"),
+                ("Source", "source0"),
+            ],
+            True,
+            True,
+        ),
+    ],
+)
+def test_sources_detect_implicit_numbering(tags, default, result):
+    sources = Sources(
+        Tags([Tag(t, v, v, ": ", Comments()) for t, v in tags]),
+        [],
+        default_to_implicit_numbering=default,
+    )
+    assert sources._detect_implicit_numbering() == result
 
 
 @pytest.mark.parametrize(
@@ -33,7 +87,7 @@ def test_tag_source_get_number(tag_name, number):
     ],
 )
 def test_sources_get_tag_format(ref_name, ref_separator, number, name, separator):
-    sources = Sources(None, [])
+    sources = Sources(Tags(), [])
     reference = TagSource(Tag(ref_name, "", "", ref_separator, Comments()))
     assert sources._get_tag_format(reference, number) == (name, separator)
 
@@ -265,7 +319,7 @@ def test_sources_insert_numbered(tags, number, location, index):
     ],
 )
 def test_patches_get_tag_format(ref_name, ref_separator, number, name, separator):
-    patches = Patches(None, [])
+    patches = Patches(Tags(), [])
     reference = TagSource(Tag(ref_name, "", "", ref_separator, Comments()))
     assert patches._get_tag_format(reference, number) == (name, separator)
 

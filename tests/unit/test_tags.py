@@ -12,9 +12,9 @@ from specfile.tags import Comment, Comments, Tag, Tags
 def test_find():
     tags = Tags(
         [
-            Tag("Name", "test", "test", ": ", []),
-            Tag("Version", "0.1", "0.1", ": ", []),
-            Tag("Release", "1%{?dist}", "1.fc35", ": ", []),
+            Tag("Name", "test", "test", ": ", Comments()),
+            Tag("Version", "0.1", "0.1", ": ", Comments()),
+            Tag("Release", "1%{?dist}", "1.fc35", ": ", Comments()),
         ]
     )
     assert tags.find("version") == 1
@@ -122,7 +122,7 @@ def test_get_raw_section_data():
 def test_copy_tags():
     tags = Tags(
         [
-            Tag("Name", "test", "test", ": ", []),
+            Tag("Name", "test", "test", ": ", Comments()),
         ]
     )
     tags_copy = copy.deepcopy(tags)
