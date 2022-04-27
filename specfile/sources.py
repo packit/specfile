@@ -46,6 +46,12 @@ class Source(ABC):
         """Literal filename of the source."""
         ...
 
+    @property
+    def remote(self) -> bool:
+        """Whether the source is remote (location is URL)."""
+        url = urllib.parse.urlsplit(self.expanded_location)
+        return all((url.scheme, url.netloc))
+
     @property  # type: ignore
     @abstractmethod
     def expanded_filename(self) -> str:
