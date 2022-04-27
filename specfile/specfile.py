@@ -266,7 +266,11 @@ class Specfile:
                     raise SpecfileException("Failed to auto-detect author") from e
             elif email is not None:
                 author += f" <{email}>"
-            changelog.append(ChangelogEntry.assemble(timestamp, author, entry, evr))
+            changelog.append(
+                ChangelogEntry.assemble(
+                    timestamp, author, entry, evr, append_newline=bool(changelog)
+                )
+            )
 
     @property
     def version(self) -> str:
