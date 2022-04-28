@@ -10,6 +10,7 @@ from tests.constants import (
     SPEC_MINIMAL,
     SPEC_MULTIPLE_SOURCES,
     SPEC_PATCHLIST,
+    SPEC_RPMAUTOSPEC,
     SPEC_TRADITIONAL,
     SPECFILE,
 )
@@ -19,6 +20,13 @@ from tests.constants import (
 def spec_minimal(tmp_path):
     specfile_path = tmp_path / SPECFILE
     shutil.copyfile(SPEC_MINIMAL / SPECFILE, specfile_path)
+    return specfile_path
+
+
+@pytest.fixture(scope="function")
+def spec_rpmautospec(tmp_path):
+    specfile_path = tmp_path / SPECFILE
+    shutil.copyfile(SPEC_RPMAUTOSPEC / SPECFILE, specfile_path)
     return specfile_path
 
 

@@ -224,6 +224,17 @@ class Specfile:
                 for section, patchlist in patchlists:
                     section.data = patchlist.get_raw_section_data()
 
+    @property
+    def has_autochangelog(self) -> bool:
+        """Whether the spec file uses %autochangelog."""
+        with self.sections() as sections:
+            try:
+                section = sections.changelog
+            except AttributeError:
+                return False
+            changelog = [ln.strip() for ln in section if ln.strip()]
+            return changelog == ["%autochangelog"]
+
     def add_changelog_entry(
         self,
         entry: Union[str, List[str]],
@@ -232,7 +243,8 @@ class Specfile:
         timestamp: Optional[Union[datetime.date, datetime.datetime]] = None,
     ) -> None:
         """
-        Adds a new %changelog entry. Does nothing if there is no %changelog section.
+        Adds a new %changelog entry. Does nothing if there is no %changelog section
+        or if %autochangelog is being used.
 
         If not specified, author and e-mail will be determined using rpmdev-packager, if available.
         Timestamp, if not set, will be set to current time (in local timezone).
@@ -244,6 +256,8 @@ class Specfile:
             timestamp: Timestamp of the entry.
               Supply `datetime` rather than `date` for extended format.
         """
+        if self.has_autochangelog:
+            return
         with self.changelog() as changelog:
             if changelog is None:
                 return

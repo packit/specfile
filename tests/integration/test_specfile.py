@@ -198,3 +198,18 @@ def test_set_version_and_release(spec_minimal, version, release):
     with spec.tags() as tags:
         assert tags.release.value == release
     assert spec._spec.sourceHeader[rpm.RPMTAG_RELEASE] == spec.expanded_raw_release
+
+
+@pytest.mark.skipif(
+    rpm.__version__ < "4.16", reason="%autochangelog requires rpm 4.16 or higher"
+)
+def test_autochangelog(spec_rpmautospec):
+    spec = Specfile(spec_rpmautospec)
+    assert spec.has_autochangelog
+    with spec.changelog() as changelog:
+        assert len(changelog) == 0
+    with spec.sections() as sections:
+        changelog = sections.changelog.copy()
+    spec.add_changelog_entry("test")
+    with spec.sections() as sections:
+        assert sections.changelog == changelog
