@@ -246,6 +246,11 @@ class Sources(collections.abc.MutableSequence):
             return False
         return location in [s.location for s in list(zip(*items))[0]]
 
+    def __add__(self, other: Iterable[Source]) -> List[Source]:
+        if not isinstance(other, Sources):
+            raise NotImplementedError
+        return list(self) + list(other)
+
     def __len__(self) -> int:
         return len(self._get_items())
 
