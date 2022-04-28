@@ -46,6 +46,12 @@ class Source(ABC):
         """Literal filename of the source."""
         ...
 
+    @property
+    def remote(self) -> bool:
+        """Whether the source is remote (location is URL)."""
+        url = urllib.parse.urlsplit(self.expanded_location)
+        return all((url.scheme, url.netloc))
+
     @property  # type: ignore
     @abstractmethod
     def expanded_filename(self) -> str:
@@ -239,6 +245,11 @@ class Sources(collections.abc.MutableSequence):
         if not items:
             return False
         return location in [s.location for s in list(zip(*items))[0]]
+
+    def __add__(self, other: Iterable[Source]) -> List[Source]:
+        if not isinstance(other, Sources):
+            raise NotImplementedError
+        return list(self) + list(other)
 
     def __len__(self) -> int:
         return len(self._get_items())

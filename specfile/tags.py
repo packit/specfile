@@ -548,6 +548,23 @@ class Tags(collections.UserList):
         else:
             return self.data[i]
 
+    def __delitem__(self, i: Union[SupportsIndex, slice]) -> None:
+        def delete(index):
+            preceding_lines = self.data[index].comments._preceding_lines.copy()
+            del self.data[index]
+            if index < len(self.data):
+                self.data[index].comments._preceding_lines = (
+                    preceding_lines + self.data[index].comments._preceding_lines
+                )
+            else:
+                self._remainder = preceding_lines + self._remainder
+
+        if isinstance(i, slice):
+            for index in reversed(range(len(self.data))[i]):
+                delete(index)
+        else:
+            delete(i)
+
     def __getattr__(self, name: str) -> Tag:
         if name.capitalize().rstrip("0123456789") not in TAG_NAMES:
             return super().__getattribute__(name)
