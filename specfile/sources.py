@@ -246,6 +246,13 @@ class Sources(collections.abc.MutableSequence):
             return False
         return location in [s.location for s in list(zip(*items))[0]]
 
+    def __add__(
+        self, other: Union[Source, Iterable[Source], "Sources"]
+    ) -> List[Source]:
+        if isinstance(other, Source):
+            return list(self) + [other]
+        return list(self) + list(other)
+
     def __len__(self) -> int:
         return len(self._get_items())
 
