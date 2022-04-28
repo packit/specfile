@@ -5,6 +5,7 @@ import datetime
 import subprocess
 
 import pytest
+import rpm
 from flexmock import flexmock
 
 from specfile.exceptions import SpecfileException
@@ -172,3 +173,28 @@ def test_add_changelog_entry(
         spec.add_changelog_entry(entry, author, email, timestamp)
         with spec.sections() as sections:
             assert sections.changelog[: len(result)] == result
+
+
+@pytest.mark.parametrize(
+    "version, release",
+    [
+        ("0.2", "3"),
+        ("67", "1"),
+        ("1.4.6", "0.1rc5"),
+    ],
+)
+def test_set_version_and_release(spec_minimal, version, release):
+    spec = Specfile(spec_minimal)
+    spec.set_version_and_release(version, release)
+    assert spec.version == version
+    assert spec.release == release
+    assert spec.raw_release.startswith(release)
+    with spec.tags() as tags:
+        assert tags.version.value == spec.version
+        assert tags.release.value == spec.raw_release
+    assert spec._spec.sourceHeader[rpm.RPMTAG_VERSION] == spec.expanded_version
+    assert spec._spec.sourceHeader[rpm.RPMTAG_RELEASE] == spec.expanded_raw_release
+    spec.raw_release = release
+    with spec.tags() as tags:
+        assert tags.release.value == release
+    assert spec._spec.sourceHeader[rpm.RPMTAG_RELEASE] == spec.expanded_raw_release

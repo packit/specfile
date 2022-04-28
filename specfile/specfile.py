@@ -3,6 +3,7 @@
 
 import contextlib
 import datetime
+import re
 import subprocess
 import types
 from pathlib import Path
@@ -266,3 +267,98 @@ class Specfile:
             elif email is not None:
                 author += f" <{email}>"
             changelog.append(ChangelogEntry.assemble(timestamp, author, entry, evr))
+
+    @property
+    def version(self) -> str:
+        """Version string as stored in the spec file."""
+        with self.tags() as tags:
+            return tags.version.value
+
+    @version.setter
+    def version(self, value: str) -> None:
+        with self.tags() as tags:
+            tags.version.value = value
+
+    @property
+    def expanded_version(self) -> str:
+        """Version string with macros expanded."""
+        with self.tags() as tags:
+            return tags.version.expanded_value
+
+    @staticmethod
+    def _split_raw_release(
+        raw_release: str,
+    ) -> Tuple[str, Optional[str], Optional[int]]:
+        """
+        Splits raw release string into release, dist and minorbump parts.
+
+        Args:
+            raw_release: Raw release string.
+
+        Returns:
+            Tuple of (release, dist, minorbump).
+        """
+        tokens = re.split(r"(%(?P<m>\{\??)?dist(?(m)\}))(\.(\d+))?$", raw_release)
+        if len(tokens) == 1:
+            return tokens[0], None, None
+        release, dist, _, _, minorbump, *_ = tokens
+        return release, dist, int(minorbump) if minorbump else None
+
+    @classmethod
+    def _get_updated_release(cls, raw_release: str, release: str) -> str:
+        """
+        Returns the specified raw release string updated with the specified release.
+        Minorbump, if there is one, is removed.
+
+        Args:
+            raw_release: Raw release string.
+            release: New release.
+
+        Returns:
+            Updated raw release string.
+        """
+        dist = cls._split_raw_release(raw_release)[1] or ""
+        return f"{release}{dist}"
+
+    @property
+    def release(self) -> str:
+        """Release string without the dist suffix."""
+        return self._split_raw_release(self.raw_release)[0]
+
+    @release.setter
+    def release(self, value: str) -> None:
+        self.raw_release = self._get_updated_release(self.raw_release, value)
+
+    @property
+    def raw_release(self) -> str:
+        """Release string as stored in the spec file."""
+        with self.tags() as tags:
+            return tags.release.value
+
+    @raw_release.setter
+    def raw_release(self, value: str) -> None:
+        with self.tags() as tags:
+            tags.release.value = value
+
+    @property
+    def expanded_release(self) -> str:
+        """Release string without the dist suffix with macros expanded."""
+        return self.expand(self.release)
+
+    @property
+    def expanded_raw_release(self) -> str:
+        """Release string with macros expanded."""
+        with self.tags() as tags:
+            return tags.release.expanded_value
+
+    def set_version_and_release(self, version: str, release: str = "1") -> None:
+        """
+        Sets both version and release at the same time.
+
+        Args:
+            version: Version string.
+            release: Release string, defaults to '1'.
+        """
+        with self.tags() as tags:
+            tags.version.value = version
+            tags.release.value = self._get_updated_release(tags.release.value, release)
