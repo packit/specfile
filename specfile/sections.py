@@ -94,6 +94,9 @@ class Section(collections.UserList):
         else:
             return self.data[i]
 
+    def copy(self) -> "Section":
+        return Section(self.name, self.data)
+
 
 class Sections(collections.UserList):
     """

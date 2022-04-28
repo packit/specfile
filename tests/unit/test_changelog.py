@@ -66,6 +66,7 @@ def test_get_raw_section_data():
                 "Nikola Forró <nforro@redhat.com>",
                 ["- first version", "  resolves: #999999999"],
                 "0.1-1",
+                append_newline=False,
             ),
             ChangelogEntry.assemble(
                 datetime.date(2021, 7, 22),
