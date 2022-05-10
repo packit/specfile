@@ -1,6 +1,7 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
+import collections
 import contextlib
 import io
 import os
@@ -55,7 +56,7 @@ class MacroLevel(IntEnum):
     GLOBAL = 0
 
 
-class Macro:
+class Macro(collections.abc.Hashable):
     """
     Class that represents a RPM macro.
 
