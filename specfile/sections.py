@@ -143,7 +143,10 @@ class Sections(collections.UserList):
         if name.split()[0].lower() not in SECTION_NAMES:
             return super().__setattr__(name, value)
         try:
-            self.data[self.find(name)].data = value
+            if isinstance(value, Section):
+                self.data[self.find(name)] = value
+            else:
+                self.data[self.find(name)].data = value
         except ValueError:
             raise AttributeError(name)
 
