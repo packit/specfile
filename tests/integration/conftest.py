@@ -6,6 +6,7 @@ import shutil
 import pytest
 
 from tests.constants import (
+    SPEC_AUTOPATCH,
     SPEC_AUTOSETUP,
     SPEC_MINIMAL,
     SPEC_MULTIPLE_SOURCES,
@@ -41,6 +42,13 @@ def spec_traditional(tmp_path):
 def spec_autosetup(tmp_path):
     destination = tmp_path / "spec_autosetup"
     shutil.copytree(SPEC_AUTOSETUP, destination)
+    return destination / SPECFILE
+
+
+@pytest.fixture(scope="function")
+def spec_autopatch(tmp_path):
+    destination = tmp_path / "spec_autopatch"
+    shutil.copytree(SPEC_AUTOPATCH, destination)
     return destination / SPECFILE
 
 

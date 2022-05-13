@@ -154,7 +154,11 @@ class Specfile:
             except AttributeError:
                 yield None
             else:
-                yield Prep(section)
+                prep = Prep.parse(section)
+                try:
+                    yield prep
+                finally:
+                    section.data = prep.get_raw_section_data()
 
     @contextlib.contextmanager
     def sources(

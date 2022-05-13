@@ -1,14 +1,14 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
-import argparse
 import collections
 import re
-import shlex
-from abc import ABC, abstractmethod
-from typing import List, Optional, overload
+from abc import ABC
+from typing import Any, Dict, List, Optional, Union, cast, overload
 
+from specfile.macro_options import MacroOptions
 from specfile.sections import Section
+from specfile.types import SupportsIndex
 
 
 class PrepMacro(ABC):
@@ -17,234 +17,310 @@ class PrepMacro(ABC):
 
     Attributes:
         name: Literal name of the macro.
+        options: Options of the macro.
     """
 
     CANONICAL_NAME: str
+    OPTSTRING: str
+    DEFAULTS: Dict[str, Union[bool, int, str]]
 
-    def __init__(self, name: str, line: int) -> None:
+    def __init__(
+        self,
+        name: str,
+        options: MacroOptions,
+        delimiter: str,
+        prefix: Optional[str] = None,
+        suffix: Optional[str] = None,
+        preceding_lines: Optional[List[str]] = None,
+    ) -> None:
         """
         Constructs a `PrepMacro` object.
 
         Args:
             name: Literal name of the macro.
-            line: Line number in %prep section where the macro is located.
+            options: Options of the macro.
+            delimiter: Delimiter separating name and option string.
+            prefix: Characters preceding the macro on a line.
+            suffix: Characters following the macro on a line.
+            preceding_lines: Lines of the %prep section preceding the macro.
 
         Returns:
             Constructed instance of `PrepMacro` class.
         """
         self.name = name
-        self._line = line
-        self._options = argparse.Namespace()
-        self._parser = argparse.ArgumentParser(add_help=False)
-        self._setup_parser()
+        self.options = options
+        self._delimiter = delimiter
+        self._prefix = prefix or ""
+        self._suffix = suffix or ""
+        self._preceding_lines = (
+            preceding_lines.copy() if preceding_lines is not None else []
+        )
 
     def __repr__(self) -> str:
+        options = repr(self.options)
+        preceding_lines = repr(self._preceding_lines)
         # determine class name dynamically so that inherited classes
         # don't have to reimplement __repr__()
-        return f"{self.__class__.__name__}('{self.name}', {self._line})"
+        return (
+            f"{self.__class__.__name__}('{self.name}', {options}, "
+            f"'{self._delimiter}', '{self._prefix}', '{self._suffix}', "
+            f"{preceding_lines})"
+        )
 
-    @abstractmethod
-    def _setup_parser(self) -> None:
-        """Configures internal `ArgumentParser` for the options of the macro."""
-        ...
-
-    def _parse_options(self, optstr: str) -> None:
-        """
-        Parses the given option string.
-
-        Args:
-            optstr: String representing options of the macro.
-        """
-        try:
-            self._parser.parse_known_args(shlex.split(optstr), self._options)
-        except SystemExit:
-            # ignore errors
-            pass
-
-    @property
-    def options(self) -> argparse.Namespace:
-        """Options of the macro as `argparse.Namespace` instance."""
-        return self._options
+    def get_raw_data(self) -> List[str]:
+        options = str(self.options)
+        return self._preceding_lines + [
+            f"{self._prefix}{self.name}{self._delimiter}{options}{self._suffix}"
+        ]
 
 
 class SetupMacro(PrepMacro):
     """Class that represents a %setup macro."""
 
     CANONICAL_NAME: str = "%setup"
-
-    def _setup_parser(self) -> None:
-        """Configures internal `ArgumentParser` for the options of the macro."""
-        self._parser.add_argument("-n", default="%{name}-%{version}")
-        self._parser.add_argument("-q", action="store_true")
-        self._parser.add_argument("-c", action="store_true")
-        self._parser.add_argument("-D", action="store_true")
-        self._parser.add_argument("-T", action="store_true")
-        self._parser.add_argument("-b", type=int)
-        self._parser.add_argument("-a", type=int)
+    OPTSTRING: str = "a:b:cDn:Tq"
+    DEFAULTS: Dict[str, Union[bool, int, str]] = {
+        "n": "%{name}-%{version}",
+    }
 
 
 class PatchMacro(PrepMacro):
     """Class that represents a %patch macro."""
 
     CANONICAL_NAME: str = "%patch"
-
-    def _setup_parser(self) -> None:
-        """Configures internal `ArgumentParser` for the options of the macro."""
-        self._parser.add_argument("-P", type=int)
-        self._parser.add_argument("-p", type=int)
-        self._parser.add_argument("-b")
-        self._parser.add_argument("-E", action="store_true")
+    OPTSTRING: str = "P:p:REb:z:F:d:o:Z"
+    DEFAULTS: Dict[str, Union[bool, int, str]] = {}
 
     @property
-    def index(self) -> int:
-        """Numeric index of the %patch macro."""
+    def number(self) -> int:
+        """Number of the %patch macro."""
         if self.options.P is not None:
-            return self.options.P
+            return int(self.options.P)
         tokens = re.split(r"(\d+)", self.name, maxsplit=1)
         if len(tokens) > 1:
             return int(tokens[1])
         return 0
+
+    @number.setter
+    def number(self, value: int) -> None:
+        if self.options.P is not None:
+            self.options.P = value
+            return
+        self.name = f"{self.CANONICAL_NAME}{value}"
 
 
 class AutosetupMacro(PrepMacro):
     """Class that represents an %autosetup macro."""
 
     CANONICAL_NAME: str = "%autosetup"
-
-    def _setup_parser(self) -> None:
-        """Configures internal `ArgumentParser` for the options of the macro."""
-        self._parser.add_argument("-n", default="%{name}-%{version}")
-        self._parser.add_argument("-v", action="store_true")
-        self._parser.add_argument("-c", action="store_true")
-        self._parser.add_argument("-D", action="store_true")
-        self._parser.add_argument("-T", action="store_true")
-        self._parser.add_argument("-b", type=int)
-        self._parser.add_argument("-a", type=int)
-        self._parser.add_argument("-N", action="store_true")
-        self._parser.add_argument("-S", default="patch")
-        self._parser.add_argument("-p", type=int)
+    OPTSTRING: str = "a:b:cDn:TvNS:p:"
+    DEFAULTS: Dict[str, Union[bool, int, str]] = {
+        "n": "%{name}-%{version}",
+        "S": "patch",
+    }
 
 
 class AutopatchMacro(PrepMacro):
     """Class that represents an %autopatch macro."""
 
     CANONICAL_NAME: str = "%autopatch"
-
-    def _setup_parser(self) -> None:
-        """Configures internal `ArgumentParser` for the options of the macro."""
-        self._parser.add_argument("-v", action="store_true")
-        self._parser.add_argument("-p", type=int)
-        self._parser.add_argument("-m", type=int)
-        self._parser.add_argument("-M", type=int)
-        self._parser.add_argument("indices", type=int, nargs="*")
+    OPTSTRING: str = "vp:m:M:"
+    DEFAULTS: Dict[str, Union[bool, int, str]] = {}
 
 
-class PrepMacros(collections.abc.Sequence):
-    """Class that represents a sequence of all %prep macros."""
+class PrepMacros(collections.UserList):
+    """
+    Class that represents a list of %prep macros.
 
-    def __init__(self, section: Section) -> None:
+    Attributes:
+        data: List of individual %prep macros.
+    """
+
+    def __init__(
+        self,
+        data: Optional[List[PrepMacro]] = None,
+        remainder: Optional[List[str]] = None,
+    ) -> None:
         """
         Constructs a `PrepMacros` object.
 
         Args:
-            section: %prep section.
+            data: List of individual %prep macros.
+            remainder: Leftover lines in the section.
 
         Returns:
             Constructed instance of `PrepMacros` class.
         """
-        self._section = section
+        super().__init__()
+        if data is not None:
+            self.data = data.copy()
+        self._remainder = remainder.copy() if remainder is not None else []
 
     def __repr__(self) -> str:
-        section = repr(self._section)
-        return f"PrepMacros({section})"
+        data = repr(self.data)
+        remainder = repr(self._remainder)
+        return f"PrepMacros({data}, {remainder})"
 
     def __contains__(self, item: object) -> bool:
         if isinstance(item, type):
-            return any(isinstance(m, item) for m in self._get_items())
-        elif isinstance(item, str):
-            return any(m.CANONICAL_NAME == item for m in self._get_items())
-        return False
-
-    def __len__(self) -> int:
-        return len(self._get_items())
-
-    def _get_items(self) -> List[PrepMacro]:
-        """
-        Gets all supported %prep macros.
-
-        Returns:
-            List of instances of subclasses of PrepMacro.
-        """
-        comment_regex = re.compile(r"^\s*#.*$")
-        # match also macros enclosed in conditionalized macro expansion
-        # e.g.: %{?with_system_nss:%patch30 -p3 -b .nss_pkcs11_v3}
-        macro_regex = re.compile(
-            r"(?P<c>%{!?\?\w+:)?.*?"
-            r"(?P<m>%(setup|patch\d*|autopatch|autosetup))\s*"
-            r"(?P<o>.*?)(?(c)}|$)"
+            return any(isinstance(m, item) for m in self.data)
+        return any(
+            m.name.startswith(item) if item == "%patch" else m.name == item
+            for m in self.data
         )
-        result: List[PrepMacro] = []
-        for i, line in enumerate(self._section):
-            if comment_regex.match(line):
-                continue
-            m = macro_regex.search(line)
-            if not m:
-                continue
-            name, options = m.group("m"), m.group("o")
-            macro: PrepMacro
-            if name.startswith(PatchMacro.CANONICAL_NAME):
-                macro = PatchMacro(name, i)
-                macro._parse_options(options)
-                # if %patch is indexed and has the -P option at the same time,
-                # it's two macros in one
-                if macro.options.P is not None and name != PatchMacro.CANONICAL_NAME:
-                    macro.options.P = None
-                    result.append(macro)
-                    # add the second macro
-                    macro = PatchMacro(PatchMacro.CANONICAL_NAME, i)
-                    macro._parse_options(options)
-                    result.append(macro)
-                else:
-                    result.append(macro)
-            else:
-                macro = next(
-                    iter(
-                        cls(name, i)  # type: ignore
-                        for cls in PrepMacro.__subclasses__()
-                        if cls.CANONICAL_NAME == name
-                    ),
-                    None,
-                )
-                if not macro:
-                    continue
-                macro._parse_options(options)
-                result.append(macro)
-        return result
 
     @overload
-    def __getitem__(self, i: int) -> PrepMacro:
+    def __getitem__(self, i: SupportsIndex) -> PrepMacro:
         pass
 
     @overload
-    def __getitem__(self, i: slice) -> List[PrepMacro]:
+    def __getitem__(self, i: slice) -> "PrepMacros":
         pass
 
     def __getitem__(self, i):
-        return self._get_items()[i]
+        if isinstance(i, slice):
+            return PrepMacros(self.data[i], self._remainder)
+        else:
+            return self.data[i]
+
+    def __delitem__(self, i: Union[SupportsIndex, slice]) -> None:
+        def delete(index):
+            preceding_lines = self.data[index]._preceding_lines.copy()
+            del self.data[index]
+            if index < len(self.data):
+                self.data[index]._preceding_lines = (
+                    preceding_lines + self.data[index]._preceding_lines
+                )
+            else:
+                self._remainder = preceding_lines + self._remainder
+
+        if isinstance(i, slice):
+            for index in reversed(range(len(self.data))[i]):
+                delete(index)
+        else:
+            delete(i)
+
+    def __getattr__(self, name: str) -> PrepMacro:
+        if not self.valid_prep_macro(name):
+            return super().__getattribute__(name)
+        try:
+            return self.data[self.find(f"%{name}")]
+        except ValueError:
+            raise AttributeError(name)
+
+    def __delattr__(self, name: str) -> None:
+        if not self.valid_prep_macro(name):
+            return super().__delattr__(name)
+        try:
+            self.__delitem__(self.find(f"%{name}"))
+        except ValueError:
+            raise AttributeError(name)
+
+    @staticmethod
+    def valid_prep_macro(name: str) -> bool:
+        return name in ("setup", "autosetup", "autopatch") or name.startswith("patch")
+
+    def copy(self) -> "PrepMacros":
+        return PrepMacros(self.data, self._remainder)
+
+    def find(self, name: str) -> int:
+        for i, macro in enumerate(self.data):
+            if macro.name == name:
+                return i
+        raise ValueError
+
+    def get_raw_data(self) -> List[str]:
+        result = []
+        for macro in self.data:
+            result.extend(macro.get_raw_data())
+        result.extend(self._remainder)
+        return result
 
 
-class Prep:
+class Prep(collections.abc.Container):
     """
     Class that represents a %prep section.
 
     Attributes:
-        macros: Sequence of individual %prep macros.
-            Recognized macros are %setup, %patch, %autosetup and %autopatch.
+        macros: List of individual %prep macros.
     """
 
-    def __init__(self, section: Section) -> None:
+    def __init__(self, macros: PrepMacros) -> None:
+        self.macros = macros.copy()
+
+    def __repr__(self) -> str:
+        macros = repr(self.macros)
+        return f"Prep({macros})"
+
+    def __contains__(self, item: object) -> bool:
+        return item in self.macros
+
+    def __getattr__(self, name: str) -> PrepMacro:
+        if not self.macros.valid_prep_macro(name):
+            return super().__getattribute__(name)
+        return getattr(self.macros, name)
+
+    def __delattr__(self, name: str) -> None:
+        if not self.macros.valid_prep_macro(name):
+            return super().__delattr__(name)
+        return delattr(self.macros, name)
+
+    def add_patch_macro(self, number: int, **kwargs: Any) -> None:
         """
-        Constructs a `Prep` object.
+        Adds a new %patch macro with given number and options.
+
+        Args:
+            number: Macro number.
+            P: The -P option (patch number).
+            p: The -p option (strip number).
+            R: The -R option (reverse).
+            E: The -E option (remove empty files).
+            b: The -b option (backup).
+            z: The -z option (suffix).
+            F: The -F option (fuzz factor).
+            d: The -d option (working directory).
+            o: The -o option (output file).
+            Z: The -Z option (set UTC times).
+        """
+        options = MacroOptions([], PatchMacro.OPTSTRING, PatchMacro.DEFAULTS)
+        for k, v in kwargs.items():
+            setattr(options, k, v)
+        macro = PatchMacro(PatchMacro.CANONICAL_NAME, options, " ")
+        macro.number = number
+        index, _ = min(
+            ((i, m) for i, m in enumerate(self.macros) if isinstance(m, PatchMacro)),
+            key=lambda im: abs(im[1].number - number),
+            default=(len(self.macros), None),
+        )
+        if (
+            index < len(self.macros)
+            and cast(PatchMacro, self.macros[index]).number <= number
+        ):
+            index += 1
+        self.macros.insert(index, macro)
+
+    def remove_patch_macro(self, number: int) -> None:
+        """
+        Removes a %patch macro with given number.
+
+        Args:
+            number: Macro number.
+        """
+        index = next(
+            (
+                i
+                for i, m in enumerate(self.macros)
+                if isinstance(m, PatchMacro) and m.number == number
+            ),
+            None,
+        )
+        if index:
+            del self.macros[index]
+
+    @staticmethod
+    def parse(section: Section) -> "Prep":
+        """
+        Parses a section into a `Prep` object.
 
         Args:
             section: %prep section.
@@ -252,84 +328,51 @@ class Prep:
         Returns:
             Constructed instance of `Prep` class.
         """
-        self._section = section
-        self.macros = PrepMacros(self._section)
-
-    def __repr__(self) -> str:
-        section = repr(self._section)
-        return f"Prep({section})"
-
-    def add_patch_macro(
-        self,
-        index: int,
-        P: Optional[int] = None,
-        p: Optional[int] = None,
-        b: Optional[str] = None,
-        E: Optional[bool] = None,
-    ) -> None:
-        """
-        Adds a new %patch macro with given index and options.
-
-        If there are existing %patch macros, the new macro is added before,
-        after or between them according to index. Otherwise it is added
-        to the very end of %prep section.
-
-        Beware that it is valid to specify non-zero index and the -P option
-        at the same time, but the resulting macro behaves as two %patch macros
-        (even if both indices are the same, in such case the patch is applied
-        twice - you most likely don't want that).
-
-        Also beware that there is no duplicity check, it is possible to add
-        multiple %patch macros with the same index.
-
-        Args:
-            index: Numeric index of the macro.
-            P: The -P option (patch index).
-            p: The -p option (strip number).
-            b: The -b option (backup).
-            E: The -E option (remove empty files).
-        """
-        macro = f"%patch{index}"
-        if P is not None:
-            macro += f" -P{P}"
-        if p is not None:
-            macro += f" -p{p}"
-        if b is not None:
-            macro += f" -b {b}"
-        if E:
-            macro += " -E"
-        macros = [m for m in self.macros if isinstance(m, PatchMacro)]
-        if macros:
-            lines = [
-                m._line
-                for m in sorted(macros, key=lambda m: m.index)
-                if m.index < index
-            ]
-            if lines:
-                self._section.insert(lines[-1] + 1, macro)
+        # match also macros enclosed in conditionalized macro expansion
+        # e.g.: %{?with_system_nss:%patch30 -p3 -b .nss_pkcs11_v3}
+        macro_regex = re.compile(
+            r"(?P<c>%{!?\?\w+:)?.*?"
+            r"(?P<m>%(setup|patch\d*|autopatch|autosetup))"
+            r"(?P<d>\s*)"
+            r"(?P<o>.*?)"
+            r"(?(c)}|$)"
+        )
+        data = []
+        buffer: List[str] = []
+        for line in section:
+            m = macro_regex.search(line)
+            if m:
+                name, delimiter, option_string = (
+                    m.group("m"),
+                    m.group("d"),
+                    m.group("o"),
+                )
+                prefix, suffix = line[: m.start("m")], line[m.end("o") :]
+                cls = next(
+                    (
+                        cls
+                        for cls in PrepMacro.__subclasses__()
+                        if name.startswith(cls.CANONICAL_NAME)
+                    ),
+                    None,
+                )
+                if not cls:
+                    buffer.append(line)
+                    continue
+                options = MacroOptions(
+                    MacroOptions.tokenize(option_string), cls.OPTSTRING, cls.DEFAULTS
+                )
+                data.append(cls(name, options, delimiter, prefix, suffix, buffer))
+                buffer = []
             else:
-                self._section.insert(macros[0]._line, macro)
-        else:
-            self._section.append(macro)
+                buffer.append(line)
+        return Prep(PrepMacros(data, buffer))
 
-    def remove_patch_macro(self, index: int) -> None:
+    def get_raw_section_data(self) -> List[str]:
         """
-        Removes a %patch macro.
+        Reconstructs section data from `Prep` object.
 
-        If there are multiple %patch macros with the same index,
-        all instances are removed.
-
-        Note that this method always removes the entire line, even if
-        for example the %patch macro is part of a conditionalized
-        macro expansion.
-
-        Args:
-            index: Numeric index of the macro to remove.
+        Returns:
+            List of lines forming the reconstructed section data.
         """
-        lines = [
-            m._line
-            for m in self.macros
-            if isinstance(m, PatchMacro) and m.index == index
-        ]
-        for line in reversed(lines):
-            del self._section[line]
+        return self.macros.get_raw_data()
