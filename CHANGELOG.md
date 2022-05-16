@@ -1,3 +1,14 @@
+# 0.3.0
+
+- Made `Sources` a `MutableSequence` (#36)
+- Started using consistent terminology for source numbers and added the option to insert a source with a specific number (#47)
+- Added support for implicit source numbering (#48)
+- Documented sources and `%prep` macros in README (#49)
+- Implemented high-level manipulation of version and release (#54)
+- Added support for `%autochangelog` (#56)
+- Added `remote` property to sources and enabled addition of `Sources` (#59)
+- Implemented mid-level manipulation of `%prep` section, including modification of `%prep` macros (#37, #52)
+
 # 0.2.0
 
 - Enabled Zuul CI (#8)

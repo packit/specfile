@@ -577,7 +577,10 @@ class Tags(collections.UserList):
         if name.capitalize().rstrip("0123456789") not in TAG_NAMES:
             return super().__setattr__(name, value)
         try:
-            self.data[self.find(name)].value = value
+            if isinstance(value, Tag):
+                self.data[self.find(name)] = value
+            else:
+                self.data[self.find(name)].value = value
         except ValueError:
             raise AttributeError(name)
 
