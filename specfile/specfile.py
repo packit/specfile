@@ -290,22 +290,65 @@ class Specfile:
                 )
             )
 
-    @property
-    def version(self) -> str:
-        """Version string as stored in the spec file."""
-        with self.tags() as tags:
-            return tags.version.value
+    def _tag(name: str, doc: str) -> property:  # type: ignore[misc]
+        """
+        Returns a property that allows to get/set value of a specified tag.
 
-    @version.setter
-    def version(self, value: str) -> None:
-        with self.tags() as tags:
-            tags.version.value = value
+        Args:
+            name: Tag name.
+            doc: Property docstring.
 
-    @property
-    def expanded_version(self) -> str:
-        """Version string with macros expanded."""
-        with self.tags() as tags:
-            return tags.version.expanded_value
+        Returns:
+            Tag value property.
+        """
+
+        def getter(self) -> str:
+            with self.tags() as tags:
+                return getattr(tags, name).value
+
+        def setter(self, value: str) -> None:
+            with self.tags() as tags:
+                getattr(tags, name).value = value
+
+        return property(getter, setter, doc=doc)
+
+    def _expanded_tag(name: str, doc: str) -> property:  # type: ignore[misc]
+        """
+        Returns a property that allows to get expanded value of a specified tag.
+
+        Args:
+            name: Tag name.
+            doc: Property docstring.
+
+        Returns:
+            Expanded tag value property.
+        """
+
+        def getter(self) -> str:
+            with self.tags() as tags:
+                return getattr(tags, name).expanded_value
+
+        return property(getter, doc=doc)
+
+    name = _tag("name", "Name as stored in the spec file.")
+    expanded_name = _expanded_tag("name", "Name with macros expanded.")
+
+    version = _tag("version", "Version as stored in the spec file.")
+    expanded_version = _expanded_tag("version", "Version with macros expanded.")
+
+    raw_release = _tag("release", "Release string as stored in the spec file.")
+    expanded_raw_release = _expanded_tag(
+        "release", "Release string with macros expanded."
+    )
+
+    summary = _tag("summary", "Summary as stored in the spec file.")
+    expanded_summary = _expanded_tag("summary", "Summary with macros expanded.")
+
+    license = _tag("license", "License as stored in the spec file.")
+    expanded_license = _expanded_tag("license", "License with macros expanded.")
+
+    url = _tag("url", "URL as stored in the spec file.")
+    expanded_url = _expanded_tag("url", "URL with macros expanded.")
 
     @staticmethod
     def _split_raw_release(
@@ -352,26 +395,9 @@ class Specfile:
         self.raw_release = self._get_updated_release(self.raw_release, value)
 
     @property
-    def raw_release(self) -> str:
-        """Release string as stored in the spec file."""
-        with self.tags() as tags:
-            return tags.release.value
-
-    @raw_release.setter
-    def raw_release(self, value: str) -> None:
-        with self.tags() as tags:
-            tags.release.value = value
-
-    @property
     def expanded_release(self) -> str:
         """Release string without the dist suffix with macros expanded."""
         return self.expand(self.release)
-
-    @property
-    def expanded_raw_release(self) -> str:
-        """Release string with macros expanded."""
-        with self.tags() as tags:
-            return tags.release.expanded_value
 
     def set_version_and_release(self, version: str, release: str = "1") -> None:
         """
