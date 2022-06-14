@@ -17,30 +17,29 @@ from specfile.tags import Comments, Tag, Tags
 class Source(ABC):
     """Class that represents a source."""
 
-    @property  # type: ignore
+    @property
     @abstractmethod
     def number(self) -> int:
         """Source number."""
         ...
 
-    @property  # type: ignore
+    @property
     @abstractmethod
     def location(self) -> str:
         """Literal location of the source as stored in the spec file."""
         ...
 
-    @location.setter  # type: ignore
-    @abstractmethod
+    @location.setter
     def location(self, value: str) -> None:
         ...
 
-    @property  # type: ignore
+    @property
     @abstractmethod
     def expanded_location(self) -> str:
         """Location of the source after expanding macros."""
         ...
 
-    @property  # type: ignore
+    @property
     @abstractmethod
     def filename(self) -> str:
         """Literal filename of the source."""
@@ -52,13 +51,13 @@ class Source(ABC):
         url = urllib.parse.urlsplit(self.expanded_location)
         return all((url.scheme, url.netloc))
 
-    @property  # type: ignore
+    @property
     @abstractmethod
     def expanded_filename(self) -> str:
         """Filename of the source after expanding macros."""
         ...
 
-    @property  # type: ignore
+    @property
     @abstractmethod
     def comments(self) -> Comments:
         """List of comments associated with the source."""
