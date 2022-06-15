@@ -546,5 +546,5 @@ class Patches(Sources):
             ][-1]
         except IndexError:
             return super()._get_initial_tag_setup(number)
-        name, separator = self._get_tag_format(source, 0)
+        name, separator = self._get_tag_format(source, number)
         return index + 1, name, separator
