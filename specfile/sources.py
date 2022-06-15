@@ -355,17 +355,24 @@ class Sources(collections.abc.MutableSequence):
             return self._default_to_implicit_numbering
         return True
 
-    def _get_tag_format(self, reference: TagSource, number: int) -> Tuple[str, str]:
+    def _get_tag_format(
+        self,
+        reference: TagSource,
+        number: int,
+        number_digits_override: Optional[int] = None,
+    ) -> Tuple[str, str]:
         """
         Determines name and separator of a new source tag based on
         a reference tag and the requested source number.
 
         The new name has the same number of digits as the reference
+        (unless number_digits_override is set to a different value)
         and the length of the separator is adjusted accordingly.
 
         Args:
             reference: Reference tag source.
             number: Requested source number.
+            number_digits_override: Requested number of digits in the source number.
 
         Returns:
             Tuple in the form of (name, separator).
@@ -374,7 +381,10 @@ class Sources(collections.abc.MutableSequence):
         if self._detect_implicit_numbering():
             suffix = ""
         else:
-            suffix = f"{number:0{reference.number_digits}}"
+            if number_digits_override is not None:
+                suffix = f"{number:0{number_digits_override}}"
+            else:
+                suffix = f"{number:0{reference.number_digits}}"
         name = f"{prefix}{suffix}"
         diff = len(reference._tag.name) - len(name)
         if diff >= 0:
@@ -546,5 +556,7 @@ class Patches(Sources):
             ][-1]
         except IndexError:
             return super()._get_initial_tag_setup(number)
-        name, separator = self._get_tag_format(source, number)
+        name, separator = self._get_tag_format(
+            source, number, self._default_source_number_digits
+        )
         return index + 1, name, separator
