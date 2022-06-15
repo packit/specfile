@@ -445,7 +445,10 @@ class Sources(collections.abc.MutableSequence):
                 )
                 self._deduplicate_tag_names()
             else:
-                container.insert(index, SourcelistEntry(location, Comments()))
+                container.insert(
+                    index,
+                    SourcelistEntry(location, Comments()),  # type: ignore[arg-type]
+                )
         elif self._sourcelists:
             self._sourcelists[-1].append(SourcelistEntry(location, Comments()))
         else:

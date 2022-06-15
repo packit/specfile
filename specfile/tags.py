@@ -391,6 +391,22 @@ class Tags(collections.UserList):
                 return i
         raise ValueError
 
+    def insert(self, i: int, item: Tag) -> None:
+        if i > len(self.data):
+            i = len(self.data)
+        if i < len(self.data):
+            lines = self.data[i].comments._preceding_lines
+        else:
+            lines = self._remainder
+        self.data.insert(i, item)
+        # do not make the new tag part of a condition block (in case there is one)
+        index = next(
+            (i for i, line in enumerate(lines) if line.startswith("%endif")), -1
+        )
+        if index >= 0:
+            item.comments._preceding_lines[0:0] = lines[: index + 1]
+            del lines[: index + 1]
+
     @staticmethod
     def parse(raw_section: Section, parsed_section: Optional[Section] = None) -> "Tags":
         """
