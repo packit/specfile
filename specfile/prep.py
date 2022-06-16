@@ -69,6 +69,9 @@ class PrepMacro(ABC):
 
     def get_raw_data(self) -> List[str]:
         options = str(self.options)
+        # ensure delimiter is not empty when there are any options
+        if options and not self._delimiter:
+            self._delimiter = " "
         return self._preceding_lines + [
             f"{self._prefix}{self.name}{self._delimiter}{options}{self._suffix}"
         ]
