@@ -201,19 +201,15 @@ with specfile.patches() as patches:
     del patches[2]
     # inserting a patch with a specific number
     patches.insert_numbered(999, 'final.patch')
-
-# fetching non-local sources (including patches)
-specfile.download_remote_sources()
-
-# same thing, but trying to fetch from lookaside cache first
-specfile.download_remote_sources(lookaside=True)
 ```
 
 #### Other attributes
 
 ```python
-print(specfile.url)
-specfile.summary = '...'
+print(specfile.name)
+print(specfile.license)
+print(specfile.summary)
+specfile.url = 'https://example.com'
 ```
 
 ## Caveats
