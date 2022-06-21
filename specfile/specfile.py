@@ -302,9 +302,12 @@ class Specfile:
             Tag value property.
         """
 
-        def getter(self) -> str:
+        def getter(self) -> Optional[str]:
             with self.tags() as tags:
-                return getattr(tags, name).value
+                try:
+                    return getattr(tags, name).value
+                except AttributeError:
+                    return None
 
         def setter(self, value: str) -> None:
             with self.tags() as tags:
@@ -324,9 +327,12 @@ class Specfile:
             Expanded tag value property.
         """
 
-        def getter(self) -> str:
+        def getter(self) -> Optional[str]:
             with self.tags() as tags:
-                return getattr(tags, name).expanded_value
+                try:
+                    return getattr(tags, name).expanded_value
+                except AttributeError:
+                    return None
 
         return property(getter, doc=doc)
 

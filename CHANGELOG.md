@@ -1,3 +1,11 @@
+# 0.4.0
+
+- Added convenience properties for most used tags (#63)
+- Hardened linting by ignoring only specific mypy errors (#64)
+- Fixed list of valid tag names and ensured newly added tags are not part of a condition block (#66)
+- Initial patch number and its default number of digits are now honored (#66)
+- Fixed a bug in `%prep` macro stringification (#67)
+
 # 0.3.0
 
 - Made `Sources` a `MutableSequence` (#36)
