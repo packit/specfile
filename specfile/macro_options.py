@@ -320,7 +320,7 @@ class MacroOptions(collections.abc.MutableMapping):
         # if there is a whitespace, enquote the value rather than escaping it
         return any(ws in str(value) for ws in string.whitespace)
 
-    def __getattr__(self, name: str) -> Union[bool, int, str]:
+    def __getattr__(self, name: str) -> Optional[Union[bool, int, str]]:
         if not self._valid_option(name):
             return super().__getattribute__(name)
         i, j = self._find_option(name)
@@ -351,24 +351,25 @@ class MacroOptions(collections.abc.MutableMapping):
         ):
             raise MacroOptionsException(f"Option -{name} is a flag.")
         i, j = self._find_option(name)
-        if i is None and value is not None and value is not False:
-            if self._tokens:
-                self._tokens.append(Token(TokenType.WHITESPACE, " "))
-            if value is True:
-                self._tokens.append(Token(TokenType.DEFAULT, f"-{name}"))
-            elif isinstance(value, int):
-                self._tokens.append(Token(TokenType.DEFAULT, f"-{name}{value}"))
-            else:
-                self._tokens.append(Token(TokenType.DEFAULT, f"-{name}"))
-                self._tokens.append(Token(TokenType.WHITESPACE, " "))
-                self._tokens.append(
-                    Token(
-                        TokenType.DOUBLE_QUOTED
-                        if self._needs_quoting(value)
-                        else TokenType.DEFAULT,
-                        value,
+        if i is None:
+            if value is not None and value is not False:
+                if self._tokens:
+                    self._tokens.append(Token(TokenType.WHITESPACE, " "))
+                if value is True:
+                    self._tokens.append(Token(TokenType.DEFAULT, f"-{name}"))
+                elif isinstance(value, int):
+                    self._tokens.append(Token(TokenType.DEFAULT, f"-{name}{value}"))
+                else:
+                    self._tokens.append(Token(TokenType.DEFAULT, f"-{name}"))
+                    self._tokens.append(Token(TokenType.WHITESPACE, " "))
+                    self._tokens.append(
+                        Token(
+                            TokenType.DOUBLE_QUOTED
+                            if self._needs_quoting(value)
+                            else TokenType.DEFAULT,
+                            value,
+                        )
                     )
-                )
             return
         if value is None or value is False:
             return delattr(self, name)
@@ -443,7 +444,7 @@ class MacroOptions(collections.abc.MutableMapping):
     def __iter__(self) -> Iterator[str]:
         for option in self.optstring.replace(":", ""):
             i, _ = self._find_option(option)
-            if i >= 0:
+            if i is not None:
                 yield option
 
     @property
