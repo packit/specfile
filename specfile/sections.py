@@ -190,7 +190,7 @@ class Sections(collections.UserList):
                     if r.match(line):
                         section_starts.append(i)
                         break
-        section_starts.append(None)
+        section_starts.append(len(lines))
         data = [Section(PREAMBLE, lines[: section_starts[0]])]
         for start, end in zip(section_starts, section_starts[1:]):
             data.append(Section(lines[start][1:], lines[start + 1 : end]))
