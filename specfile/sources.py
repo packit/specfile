@@ -100,14 +100,25 @@ class TagSource(Source):
     @property
     def number(self) -> int:
         """Source number."""
-        return self._number or int(self._extract_number() or 0)
+        if self._number is not None:
+            return self._number
+        return int(self._extract_number() or 0)
 
     @property
     def number_digits(self) -> int:
-        """Number of digits in the source number."""
-        if self._number:
+        """
+        Gets number of digits in the source number.
+
+        Returns 0 if the source has no number, 1 if the source number
+        has no leading zeros and the actual number of digits if there are
+        any leading zeros.
+        """
+        if self._number is not None:
             return 0
-        return len(self._extract_number() or "")
+        number = self._extract_number()
+        if not number:
+            return 0
+        return len(number) if number.startswith("0") else 1
 
     @property
     def location(self) -> str:
@@ -378,13 +389,14 @@ class Sources(collections.abc.MutableSequence):
             Tuple in the form of (name, separator).
         """
         prefix = self.PREFIX.capitalize()
-        if self._detect_implicit_numbering():
+        if number_digits_override is not None:
+            number_digits = number_digits_override
+        else:
+            number_digits = reference.number_digits
+        if self._detect_implicit_numbering() or number_digits == 0:
             suffix = ""
         else:
-            if number_digits_override is not None:
-                suffix = f"{number:0{number_digits_override}}"
-            else:
-                suffix = f"{number:0{reference.number_digits}}"
+            suffix = f"{number:0{number_digits}}"
         name = f"{prefix}{suffix}"
         diff = len(reference._tag.name) - len(name)
         if diff >= 0:
@@ -404,7 +416,10 @@ class Sources(collections.abc.MutableSequence):
             Tuple in the form of (index, name, separator).
         """
         prefix = self.PREFIX.capitalize()
-        if self._default_to_implicit_numbering:
+        if (
+            self._default_to_implicit_numbering
+            or self._default_source_number_digits == 0
+        ):
             suffix = ""
         else:
             suffix = f"{number:0{self._default_source_number_digits}}"

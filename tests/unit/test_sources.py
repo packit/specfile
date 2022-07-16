@@ -82,7 +82,8 @@ def test_sources_detect_implicit_numbering(tags, default, result):
 @pytest.mark.parametrize(
     "ref_name, ref_separator, number, name, separator",
     [
-        ("Source", ": ", 28, "Source28", ":"),
+        ("Source", ": ", 28, "Source", ": "),
+        ("Source0", ": ", 28, "Source28", ":"),
         ("Source0001", ":      ", 2, "Source0002", ":      "),
     ],
 )
@@ -415,7 +416,8 @@ def test_sources_remove_numbered(tags, sourcelists, number, new_tags, new_source
     "ref_name, ref_separator, number, name, separator",
     [
         ("Patch99", ":      ", 100, "Patch100", ":     "),
-        ("Patch9999", ":  ", 28, "Patch0028", ":  "),
+        ("Patch9999", ":  ", 28, "Patch28", ":    "),
+        ("Patch0999", ":  ", 28, "Patch0028", ":  "),
         ("Source2", ":     ", 0, "Patch0", ":      "),
     ],
 )
