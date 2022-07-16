@@ -8,6 +8,7 @@ import pytest
 from tests.constants import (
     SPEC_AUTOPATCH,
     SPEC_AUTOSETUP,
+    SPEC_COMMENTED_PATCHES,
     SPEC_MINIMAL,
     SPEC_MULTIPLE_SOURCES,
     SPEC_PATCHLIST,
@@ -63,4 +64,11 @@ def spec_patchlist(tmp_path):
 def spec_multiple_sources(tmp_path):
     destination = tmp_path / "spec_multiple_sources"
     shutil.copytree(SPEC_MULTIPLE_SOURCES, destination)
+    return destination / SPECFILE
+
+
+@pytest.fixture(scope="function")
+def spec_commented_patches(tmp_path):
+    destination = tmp_path / "spec_commented_patches"
+    shutil.copytree(SPEC_COMMENTED_PATCHES, destination)
     return destination / SPECFILE

@@ -220,6 +220,25 @@ def test_set_version_and_release(spec_minimal, version, release):
     assert spec._spec.sourceHeader[rpm.RPMTAG_RELEASE] == spec.expanded_raw_release
 
 
+def test_remove_patches(spec_commented_patches):
+    spec = Specfile(spec_commented_patches)
+    with spec.patches() as patches:
+        del patches[1:3]
+        patches.remove_numbered(5)
+    with spec.sections() as sections:
+        assert sections.package[-11:-2] == [
+            "# this is a downstream-only patch",
+            "Patch0:         patch0.patch",
+            "",
+            "# these two patches are related to each other",
+            "Patch3:         patch3.patch",
+            "Patch4:         patch4.patch",
+            "",
+            "# this is patch6",
+            "Patch6:         patch6.patch",
+        ]
+
+
 @pytest.mark.skipif(
     rpm.__version__ < "4.16", reason="%autochangelog requires rpm 4.16 or higher"
 )

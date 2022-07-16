@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import collections
+import itertools
 import re
 from typing import Any, Iterable, List, Optional, Union, overload
 
@@ -340,14 +341,29 @@ class Tags(collections.UserList):
 
     def __delitem__(self, i: Union[SupportsIndex, slice]) -> None:
         def delete(index):
-            preceding_lines = self.data[index].comments._preceding_lines.copy()
+            preceding_lines = self.data[index].comments._preceding_lines[:]
             del self.data[index]
+            # preserve preceding lines of the deleted tag but compress empty lines
             if index < len(self.data):
-                self.data[index].comments._preceding_lines = (
-                    preceding_lines + self.data[index].comments._preceding_lines
-                )
+                lines = self.data[index].comments._preceding_lines
             else:
-                self._remainder = preceding_lines + self._remainder
+                lines = self._remainder
+            delimiter = []
+            if preceding_lines and not preceding_lines[-1] or lines and not lines[0]:
+                delimiter.append("")
+            lines[:] = (
+                list(
+                    reversed(
+                        list(
+                            itertools.dropwhile(
+                                lambda l: not l, reversed(preceding_lines)
+                            )
+                        )
+                    )
+                )
+                + delimiter
+                + list(itertools.dropwhile(lambda l: not l, lines))
+            )
 
         if isinstance(i, slice):
             for index in reversed(range(len(self.data))[i]):

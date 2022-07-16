@@ -12,5 +12,6 @@ SPEC_AUTOSETUP = DATA_DIR / "spec_autosetup"
 SPEC_AUTOPATCH = DATA_DIR / "spec_autopatch"
 SPEC_PATCHLIST = DATA_DIR / "spec_patchlist"
 SPEC_MULTIPLE_SOURCES = DATA_DIR / "spec_multiple_sources"
+SPEC_COMMENTED_PATCHES = DATA_DIR / "spec_commented_patches"
 
 SPECFILE = "test.spec"
