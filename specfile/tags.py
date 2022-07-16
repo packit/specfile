@@ -125,6 +125,11 @@ class Comments(collections.UserList):
             return item in [c.text for c in self.data]
         return item in self.data
 
+    @property
+    def raw(self) -> List[str]:
+        """List of comment texts"""
+        return [c.text for c in self.data]
+
     @overload
     def __getitem__(self, i: SupportsIndex) -> Comment:
         pass
