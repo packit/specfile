@@ -410,17 +410,25 @@ class Sources(collections.abc.MutableSequence):
             suffix = f"{number:0{self._default_source_number_digits}}"
         return len(self._tags) if self._tags else 0, f"{prefix}{suffix}", ": "
 
-    def _deduplicate_tag_names(self) -> None:
-        """Eliminates duplicate numbers in source tag names."""
+    def _deduplicate_tag_names(self, start: int = 0) -> None:
+        """
+        Eliminates duplicate numbers in source tag names.
+
+        Args:
+            start: Starting index, defaults to the first source tag.
+        """
         tags = self._get_tags()
         if not tags:
             return
-        tag_sources = sorted(list(zip(*tags))[0], key=lambda ts: ts.number)
+        tag_sources = list(zip(*tags[start:]))[0]
         for ts0, ts1 in zip(tag_sources, tag_sources[1:]):
-            if ts1.number <= ts0.number:
-                ts1._tag.name, ts1._tag._separator = self._get_tag_format(
-                    ts0, ts0.number + 1
-                )
+            if ts1.number == ts0.number:
+                if ts1._number is not None:
+                    ts1._number = ts0.number + 1
+                else:
+                    ts1._tag.name, ts1._tag._separator = self._get_tag_format(
+                        ts1, ts0.number + 1
+                    )
 
     def insert(self, i: int, location: str) -> None:
         """
@@ -453,7 +461,7 @@ class Sources(collections.abc.MutableSequence):
                     index,
                     Tag(name, location, Macros.expand(location), separator, Comments()),
                 )
-                self._deduplicate_tag_names()
+                self._deduplicate_tag_names(i)
             else:
                 container.insert(
                     index,
@@ -501,7 +509,7 @@ class Sources(collections.abc.MutableSequence):
         self._tags.insert(
             index, Tag(name, location, Macros.expand(location), separator, Comments())
         )
-        self._deduplicate_tag_names()
+        self._deduplicate_tag_names(i)
         return i
 
     def remove(self, location: str) -> None:

@@ -109,11 +109,43 @@ def test_sources_get_initial_tag_setup(tags, number, index):
 @pytest.mark.parametrize(
     "tags, deduplicated_tags",
     [
-        (["Source", "Source0"], ["Source", "Source1"]),
-        (["Source0028", "Source28"], ["Source0028", "Source0029"]),
+        (["Source", "Source"], ["Source", "Source"]),
+        (["Source0", "Source"], ["Source0", "Source"]),
         (
-            ["Source2", "Source2", "Source3", "Source3"],
-            ["Source2", "Source3", "Source4", "Source5"],
+            ["Source0", "Source0", "Source", "Source"],
+            ["Source0", "Source1", "Source", "Source"],
+        ),
+        (
+            ["Source100", "Source100", "Source", "Source1028", "Source1011"],
+            ["Source100", "Source101", "Source", "Source1028", "Source1011"],
+        ),
+        (
+            ["Source2", "Source2", "Source4", "Source", "Source999"],
+            ["Source2", "Source3", "Source4", "Source", "Source999"],
+        ),
+        (
+            ["Source3", "Source4", "Source", "Source5"],
+            ["Source3", "Source4", "Source", "Source6"],
+        ),
+        (
+            [
+                "Source",
+                "Source",
+                "Source100",
+                "Source101",
+                "Source101",
+                "Source102",
+                "Source",
+            ],
+            [
+                "Source",
+                "Source",
+                "Source100",
+                "Source101",
+                "Source102",
+                "Source103",
+                "Source",
+            ],
         ),
     ],
 )
