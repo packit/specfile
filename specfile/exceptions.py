@@ -33,3 +33,7 @@ class MacroOptionsException(SpecfileException):
 
 class DuplicateSourceException(SpecfileException):
     """Exception related to adding a duplicate source."""
+
+
+class SourceNumberException(SpecfileException):
+    """Exception related to source numbers."""
