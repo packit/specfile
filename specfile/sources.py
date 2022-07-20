@@ -523,6 +523,21 @@ class Sources(collections.abc.MutableSequence):
             if source.location == location:
                 del container[index]
 
+    def remove_numbered(self, number: int) -> None:
+        """
+        Removes a source by number.
+
+        Args:
+            number: Number of the source to be removed.
+        """
+        items = self._get_items()
+        try:
+            container, index = next((c, i) for s, c, i in items if s.number == number)
+        except StopIteration:
+            pass
+        else:
+            del container[index]
+
     def count(self, location: str) -> int:
         """
         Counts sources by location.

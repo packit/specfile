@@ -343,6 +343,75 @@ def test_sources_insert_numbered(tags, number, location, index):
 
 
 @pytest.mark.parametrize(
+    "tags, sourcelists, number, new_tags, new_sourcelists",
+    [
+        (
+            [
+                ("Name", "test"),
+                ("Version", "0.1"),
+                ("Source0", "source0"),
+                ("Source1", "source1"),
+            ],
+            [],
+            1,
+            [
+                ("Name", "test"),
+                ("Version", "0.1"),
+                ("Source0", "source0"),
+            ],
+            [],
+        ),
+        (
+            [
+                ("Name", "test"),
+                ("Version", "0.1"),
+                ("Source0", "source0"),
+                ("Source1", "source1"),
+            ],
+            [],
+            2,
+            [
+                ("Name", "test"),
+                ("Version", "0.1"),
+                ("Source0", "source0"),
+                ("Source1", "source1"),
+            ],
+            [],
+        ),
+        (
+            [
+                ("Name", "test"),
+                ("Version", "0.1"),
+                ("Source0", "source0"),
+                ("Source1", "source1"),
+            ],
+            [["source2", "source3"]],
+            2,
+            [
+                ("Name", "test"),
+                ("Version", "0.1"),
+                ("Source0", "source0"),
+                ("Source1", "source1"),
+            ],
+            [["source3"]],
+        ),
+    ],
+)
+def test_sources_remove_numbered(tags, sourcelists, number, new_tags, new_sourcelists):
+    tags = Tags([Tag(t, v, v, ": ", Comments()) for t, v in tags])
+    sourcelists = [
+        Sourcelist([SourcelistEntry(s, Comments()) for s in sl]) for sl in sourcelists
+    ]
+    sources = Sources(tags, sourcelists)
+    sources.remove_numbered(number)
+    assert tags == Tags([Tag(t, v, v, ": ", Comments()) for t, v in new_tags])
+    assert sourcelists == [
+        Sourcelist([SourcelistEntry(s, Comments()) for s in sl])
+        for sl in new_sourcelists
+    ]
+
+
+@pytest.mark.parametrize(
     "ref_name, ref_separator, number, name, separator",
     [
         ("Patch99", ":      ", 100, "Patch100", ":     "),

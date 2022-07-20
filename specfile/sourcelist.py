@@ -23,6 +23,11 @@ class SourcelistEntry:
         self.location = location
         self.comments = comments.copy()
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, SourcelistEntry):
+            return NotImplemented
+        return self.location == other.location and self.comments == other.comments
+
     def __repr__(self) -> str:
         comments = repr(self.comments)
         return f"SourcelistEntry('{self.location}', {comments})"
