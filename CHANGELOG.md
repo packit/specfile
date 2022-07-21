@@ -1,3 +1,13 @@
+# 0.5.0
+
+- Strict optional typing is now enforced (#68)
+- Fixed deduplication of tag names (#69)
+- Sources and patches can now be removed by number (#69)
+- Number of digits in a source number is now expressed the same way as packit does it (#69)
+- Empty lines are now compressed when deleting tags (#69)
+- Added convenience property for getting texts of tag comments (#69)
+- Added convenience method for adding a patch (#69)
+
 # 0.4.0
 
 - Added convenience properties for most used tags (#63)
