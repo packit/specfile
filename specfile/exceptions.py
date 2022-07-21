@@ -7,8 +7,6 @@ from typing import List
 class SpecfileException(Exception):
     """Something went wrong during our execution."""
 
-    pass
-
 
 class RPMException(SpecfileException):
     """Exception related to RPM."""
@@ -31,3 +29,7 @@ class MacroRemovalException(SpecfileException):
 
 class MacroOptionsException(SpecfileException):
     """Exception related to processing macro options."""
+
+
+class DuplicateSourceException(SpecfileException):
+    """Exception related to adding a duplicate source."""

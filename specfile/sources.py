@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Iterable, List, Optional, Tuple, Union, cast, overload
 
-from specfile.exceptions import SpecfileException
+from specfile.exceptions import DuplicateSourceException
 from specfile.rpm import Macros
 from specfile.sourcelist import Sourcelist, SourcelistEntry
 from specfile.tags import Comments, Tag, Tags
@@ -439,11 +439,11 @@ class Sources(collections.abc.MutableSequence):
             location: Location of the new source.
 
         Raises:
-            SpecfileException if duplicates are disallowed and there
-            already is a source with the same location.
+            DuplicateSourceException if duplicates are disallowed and there
+              already is a source with the same location.
         """
         if not self._allow_duplicates and location in self:
-            raise SpecfileException(f"Source '{location}' already exists")
+            raise DuplicateSourceException(f"Source '{location}' already exists")
         items = self._get_items()
         if i > len(items):
             i = len(items)
@@ -488,11 +488,11 @@ class Sources(collections.abc.MutableSequence):
             Index of the newly inserted source.
 
         Raises:
-            SpecfileException if duplicates are disallowed and there
-            already is a source with the same location.
+            DuplicateSourceException if duplicates are disallowed and there
+              already is a source with the same location.
         """
         if not self._allow_duplicates and location in self:
-            raise SpecfileException(f"Source '{location}' already exists")
+            raise DuplicateSourceException(f"Source '{location}' already exists")
         tags = self._get_tags()
         if tags:
             # find the nearest source tag
