@@ -12,7 +12,7 @@ from typing import Iterator, List, Optional, Tuple, Type, Union
 import arrow
 
 from specfile.changelog import Changelog, ChangelogEntry
-from specfile.exceptions import SpecfileException
+from specfile.exceptions import SourceNumberException, SpecfileException
 from specfile.prep import Prep
 from specfile.rpm import RPM, Macros
 from specfile.sections import Sections
@@ -416,3 +416,39 @@ class Specfile:
         with self.tags() as tags:
             tags.version.value = version
             tags.release.value = self._get_updated_release(tags.release.value, release)
+
+    def add_patch(
+        self,
+        location: str,
+        number: Optional[int] = None,
+        comment: Optional[str] = None,
+        initial_number: int = 0,
+        number_digits: int = 4,
+    ) -> None:
+        """
+        Adds a patch.
+
+        Args:
+            location: Patch location (filename or URL).
+            number: Patch number. It will be auto-assigned if not specified.
+              If specified, it must be higher than any existing patch number.
+            comment: Associated comment.
+            initial_number: Auto-assigned number to start with if there are no patches.
+            number_digits: Number of digits in the patch number.
+
+        Raises:
+            SourceNumberException when the specified patch number is not higher
+              than any existing patch number.
+        """
+        with self.patches(default_source_number_digits=number_digits) as patches:
+            highest_number = max((p.number for p in patches), default=-1)
+            if number is not None:
+                if number <= highest_number:
+                    raise SourceNumberException(
+                        "Patch number must be higher than any existing patch number"
+                    )
+            else:
+                number = max(highest_number + 1, initial_number)
+            index = patches.insert_numbered(number, location)
+            if comment:
+                patches[index].comments.extend(comment.splitlines())

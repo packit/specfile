@@ -220,6 +220,52 @@ def test_set_version_and_release(spec_minimal, version, release):
     assert spec._spec.sourceHeader[rpm.RPMTAG_RELEASE] == spec.expanded_raw_release
 
 
+@pytest.mark.parametrize(
+    "location, number, comment",
+    [
+        ("patchX.patch", None, None),
+        ("patchX.patch", 0, None),
+        ("patch2.patch", None, None),
+        ("patch3.patch", 3, "patch3"),
+    ],
+)
+def test_add_patch(spec_autosetup, location, number, comment):
+    spec = Specfile(spec_autosetup)
+    if number == 0 or location == "patch2.patch":
+        with pytest.raises(SpecfileException):
+            spec.add_patch(location, number, comment)
+    else:
+        spec.add_patch(location, number, comment)
+        with spec.patches() as patches:
+            assert patches[-1].location == location
+            if number is not None:
+                assert patches[-1].number == number
+            else:
+                assert patches[-1].number == 3
+        with spec.sections() as sections:
+            if comment is not None:
+                assert sections.package[-4] == f"# {comment}"
+
+
+def test_remove_patches(spec_commented_patches):
+    spec = Specfile(spec_commented_patches)
+    with spec.patches() as patches:
+        del patches[1:3]
+        patches.remove_numbered(5)
+    with spec.sections() as sections:
+        assert sections.package[-11:-2] == [
+            "# this is a downstream-only patch",
+            "Patch0:         patch0.patch",
+            "",
+            "# these two patches are related to each other",
+            "Patch3:         patch3.patch",
+            "Patch4:         patch4.patch",
+            "",
+            "# this is patch6",
+            "Patch6:         patch6.patch",
+        ]
+
+
 @pytest.mark.skipif(
     rpm.__version__ < "4.16", reason="%autochangelog requires rpm 4.16 or higher"
 )

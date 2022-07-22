@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Iterable, List, Optional, Tuple, Union, cast, overload
 
-from specfile.exceptions import SpecfileException
+from specfile.exceptions import DuplicateSourceException
 from specfile.rpm import Macros
 from specfile.sourcelist import Sourcelist, SourcelistEntry
 from specfile.tags import Comments, Tag, Tags
@@ -100,14 +100,25 @@ class TagSource(Source):
     @property
     def number(self) -> int:
         """Source number."""
-        return self._number or int(self._extract_number() or 0)
+        if self._number is not None:
+            return self._number
+        return int(self._extract_number() or 0)
 
     @property
     def number_digits(self) -> int:
-        """Number of digits in the source number."""
-        if self._number:
+        """
+        Gets number of digits in the source number.
+
+        Returns 0 if the source has no number, 1 if the source number
+        has no leading zeros and the actual number of digits if there are
+        any leading zeros.
+        """
+        if self._number is not None:
             return 0
-        return len(self._extract_number() or "")
+        number = self._extract_number()
+        if not number:
+            return 0
+        return len(number) if number.startswith("0") else 1
 
     @property
     def location(self) -> str:
@@ -378,13 +389,14 @@ class Sources(collections.abc.MutableSequence):
             Tuple in the form of (name, separator).
         """
         prefix = self.PREFIX.capitalize()
-        if self._detect_implicit_numbering():
+        if number_digits_override is not None:
+            number_digits = number_digits_override
+        else:
+            number_digits = reference.number_digits
+        if self._detect_implicit_numbering() or number_digits == 0:
             suffix = ""
         else:
-            if number_digits_override is not None:
-                suffix = f"{number:0{number_digits_override}}"
-            else:
-                suffix = f"{number:0{reference.number_digits}}"
+            suffix = f"{number:0{number_digits}}"
         name = f"{prefix}{suffix}"
         diff = len(reference._tag.name) - len(name)
         if diff >= 0:
@@ -404,23 +416,34 @@ class Sources(collections.abc.MutableSequence):
             Tuple in the form of (index, name, separator).
         """
         prefix = self.PREFIX.capitalize()
-        if self._default_to_implicit_numbering:
+        if (
+            self._default_to_implicit_numbering
+            or self._default_source_number_digits == 0
+        ):
             suffix = ""
         else:
             suffix = f"{number:0{self._default_source_number_digits}}"
         return len(self._tags) if self._tags else 0, f"{prefix}{suffix}", ": "
 
-    def _deduplicate_tag_names(self) -> None:
-        """Eliminates duplicate numbers in source tag names."""
+    def _deduplicate_tag_names(self, start: int = 0) -> None:
+        """
+        Eliminates duplicate numbers in source tag names.
+
+        Args:
+            start: Starting index, defaults to the first source tag.
+        """
         tags = self._get_tags()
         if not tags:
             return
-        tag_sources = sorted(list(zip(*tags))[0], key=lambda ts: ts.number)
+        tag_sources = list(zip(*tags[start:]))[0]
         for ts0, ts1 in zip(tag_sources, tag_sources[1:]):
-            if ts1.number <= ts0.number:
-                ts1._tag.name, ts1._tag._separator = self._get_tag_format(
-                    ts0, ts0.number + 1
-                )
+            if ts1.number == ts0.number:
+                if ts1._number is not None:
+                    ts1._number = ts0.number + 1
+                else:
+                    ts1._tag.name, ts1._tag._separator = self._get_tag_format(
+                        ts1, ts0.number + 1
+                    )
 
     def insert(self, i: int, location: str) -> None:
         """
@@ -431,11 +454,11 @@ class Sources(collections.abc.MutableSequence):
             location: Location of the new source.
 
         Raises:
-            SpecfileException if duplicates are disallowed and there
-            already is a source with the same location.
+            DuplicateSourceException if duplicates are disallowed and there
+              already is a source with the same location.
         """
         if not self._allow_duplicates and location in self:
-            raise SpecfileException(f"Source '{location}' already exists")
+            raise DuplicateSourceException(f"Source '{location}' already exists")
         items = self._get_items()
         if i > len(items):
             i = len(items)
@@ -453,7 +476,7 @@ class Sources(collections.abc.MutableSequence):
                     index,
                     Tag(name, location, Macros.expand(location), separator, Comments()),
                 )
-                self._deduplicate_tag_names()
+                self._deduplicate_tag_names(i)
             else:
                 container.insert(
                     index,
@@ -480,11 +503,11 @@ class Sources(collections.abc.MutableSequence):
             Index of the newly inserted source.
 
         Raises:
-            SpecfileException if duplicates are disallowed and there
-            already is a source with the same location.
+            DuplicateSourceException if duplicates are disallowed and there
+              already is a source with the same location.
         """
         if not self._allow_duplicates and location in self:
-            raise SpecfileException(f"Source '{location}' already exists")
+            raise DuplicateSourceException(f"Source '{location}' already exists")
         tags = self._get_tags()
         if tags:
             # find the nearest source tag
@@ -501,7 +524,7 @@ class Sources(collections.abc.MutableSequence):
         self._tags.insert(
             index, Tag(name, location, Macros.expand(location), separator, Comments())
         )
-        self._deduplicate_tag_names()
+        self._deduplicate_tag_names(i)
         return i
 
     def remove(self, location: str) -> None:
@@ -514,6 +537,21 @@ class Sources(collections.abc.MutableSequence):
         for source, container, index in reversed(self._get_items()):
             if source.location == location:
                 del container[index]
+
+    def remove_numbered(self, number: int) -> None:
+        """
+        Removes a source by number.
+
+        Args:
+            number: Number of the source to be removed.
+        """
+        items = self._get_items()
+        try:
+            container, index = next((c, i) for s, c, i in items if s.number == number)
+        except StopIteration:
+            pass
+        else:
+            del container[index]
 
     def count(self, location: str) -> int:
         """

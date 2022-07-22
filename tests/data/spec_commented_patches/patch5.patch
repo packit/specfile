@@ -1,0 +1,20 @@
+From 2b6f99fdaa15c486e09350916a486e92706c5ad2 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Nikola=20Forr=C3=B3?= <nforro@redhat.com>
+Date: Mon, 25 Apr 2022 12:39:42 +0200
+Subject: [PATCH 6/7] patch5
+
+---
+ test.txt | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/test.txt b/test.txt
+index 339c7a8..0883796 100644
+--- a/test.txt
++++ b/test.txt
+@@ -4,3 +4,4 @@ test
+ test
+ test
+ test
++test
+--
+2.35.1
