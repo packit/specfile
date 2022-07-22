@@ -5,7 +5,7 @@ in a minimal diff.}
 
 
 Name:           python-specfile
-Version:        0.4.0
+Version:        0.5.0
 Release:        1%{?dist}
 
 Summary:        A library for parsing and manipulating RPM spec files
@@ -57,6 +57,9 @@ Summary:        %{summary}
 
 
 %changelog
+* Thu Jul 21 2022 Nikola Forró <nforro@redhat.com> - 0.5.0-1
+- New upstream release 0.5.0
+
 * Thu Jun 16 2022 Nikola Forró <nforro@redhat.com> - 0.4.0-1
 - New upstream release 0.4.0
 
