@@ -17,6 +17,7 @@ Source0:        %{pypi_source specfile}
 BuildArch:      noarch
 
 BuildRequires:  python%{python3_pkgversion}-devel
+BuildRequires:  python%{python3_pkgversion}-rpm
 
 
 %description
@@ -31,12 +32,13 @@ Summary:        %{summary}
 %{desc}
 
 
-%generate_buildrequires
-%pyproject_buildrequires -x testing
-
-
 %prep
 %autosetup -p1 -n specfile-%{version}
+sed -i 's/rpm-py-installer/rpm/' setup.cfg
+
+
+%generate_buildrequires
+%pyproject_buildrequires -x testing
 
 
 %build
