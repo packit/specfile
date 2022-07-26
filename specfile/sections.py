@@ -12,6 +12,7 @@ SECTION_NAMES = {
     "package",
     "prep",
     "generate_buildrequires",
+    "conf",
     "build",
     "install",
     "check",
