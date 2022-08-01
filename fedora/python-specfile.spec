@@ -31,12 +31,14 @@ Summary:        %{summary}
 %{desc}
 
 
-%generate_buildrequires
-%pyproject_buildrequires -x testing
-
-
 %prep
 %autosetup -p1 -n specfile-%{version}
+# Use packaged RPM python bindings downstream
+sed -i 's/rpm-py-installer/rpm/' setup.cfg
+
+
+%generate_buildrequires
+%pyproject_buildrequires -x testing
 
 
 %build
