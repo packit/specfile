@@ -55,7 +55,7 @@ class ChangelogEntry:
     def extended_timestamp(self) -> bool:
         """Whether the timestamp present in the entry header is extended (date and time)."""
         try:
-            arrow.get(self.header, "ddd MMM DD YYYY")
+            arrow.get(self.header, ["ddd MMM D YYYY", "ddd MMM DD YYYY"])
         except arrow.parser.ParserError:
             return True
         else:
