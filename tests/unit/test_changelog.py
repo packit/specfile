@@ -4,9 +4,28 @@
 import datetime
 
 import dateutil.tz
+import pytest
 
 from specfile.changelog import Changelog, ChangelogEntry
 from specfile.sections import Section
+
+
+@pytest.mark.parametrize(
+    "header, extended",
+    [
+        ("* Tue May 4 2021 Nikola Forró <nforro@redhat.com> - 0.1-1", False),
+        (
+            "* Thu Jul 22 2021 Fedora Release Engineering <releng@fedoraproject.org> - 0.1-2",
+            False,
+        ),
+        (
+            "* Mon Oct 18 12:34:45 CEST 2021 Nikola Forró <nforro@redhat.com> - 0.2-1",
+            True,
+        ),
+    ],
+)
+def test_entry_has_extended_timestamp(header, extended):
+    assert ChangelogEntry(header, [""]).extended_timestamp == extended
 
 
 def test_parse():
