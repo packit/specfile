@@ -1,3 +1,9 @@
+# 0.5.1
+
+- Added new `%conf` section (#74)
+- Switched to rpm-py-installer (#75)
+- Fixed detecting extended timestamp format in `%changelog` (#77, #81)
+
 # 0.5.0
 
 - Strict optional typing is now enforced (#68)
