@@ -31,7 +31,7 @@ repos:
       - id: mixed-line-ending
       - id: trailing-whitespace
   - repo: https://github.com/PyCQA/flake8
-    rev: 5.0.2
+    rev: 5.0.4
     hooks:
       - id: flake8
         args:
@@ -51,7 +51,7 @@ repos:
         additional_dependencies:
           [types-pkg_resources, types-requests, types-python-dateutil]
   - repo: https://github.com/packit/pre-commit-hooks
-    rev: 3bf9afc5ede12a4ee26e9451f306edf255749396
+    rev: 8db5a24e01b9f54aaa7a800f33c4b9aa619af1b9
     hooks:
       - id: check-rebase
         args:

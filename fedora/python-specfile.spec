@@ -5,7 +5,7 @@ in a minimal diff.}
 
 
 Name:           python-specfile
-Version:        0.5.0
+Version:        0.5.1
 Release:        1%{?dist}
 
 Summary:        A library for parsing and manipulating RPM spec files
@@ -59,6 +59,9 @@ sed -i 's/rpm-py-installer/rpm/' setup.cfg
 
 
 %changelog
+* Tue Aug 09 2022 Nikola Forró <nforro@redhat.com> - 0.5.1-1
+- New upstream release 0.5.1
+
 * Thu Jul 21 2022 Nikola Forró <nforro@redhat.com> - 0.5.0-1
 - New upstream release 0.5.0
 
