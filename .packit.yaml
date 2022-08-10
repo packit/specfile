@@ -37,25 +37,22 @@ srpm_build_deps:
 jobs:
   - job: propose_downstream
     trigger: release
-    metadata:
-      dist_git_branches:
-        - fedora-all
+    dist_git_branches:
+      - fedora-all
   - job: propose_downstream
     trigger: release
     specfile_path: epel/python-specfile.spec
     files_to_sync:
       - epel/python-specfile.spec
       - .packit.yaml
-    metadata:
-      dist_git_branches:
-        - epel-8
+    dist_git_branches:
+      - epel-8
 
   - job: copr_build
     trigger: pull_request
     identifier: fedora
-    metadata:
-      targets:
-        - fedora-all
+    targets:
+      - fedora-all
   - &copr_build_pr_epel
     job: copr_build
     trigger: pull_request
@@ -66,58 +63,68 @@ jobs:
         - python3 setup.py sdist --dist-dir ./epel/
         - bash -c "ls -1t ./epel/*.tar.gz | head -n 1"
       get-current-version: python3 setup.py --version
-    metadata:
-      targets:
-        - epel-8
+    targets:
+      - epel-8
 
   - job: copr_build
     trigger: commit
-    metadata:
-      branch: main
-      targets:
-        - fedora-all
-      project: packit-dev
-      list_on_homepage: True
-      preserve_project: True
+    branch: main
+    targets:
+      - fedora-all
+    project: packit-dev
+    list_on_homepage: True
+    preserve_project: True
   - <<: *copr_build_pr_epel
     trigger: commit
-    metadata:
-      branch: main
-      targets:
-        - epel-8
-      project: packit-dev
-      list_on_homepage: True
-      preserve_project: True
+    branch: main
+    targets:
+      - epel-8
+    project: packit-dev
+    list_on_homepage: True
+    preserve_project: True
+
+  - job: copr_build
+    trigger: commit
+    branch: stable
+    targets:
+      - fedora-stable
+    project: packit-stable
+    list_on_homepage: True
+    preserve_project: True
+  - <<: *copr_build_pr_epel
+    trigger: commit
+    branch: stable
+    targets:
+      - epel-8
+    project: packit-stable
+    list_on_homepage: True
+    preserve_project: True
 
   - job: copr_build
     trigger: release
-    metadata:
-      targets:
-        - fedora-all
-      project: packit-releases
-      list_on_homepage: True
-      preserve_project: True
+    targets:
+      - fedora-all
+    project: packit-releases
+    list_on_homepage: True
+    preserve_project: True
   - <<: *copr_build_pr_epel
     trigger: release
-    metadata:
-      targets:
-        - epel-8
-      project: packit-releases
-      list_on_homepage: True
-      preserve_project: True
+    targets:
+      - epel-8
+    project: packit-releases
+    list_on_homepage: True
+    preserve_project: True
 
   # downstream automation:
   - job: koji_build
     trigger: commit
     packit_instances: ["stg"]
-    metadata:
-      dist_git_branches:
-        - fedora-all
-        - epel-8
+    dist_git_branches:
+      - fedora-all
+      - epel-8
   - job: bodhi_update
     trigger: commit
     packit_instances: ["stg"]
-    metadata:
-      dist_git_branches:
-        - fedora-branched # rawhide updates are created automatically
-        - epel-8
+    dist_git_branches:
+      - fedora-branched # rawhide updates are created automatically
+      - epel-8
