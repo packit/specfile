@@ -90,6 +90,24 @@ jobs:
       preserve_project: True
 
   - job: copr_build
+    trigger: commit
+    metadata:
+      branch: stable
+      targets:
+        - fedora-stable
+      project: packit-stable
+      list_on_homepage: True
+      preserve_project: True
+  - <<: *copr_build_pr_epel
+    trigger: commit
+    branch: stable
+    targets:
+      - epel-8
+    project: packit-stable
+    list_on_homepage: True
+    preserve_project: True
+
+  - job: copr_build
     trigger: release
     metadata:
       targets:
