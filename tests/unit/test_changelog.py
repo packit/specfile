@@ -14,6 +14,7 @@ from specfile.sections import Section
     "header, extended",
     [
         ("* Tue May 4 2021 Nikola Forró <nforro@redhat.com> - 0.1-1", False),
+        ("* Tue May  4 2021 Nikola Forró <nforro@redhat.com> - 0.1-1", False),
         (
             "* Thu Jul 22 2021 Fedora Release Engineering <releng@fedoraproject.org> - 0.1-2",
             False,

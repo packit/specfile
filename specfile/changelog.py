@@ -55,11 +55,17 @@ class ChangelogEntry:
     def extended_timestamp(self) -> bool:
         """Whether the timestamp present in the entry header is extended (date and time)."""
         try:
-            arrow.get(self.header, ["ddd MMM D YYYY", "ddd MMM DD YYYY"])
+            arrow.get(
+                self.header,
+                [
+                    r"ddd[\s+]MMM[\s+]D[\s+]HH:mm:ss[\s+][\w+][\s+]YYYY",
+                    r"ddd[\s+]MMM[\s+]DD[\s+]HH:mm:ss[\s+][\w+][\s+]YYYY",
+                ],
+            )
         except arrow.parser.ParserError:
-            return True
-        else:
             return False
+        else:
+            return True
 
     @staticmethod
     def assemble(
