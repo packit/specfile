@@ -36,6 +36,8 @@ Summary:        %{summary}
 
 %prep
 %autosetup -p1 -n specfile-%{version}
+# Use packaged RPM python bindings downstream
+sed -i 's/rpm-py-installer/rpm/' setup.cfg
 # Remove bundled egg-info
 rm -rf specfile.egg-info
 
