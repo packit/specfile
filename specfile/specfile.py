@@ -281,9 +281,21 @@ class Specfile:
                     raise SpecfileException("Failed to auto-detect author") from e
             elif email is not None:
                 author += f" <{email}>"
+            if changelog:
+                # try to preserve padding of day of month
+                padding = max(
+                    (e.day_of_month_padding for e in reversed(changelog)), key=len
+                )
+            else:
+                padding = "0"
             changelog.append(
                 ChangelogEntry.assemble(
-                    timestamp, author, entry, evr, append_newline=bool(changelog)
+                    timestamp,
+                    author,
+                    entry,
+                    evr,
+                    day_of_month_padding=padding,
+                    append_newline=bool(changelog),
                 )
             )
 

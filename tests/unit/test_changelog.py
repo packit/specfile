@@ -29,6 +29,26 @@ def test_entry_has_extended_timestamp(header, extended):
     assert ChangelogEntry(header, [""]).extended_timestamp == extended
 
 
+@pytest.mark.parametrize(
+    "header, padding",
+    [
+        ("* Tue May 4 2021 Nikola Forró <nforro@redhat.com> - 0.1-1", ""),
+        ("* Tue May 04 2021 Nikola Forró <nforro@redhat.com> - 0.1-1", "0"),
+        ("* Tue May  4 2021 Nikola Forró <nforro@redhat.com> - 0.1-1", " "),
+        (
+            "* Thu Jul 22 2021 Fedora Release Engineering <releng@fedoraproject.org> - 0.1-2",
+            "",
+        ),
+        (
+            "* Mon Oct  18 12:34:45 CEST 2021 Nikola Forró <nforro@redhat.com> - 0.2-1",
+            " ",
+        ),
+    ],
+)
+def test_entry_day_of_month_padding(header, padding):
+    assert ChangelogEntry(header, [""]).day_of_month_padding == padding
+
+
 def test_parse():
     changelog = Changelog.parse(
         Section(

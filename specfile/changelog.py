@@ -94,6 +94,27 @@ class ChangelogEntry:
         )
         return m is not None
 
+    @property
+    def day_of_month_padding(self) -> str:
+        """Padding of day of month in the entry header timestamp"""
+        weekdays = "|".join(WEEKDAYS)
+        months = "|".join(MONTHS)
+        m = re.search(
+            rf"""
+            ({weekdays})                 # weekday
+            [ ]
+            ({months})                   # month
+            [ ]
+            (?P<wsp>[ ]*)                # optional whitespace padding
+            ((?P<zp>0)?\d|[12]\d|3[01])  # possibly zero-padded day of month
+            """,
+            self.header,
+            re.VERBOSE,
+        )
+        if not m:
+            return ""
+        return m.group("wsp") + (m.group("zp") or "")
+
     @staticmethod
     def assemble(
         timestamp: Union[datetime.date, datetime.datetime],
