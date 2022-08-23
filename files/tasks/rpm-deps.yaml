@@ -2,6 +2,5 @@
 - name: Install runtime RPM dependencies
   dnf:
     name:
-      - python3-arrow
       - python3-typing-extensions
   become: true

@@ -3,12 +3,27 @@
 
 import collections
 import datetime
+import re
 from typing import List, Optional, Union, overload
-
-import arrow
 
 from specfile.sections import Section
 from specfile.types import SupportsIndex
+
+WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+MONTHS = (
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+)
 
 
 class ChangelogEntry:
@@ -54,18 +69,30 @@ class ChangelogEntry:
     @property
     def extended_timestamp(self) -> bool:
         """Whether the timestamp present in the entry header is extended (date and time)."""
-        try:
-            arrow.get(
-                self.header,
-                [
-                    r"ddd[\s+]MMM[\s+]D[\s+]HH:mm:ss[\s+][\w+][\s+]YYYY",
-                    r"ddd[\s+]MMM[\s+]DD[\s+]HH:mm:ss[\s+][\w+][\s+]YYYY",
-                ],
-            )
-        except arrow.parser.ParserError:
-            return False
-        else:
-            return True
+        weekdays = "|".join(WEEKDAYS)
+        months = "|".join(MONTHS)
+        m = re.search(
+            rf"""
+            ({weekdays})     # weekday
+            [ ]
+            ({months})       # month
+            [ ]+
+            ([12]?\d|3[01])  # day of month
+            [ ]
+            ([01]\d|2[0-3])  # hour
+            :
+            ([0-5]\d)        # minute
+            :
+            ([0-5]\d)        # second
+            [ ]
+            \S+              # timezone
+            [ ]
+            \d{{4}}          # year
+            """,
+            self.header,
+            re.VERBOSE,
+        )
+        return m is not None
 
     @staticmethod
     def assemble(
@@ -73,6 +100,7 @@ class ChangelogEntry:
         author: str,
         content: List[str],
         evr: Optional[str] = None,
+        day_of_month_padding: str = "0",
         append_newline: bool = True,
     ) -> "ChangelogEntry":
         """
@@ -84,20 +112,25 @@ class ChangelogEntry:
             author: Author of the entry.
             content: List of lines forming the content of the entry.
             evr: EVR (epoch, version, release) of the entry.
+            day_of_month_padding: Padding to apply to day of month in the timestamp.
             append_newline: Whether the entry should be followed by an empty line.
 
         Returns:
             Constructed instance of `ChangelogEntry` class.
         """
-        header = "*"
+        weekday = WEEKDAYS[timestamp.weekday()]
+        month = MONTHS[timestamp.month - 1]
+        header = f"* {weekday} {month}"
+        if day_of_month_padding.endswith("0"):
+            header += f" {day_of_month_padding[:-1]}{timestamp.day:02}"
+        else:
+            header += f" {day_of_month_padding}{timestamp.day}"
         if isinstance(timestamp, datetime.datetime):
             # extended format
-            header += arrow.Arrow.fromdatetime(timestamp).format(
-                " ddd MMM DD hh:mm:ss ZZZ YYYY"
-            )
-        else:
-            header += arrow.Arrow.fromdate(timestamp).format(" ddd MMM DD YYYY")
-        header += f" {author}"
+            if not timestamp.tzinfo:
+                timestamp = timestamp.replace(tzinfo=datetime.timezone.utc)
+            header += f" {timestamp:%H:%M:%S %Z}"
+        header += f" {timestamp:%Y} {author}"
         if evr is not None:
             header += f" - {evr}"
         return ChangelogEntry(header, content, [""] if append_newline else None)

@@ -9,8 +9,6 @@ import types
 from pathlib import Path
 from typing import Iterator, List, Optional, Tuple, Type, Union
 
-import arrow
-
 from specfile.changelog import Changelog, ChangelogEntry
 from specfile.exceptions import SourceNumberException, SpecfileException
 from specfile.prep import Prep
@@ -271,12 +269,11 @@ class Specfile:
             if isinstance(entry, str):
                 entry = [entry]
             if timestamp is None:
-                now = arrow.now()
                 # honor the timestamp format, but default to date-only
                 if changelog and changelog[-1].extended_timestamp:
-                    timestamp = now.datetime
+                    timestamp = datetime.datetime.now().astimezone()
                 else:
-                    timestamp = now.date()
+                    timestamp = datetime.date.today()
             if author is None:
                 try:
                     author = subprocess.check_output("rpmdev-packager").decode().strip()
