@@ -3,7 +3,6 @@
 
 import datetime
 
-import dateutil.tz
 import pytest
 
 from specfile.changelog import Changelog, ChangelogEntry
@@ -99,6 +98,7 @@ def test_parse():
 
 
 def test_get_raw_section_data():
+    tzinfo = datetime.timezone(datetime.timedelta(hours=2), name="CEST")
     changelog = Changelog(
         [
             ChangelogEntry.assemble(
@@ -115,9 +115,7 @@ def test_get_raw_section_data():
                 "0.1-2",
             ),
             ChangelogEntry.assemble(
-                datetime.datetime(
-                    2021, 10, 18, 12, 34, 45, tzinfo=dateutil.tz.gettz("CET")
-                ),
+                datetime.datetime(2021, 10, 18, 12, 34, 45, tzinfo=tzinfo),
                 "Nikola Forró <nforro@redhat.com>",
                 ["- new upstream release"],
                 "0.2-1",
