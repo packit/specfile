@@ -7,7 +7,6 @@
       pip:
         name: "{{ item }}"
       with_items:
-        - arrow
         - rpm-py-installer
         - typing-extensions
       become: true

@@ -9,8 +9,6 @@ import types
 from pathlib import Path
 from typing import Iterator, List, Optional, Tuple, Type, Union
 
-import arrow
-
 from specfile.changelog import Changelog, ChangelogEntry
 from specfile.exceptions import SourceNumberException, SpecfileException
 from specfile.prep import Prep
@@ -271,12 +269,11 @@ class Specfile:
             if isinstance(entry, str):
                 entry = [entry]
             if timestamp is None:
-                now = arrow.now()
                 # honor the timestamp format, but default to date-only
                 if changelog and changelog[-1].extended_timestamp:
-                    timestamp = now.datetime
+                    timestamp = datetime.datetime.now().astimezone()
                 else:
-                    timestamp = now.date()
+                    timestamp = datetime.date.today()
             if author is None:
                 try:
                     author = subprocess.check_output("rpmdev-packager").decode().strip()
@@ -284,9 +281,21 @@ class Specfile:
                     raise SpecfileException("Failed to auto-detect author") from e
             elif email is not None:
                 author += f" <{email}>"
+            if changelog:
+                # try to preserve padding of day of month
+                padding = max(
+                    (e.day_of_month_padding for e in reversed(changelog)), key=len
+                )
+            else:
+                padding = "0"
             changelog.append(
                 ChangelogEntry.assemble(
-                    timestamp, author, entry, evr, append_newline=bool(changelog)
+                    timestamp,
+                    author,
+                    entry,
+                    evr,
+                    day_of_month_padding=padding,
+                    append_newline=bool(changelog),
                 )
             )
 
