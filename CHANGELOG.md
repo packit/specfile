@@ -1,3 +1,8 @@
+# 0.6.0
+
+- Switched to our own implementation of working with `%changelog` timestamps and removed dependency on arrow (#88)
+- Fixed requires of EPEL 8 rpm (#86)
+
 # 0.5.1
 
 - Added new `%conf` section (#74)
