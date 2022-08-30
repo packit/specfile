@@ -10,6 +10,10 @@ specfile_path: fedora/python-specfile.spec
 files_to_sync:
   - fedora/python-specfile.spec
   - .packit.yaml
+  - src: plans/
+    dest: plans/
+  - src: .fmf/
+    dest: .fmf/
 
 # name in upstream package repository or registry (e.g. in PyPI)
 upstream_package_name: specfile
@@ -29,6 +33,9 @@ actions:
     - python3 setup.py sdist --dist-dir ./fedora/
     - bash -c "ls -1t ./fedora/*.tar.gz | head -n 1"
   get-current-version: python3 setup.py --version
+  pre-sync:
+    # FMF has to be installed on system where you are calling this tool.
+    - python3 plans/git_reference.py
 
 srpm_build_deps:
   - python3-pip # "python3 setup.py --version" needs it
@@ -46,6 +53,10 @@ jobs:
     files_to_sync:
       - epel/python-specfile.spec
       - .packit.yaml
+      - src: plans/
+        dest: plans/
+      - src: .fmf/
+        dest: .fmf/
     dist_git_branches:
       - epel-8
 
@@ -65,6 +76,9 @@ jobs:
         - python3 setup.py sdist --dist-dir ./epel8/
         - bash -c "ls -1t ./epel8/*.tar.gz | head -n 1"
       get-current-version: python3 setup.py --version
+      pre-sync:
+        # FMF has to be installed on system where you are calling this tool.
+        - python3 plans/git_reference.py
     targets:
       - epel-8
 

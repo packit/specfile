@@ -1,0 +1,12 @@
+summary:
+  Unit & integration tests
+discover+:
+  filter: tier:1
+prepare:
+  # flexmock is not in EPEL 9, install it from PyPI
+  - name: pip
+    how: install
+    package: python3-pip
+  - name: flexmock
+    how: shell
+    script: pip3 install flexmock
