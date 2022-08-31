@@ -1,0 +1,9 @@
+summary:
+  Unit & integration tests
+require:
+  - python3-pytest
+  - python3-specfile
+tag:
+  - basic
+tier: 1
+test: python3 -m pytest --verbose

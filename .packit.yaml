@@ -10,6 +10,10 @@ specfile_path: fedora/python-specfile.spec
 files_to_sync:
   - fedora/python-specfile.spec
   - .packit.yaml
+  - src: plans/
+    dest: plans/
+  - src: .fmf/
+    dest: .fmf/
 
 # name in upstream package repository or registry (e.g. in PyPI)
 upstream_package_name: specfile
@@ -29,6 +33,9 @@ actions:
     - python3 setup.py sdist --dist-dir ./fedora/
     - bash -c "ls -1t ./fedora/*.tar.gz | head -n 1"
   get-current-version: python3 setup.py --version
+  pre-sync:
+    # FMF has to be installed on system where you are calling this tool.
+    - python3 plans/git_reference.py
 
 srpm_build_deps:
   - python3-pip # "python3 setup.py --version" needs it
@@ -39,30 +46,39 @@ jobs:
     trigger: release
     dist_git_branches:
       - fedora-all
+      - epel-9
   - job: propose_downstream
     trigger: release
     specfile_path: epel/python-specfile.spec
     files_to_sync:
       - epel/python-specfile.spec
       - .packit.yaml
+      - src: plans/
+        dest: plans/
+      - src: .fmf/
+        dest: .fmf/
     dist_git_branches:
       - epel-8
 
   - job: copr_build
     trigger: pull_request
-    identifier: fedora
+    identifier: fedora-and-epel
     targets:
       - fedora-all
-  - &copr_build_pr_epel
+      - epel-9
+  - &copr_build_pr_epel8
     job: copr_build
     trigger: pull_request
-    specfile_path: epel/python-specfile.spec
-    identifier: epel
+    specfile_path: epel8/python-specfile.spec
+    identifier: epel8
     actions:
       create-archive:
-        - python3 setup.py sdist --dist-dir ./epel/
-        - bash -c "ls -1t ./epel/*.tar.gz | head -n 1"
+        - python3 setup.py sdist --dist-dir ./epel8/
+        - bash -c "ls -1t ./epel8/*.tar.gz | head -n 1"
       get-current-version: python3 setup.py --version
+      pre-sync:
+        # FMF has to be installed on system where you are calling this tool.
+        - python3 plans/git_reference.py
     targets:
       - epel-8
 
@@ -71,10 +87,11 @@ jobs:
     branch: main
     targets:
       - fedora-all
+      - epel-9
     project: packit-dev
     list_on_homepage: True
     preserve_project: True
-  - <<: *copr_build_pr_epel
+  - <<: *copr_build_pr_epel8
     trigger: commit
     branch: main
     targets:
@@ -88,10 +105,11 @@ jobs:
     branch: stable
     targets:
       - fedora-stable
+      - epel-9
     project: packit-stable
     list_on_homepage: True
     preserve_project: True
-  - <<: *copr_build_pr_epel
+  - <<: *copr_build_pr_epel8
     trigger: commit
     branch: stable
     targets:
@@ -104,10 +122,11 @@ jobs:
     trigger: release
     targets:
       - fedora-all
+      - epel-9
     project: packit-releases
     list_on_homepage: True
     preserve_project: True
-  - <<: *copr_build_pr_epel
+  - <<: *copr_build_pr_epel8
     trigger: release
     targets:
       - epel-8
@@ -122,10 +141,12 @@ jobs:
     allowed_pr_authors: ["packit-stg", "packit"]
     dist_git_branches:
       - fedora-all
+      - epel-9
       - epel-8
   - job: bodhi_update
     trigger: commit
     packit_instances: ["stg"]
     dist_git_branches:
       - fedora-stable # rawhide and branched updates are created automatically
+      - epel-9
       - epel-8

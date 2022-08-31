@@ -1,3 +1,11 @@
+%if 0%{?rhel} == 9
+# RHEL 9 is missing python-flexmock
+%bcond_with tests
+%else
+%bcond_without tests
+%endif
+
+
 %global desc %{expand:
 Python library for parsing and manipulating RPM spec files.
 Main focus is on modifying existing spec files, any change should result
@@ -38,7 +46,7 @@ sed -i 's/rpm-py-installer/rpm/' setup.cfg
 
 
 %generate_buildrequires
-%pyproject_buildrequires -x testing
+%pyproject_buildrequires %{?with_tests: -x testing}
 
 
 %build
@@ -50,8 +58,10 @@ sed -i 's/rpm-py-installer/rpm/' setup.cfg
 %pyproject_save_files specfile
 
 
+%if 0%{?with_tests}
 %check
 %pytest
+%endif
 
 
 %files -n python%{python3_pkgversion}-specfile -f %{pyproject_files}
