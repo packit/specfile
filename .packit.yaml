@@ -49,9 +49,9 @@ jobs:
       - epel-9
   - job: propose_downstream
     trigger: release
-    specfile_path: epel/python-specfile.spec
+    specfile_path: epel8/python-specfile.spec
     files_to_sync:
-      - epel/python-specfile.spec
+      - epel8/python-specfile.spec
       - .packit.yaml
       - src: plans/
         dest: plans/
