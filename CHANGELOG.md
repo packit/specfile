@@ -1,3 +1,6 @@
+# 0.6.1
+
+
 # 0.6.0
 
 - Switched to our own implementation of working with `%changelog` timestamps and removed dependency on arrow (#88)
