@@ -8,7 +8,6 @@ import os
 import re
 import sys
 import tempfile
-import urllib.parse
 from enum import IntEnum
 from pathlib import Path
 from typing import Iterator, List, Optional, Tuple
@@ -16,6 +15,7 @@ from typing import Iterator, List, Optional, Tuple
 import rpm
 
 from specfile.exceptions import MacroRemovalException, RPMException
+from specfile.utils import get_filename_from_location
 
 MAX_REMOVAL_RETRIES = 20
 
@@ -267,7 +267,7 @@ class RPM:
         MAGIC_LENGTH = 13
         dummy_sources = []
         for source in sources:
-            filename = Path(urllib.parse.urlsplit(source).path).name
+            filename = get_filename_from_location(source)
             if not filename:
                 continue
             path = sourcedir / filename

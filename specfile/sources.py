@@ -5,13 +5,13 @@ import collections
 import re
 import urllib.parse
 from abc import ABC, abstractmethod
-from pathlib import Path
 from typing import Iterable, List, Optional, Tuple, Union, cast, overload
 
 from specfile.exceptions import DuplicateSourceException
 from specfile.rpm import Macros
 from specfile.sourcelist import Sourcelist, SourcelistEntry
 from specfile.tags import Comments, Tag, Tags
+from specfile.utils import get_filename_from_location
 
 
 class Source(ABC):
@@ -137,12 +137,12 @@ class TagSource(Source):
     @property
     def filename(self) -> str:
         """Literal filename of the source."""
-        return Path(urllib.parse.urlsplit(self._tag.value).path).name
+        return get_filename_from_location(self._tag.value)
 
     @property
     def expanded_filename(self) -> str:
         """Filename of the source after expanding macros."""
-        return Path(urllib.parse.urlsplit(self._tag.expanded_value).path).name
+        return get_filename_from_location(self._tag.expanded_value)
 
     @property
     def comments(self) -> Comments:
@@ -193,12 +193,12 @@ class ListSource(Source):
     @property
     def filename(self) -> str:
         """Literal filename of the source."""
-        return Path(urllib.parse.urlsplit(self._source.location).path).name
+        return get_filename_from_location(self._source.location)
 
     @property
     def expanded_filename(self) -> str:
         """Filename of the source after expanding macros."""
-        return Path(urllib.parse.urlsplit(self._source.expanded_location).path).name
+        return get_filename_from_location(self._source.expanded_location)
 
     @property
     def comments(self) -> Comments:
