@@ -11,6 +11,7 @@ from typing import Iterator, List, Optional, Tuple, Type, Union
 
 from specfile.changelog import Changelog, ChangelogEntry
 from specfile.exceptions import SourceNumberException, SpecfileException
+from specfile.macro_definitions import MacroDefinitions
 from specfile.prep import Prep
 from specfile.rpm import RPM, Macros
 from specfile.sections import Section, Sections
@@ -104,6 +105,21 @@ class Specfile:
             self._spec = RPM.parse(str(self), self.sourcedir, self.macros)
             if self.autosave:
                 self.save()
+
+    @contextlib.contextmanager
+    def macro_definitions(self) -> Iterator[MacroDefinitions]:
+        """
+        Context manager for accessing macro definitions.
+
+        Yields:
+            Macro definitions in the spec file as `MacroDefinitions` object.
+        """
+        with self.lines() as lines:
+            macro_definitions = MacroDefinitions.parse(lines)
+            try:
+                yield macro_definitions
+            finally:
+                lines[:] = macro_definitions.get_raw_data()
 
     @contextlib.contextmanager
     def sections(self) -> Iterator[Sections]:
