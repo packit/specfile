@@ -3,7 +3,7 @@
 
 import collections
 import re
-from typing import List, Optional, overload
+from typing import List, Optional, Union, overload
 
 from specfile.types import SupportsIndex
 
@@ -140,7 +140,7 @@ class Sections(collections.UserList):
         except ValueError:
             raise AttributeError(name)
 
-    def __setattr__(self, name: str, value: List[str]) -> None:
+    def __setattr__(self, name: str, value: Union[Section, List[str]]) -> None:
         if name.split()[0].lower() not in SECTION_NAMES:
             return super().__setattr__(name, value)
         try:

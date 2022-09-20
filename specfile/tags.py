@@ -384,7 +384,7 @@ class Tags(collections.UserList):
         except ValueError:
             raise AttributeError(name)
 
-    def __setattr__(self, name: str, value: str) -> None:
+    def __setattr__(self, name: str, value: Union[Tag, str]) -> None:
         if name.lower().rstrip("0123456789") not in TAG_NAMES:
             return super().__setattr__(name, value)
         try:
