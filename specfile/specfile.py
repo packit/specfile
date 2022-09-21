@@ -13,7 +13,7 @@ from specfile.changelog import Changelog, ChangelogEntry
 from specfile.exceptions import SourceNumberException, SpecfileException
 from specfile.prep import Prep
 from specfile.rpm import RPM, Macros
-from specfile.sections import Sections
+from specfile.sections import Section, Sections
 from specfile.sourcelist import Sourcelist
 from specfile.sources import Patches, Sources
 from specfile.tags import Tags
@@ -41,9 +41,18 @@ class Specfile:
         self.sourcedir = Path(sourcedir or self.path.parent)
         self.autosave = autosave
         self.macros = macros.copy() if macros is not None else []
-        self._sections = Sections.parse(self.path.read_text())
-        self._spec = RPM.parse(str(self._sections), self.sourcedir, self.macros)
-        self._parsed_sections = Sections.parse(self._spec.parsed)
+        self._lines = self.path.read_text().splitlines()
+        self._spec = RPM.parse(str(self), self.sourcedir, self.macros)
+
+    def __repr__(self) -> str:
+        path = repr(self.path)
+        sourcedir = repr(self.sourcedir)
+        autosave = repr(self.autosave)
+        macros = repr(self.macros)
+        return f"Specfile({path}, {sourcedir}, {autosave}, {macros})"
+
+    def __str__(self) -> str:
+        return "\n".join(self._lines) + "\n"
 
     def __enter__(self) -> "Specfile":
         return self
@@ -58,13 +67,12 @@ class Specfile:
 
     def reload(self) -> None:
         """Reload the spec file content."""
-        self._sections = Sections.parse(self.path.read_text())
-        self._spec = RPM.parse(str(self._sections), self.sourcedir, self.macros)
-        self._parsed_sections = Sections.parse(self._spec.parsed)
+        self._lines = self.path.read_text().splitlines()
+        self._spec = RPM.parse(str(self), self.sourcedir, self.macros)
 
     def save(self) -> None:
         """Save the spec file content."""
-        self.path.write_text(str(self._sections))
+        self.path.write_text(str(self))
 
     def expand(
         self, expression: str, extra_macros: Optional[List[Tuple[str, str]]] = None
@@ -79,10 +87,23 @@ class Specfile:
         Returns:
             Expanded expression.
         """
-        RPM.parse(
-            str(self._sections), self.sourcedir, self.macros + (extra_macros or [])
-        )
+        RPM.parse(str(self), self.sourcedir, self.macros + (extra_macros or []))
         return Macros.expand(expression)
+
+    @contextlib.contextmanager
+    def lines(self) -> Iterator[List[str]]:
+        """
+        Context manager for accessing spec file lines.
+
+        Yields:
+            Spec file lines as list of strings.
+        """
+        try:
+            yield self._lines
+        finally:
+            self._spec = RPM.parse(str(self), self.sourcedir, self.macros)
+            if self.autosave:
+                self.save()
 
     @contextlib.contextmanager
     def sections(self) -> Iterator[Sections]:
@@ -92,31 +113,47 @@ class Specfile:
         Yields:
             Spec file sections as `Sections` object.
         """
-        yield self._sections
-        self._spec = RPM.parse(str(self._sections), self.sourcedir, self.macros)
-        self._parsed_sections = Sections.parse(self._spec.parsed)
-        if self.autosave:
-            self.save()
+        with self.lines() as lines:
+            sections = Sections.parse(lines)
+            try:
+                yield sections
+            finally:
+                lines[:] = sections.get_raw_data()
+
+    @property
+    def parsed_sections(self) -> Sections:
+        """Parsed spec file sections."""
+        return Sections.parse(self._spec.parsed.splitlines())
 
     @contextlib.contextmanager
-    def tags(self, section: str = "package") -> Iterator[Tags]:
+    def tags(self, section: Union[str, Section] = "package") -> Iterator[Tags]:
         """
         Context manager for accessing tags in a specified section.
 
         Args:
-            section: Name of the requested section. Defaults to preamble.
+            section: Name of the requested section or an existing `Section` instance.
+              Defaults to preamble.
 
         Yields:
             Tags in the section as `Tags` object.
         """
-        with self.sections() as sections:
-            raw_section = getattr(sections, section)
-            parsed_section = getattr(self._parsed_sections, section, None)
+        if isinstance(section, Section):
+            raw_section = section
+            parsed_section = getattr(self.parsed_sections, section.name, None)
             tags = Tags.parse(raw_section, parsed_section)
             try:
                 yield tags
             finally:
                 raw_section.data = tags.get_raw_section_data()
+        else:
+            with self.sections() as sections:
+                raw_section = getattr(sections, section)
+                parsed_section = getattr(self.parsed_sections, section, None)
+                tags = Tags.parse(raw_section, parsed_section)
+                try:
+                    yield tags
+                finally:
+                    raw_section.data = tags.get_raw_section_data()
 
     @contextlib.contextmanager
     def changelog(self) -> Iterator[Optional[Changelog]]:
@@ -176,7 +213,7 @@ class Specfile:
         Yields:
             Spec file sources as `Sources` object.
         """
-        with self.sections() as sections, self.tags() as tags:
+        with self.sections() as sections, self.tags(sections.package) as tags:
             sourcelists = [
                 (s, Sourcelist.parse(s)) for s in sections if s.name == "sourcelist"
             ]
@@ -210,7 +247,7 @@ class Specfile:
         Yields:
             Spec file patches as `Patches` object.
         """
-        with self.sections() as sections, self.tags() as tags:
+        with self.sections() as sections, self.tags(sections.package) as tags:
             patchlists = [
                 (s, Sourcelist.parse(s)) for s in sections if s.name == "patchlist"
             ]
