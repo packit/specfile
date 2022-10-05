@@ -10,6 +10,39 @@ from specfile.sections import Section
 
 
 @pytest.mark.parametrize(
+    "header, evr",
+    [
+        ("* Thu Jan 04 2007 Michael Schwendt <mschwendt@fedoraproject.org>", None),
+        (
+            "* Mon Jul 13 2020 Tom Stellard <tstellar@redhat.com> 4.0-0.4.pre2",
+            "4.0-0.4.pre2",
+        ),
+        ("* Fri Jul 20 2018 Gwyn Ciesla <limburgher@gmail.com> - 0.52-6", "0.52-6"),
+        (
+            "* Mon Feb 23 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> "
+            "- 1.23-3.20081106gitbe42b4",
+            "1.23-3.20081106gitbe42b4",
+        ),
+        (
+            "* Thu Feb 04 2016 Marcin Zajaczkowski <mszpak ATT wp DOTT pl> - 1:0.9.10-6",
+            "1:0.9.10-6",
+        ),
+        (
+            "* Mon Jan 03 2022 Fedora Kernel Team <kernel-team@fedoraproject.org> [5.16-0.rc8.55]",
+            "5.16-0.rc8.55",
+        ),
+        ("* Wed Jan 23 2002 Karsten Hopp <karsten@redhat.de> (4.6-1)", "4.6-1"),
+        (
+            "* Thu Apr  9 2015 Jeffrey C. Ollie <jeff@ocjtech.us> - 13.3.2-1:",
+            "13.3.2-1",
+        ),
+    ],
+)
+def test_entry_evr(header, evr):
+    assert ChangelogEntry(header, [""]).evr == evr
+
+
+@pytest.mark.parametrize(
     "header, extended",
     [
         ("* Tue May 4 2021 Nikola Forró <nforro@redhat.com> - 0.1-1", False),
@@ -46,6 +79,60 @@ def test_entry_has_extended_timestamp(header, extended):
 )
 def test_entry_day_of_month_padding(header, padding):
     assert ChangelogEntry(header, [""]).day_of_month_padding == padding
+
+
+@pytest.mark.parametrize(
+    "since, until, evrs",
+    [
+        (None, None, ["0.1-1", "0.1-2", "0.2-1", "0.2-2"]),
+        ("0.1-1", None, ["0.1-1", "0.1-2", "0.2-1", "0.2-2"]),
+        ("0.1-2", None, ["0.1-2", "0.2-1", "0.2-2"]),
+        ("0.2-1", None, ["0.2-1", "0.2-2"]),
+        (None, "0.2-2", ["0.1-1", "0.1-2", "0.2-1", "0.2-2"]),
+        (None, "0.2-1", ["0.1-1", "0.1-2", "0.2-1"]),
+        (None, "0.1-2", ["0.1-1", "0.1-2"]),
+        ("0.1-1", "0.2-2", ["0.1-1", "0.1-2", "0.2-1", "0.2-2"]),
+        ("0.1-2", "0.2-1", ["0.1-2", "0.2-1"]),
+        ("0.2-1", "0.2-1", ["0.2-1"]),
+        ("0.2-2", "0.1-1", []),
+        ("0.0.1-1", None, ["0.1-1", "0.1-2", "0.2-1", "0.2-2"]),
+        ("0.3-1", None, []),
+        (None, "0.0.1-1", []),
+        (None, "0.3-1", ["0.1-1", "0.1-2", "0.2-1", "0.2-2"]),
+        ("0.0.1-1", "0.3-1", ["0.1-1", "0.1-2", "0.2-1", "0.2-2"]),
+    ],
+)
+def test_filter(since, until, evrs):
+    changelog = Changelog(
+        [
+            ChangelogEntry.assemble(
+                datetime.date(2021, 5, 4),
+                "Nikola Forró <nforro@redhat.com>",
+                ["- first version", "  resolves: #999999999"],
+                "0.1-1",
+                append_newline=False,
+            ),
+            ChangelogEntry.assemble(
+                datetime.date(2021, 7, 22),
+                "Fedora Release Engineering <releng@fedoraproject.org>",
+                ["- Rebuilt for https://fedoraproject.org/wiki/Fedora_35_Mass_Rebuild"],
+                "0.1-2",
+            ),
+            ChangelogEntry.assemble(
+                datetime.datetime(2021, 10, 18, 12, 34, 45),
+                "Nikola Forró <nforro@redhat.com>",
+                ["- new upstream release"],
+                "0.2-1",
+            ),
+            ChangelogEntry.assemble(
+                datetime.datetime(2022, 1, 13, 8, 12, 41),
+                "Nikola Forró <nforro@redhat.com>",
+                ["- rebuilt"],
+                "0.2-2",
+            ),
+        ]
+    )
+    assert [e.evr for e in changelog.filter(since=since, until=until)] == evrs
 
 
 def test_parse():
