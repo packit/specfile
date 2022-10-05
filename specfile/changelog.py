@@ -6,6 +6,8 @@ import datetime
 import re
 from typing import List, Optional, Union, overload
 
+import rpm
+
 from specfile.sections import Section
 from specfile.types import SupportsIndex
 
@@ -65,6 +67,27 @@ class ChangelogEntry:
         content = repr(self.content)
         following_lines = repr(self._following_lines)
         return f"ChangelogEntry('{self.header}', {content}, {following_lines})"
+
+    @property
+    def evr(self) -> Optional[str]:
+        """EVR (Epoch, Version, Release) of the entry."""
+        m = re.match(
+            r"""
+            ^.*
+            \s+                       # preceding whitespace
+            ((?P<sb>\[)|(?P<rb>\())?  # optional opening bracket
+            (?P<evr>(\d+:)?\S+-\S+?)  # EVR
+            (?(sb)\]|(?(rb)\)))       # matching closing bracket
+            :?                        # optional colon
+            \s*                       # optional following whitespace
+            $
+            """,
+            self.header,
+            re.VERBOSE,
+        )
+        if not m:
+            return None
+        return m.group("evr")
 
     @property
     def extended_timestamp(self) -> bool:
@@ -222,6 +245,54 @@ class Changelog(collections.UserList):
                 delete(index)
         else:
             delete(i)
+
+    def filter(
+        self, since: Optional[str] = None, until: Optional[str] = None
+    ) -> "Changelog":
+        """
+        Filters changelog entries with EVR between since and until.
+
+        Args:
+            since: Optional lower bound. If specified, entries with EVR higher
+              than or equal to this will be included.
+            until: Optional upper bound. If specified, entries with EVR lower
+              than or equal to this will be included.
+
+        Returns:
+            Filtered changelog.
+        """
+
+        def parse_evr(s):
+            if not s:
+                return "0", "0", ""
+            m = re.match(r"^(?:(\d+):)?(.*?)(?:-([^-]*))?$", s)
+            if not m:
+                return "0", "0", ""
+            return m.group(1) or "0", m.group(2), m.group(3) or ""
+
+        if since is None:
+            start_index = 0
+        else:
+            start_index = next(
+                (
+                    i
+                    for i, e in enumerate(self.data)
+                    if rpm.labelCompare(parse_evr(e.evr), parse_evr(since)) >= 0
+                ),
+                len(self.data) + 1,
+            )
+        if until is None:
+            end_index = len(self.data) + 1
+        else:
+            end_index = next(
+                (
+                    i + 1
+                    for i, e in reversed(list(enumerate(self.data)))
+                    if rpm.labelCompare(parse_evr(e.evr), parse_evr(until)) <= 0
+                ),
+                0,
+            )
+        return self[start_index:end_index]
 
     @staticmethod
     def parse(section: Section) -> "Changelog":
