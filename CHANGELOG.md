@@ -1,3 +1,8 @@
+# 0.7.0
+
+- It is now possible to filter changelog entries by specifying lower bound EVR, upper bound EVR or both. (#104)
+- Added support for filenames specified in source URL fragments, for example: `https://example.com/foo/1.0/download.cgi#/%{name}-%{version}.tar.gz` (#100)
+
 # 0.6.0
 
 - Switched to our own implementation of working with `%changelog` timestamps and removed dependency on arrow (#88)
