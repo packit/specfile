@@ -302,17 +302,22 @@ class RPM:
         Raises:
             RPMException, if parsing error occurs.
         """
-        Macros.reinit()
-        for name, value in macros or []:
-            Macros.define(name, value)
-        Macros.define("_sourcedir", str(sourcedir))
+
+        def reinit_macros():
+            Macros.reinit()
+            for name, value in macros or []:
+                Macros.define(name, value)
+            Macros.define("_sourcedir", str(sourcedir))
+
         with tempfile.NamedTemporaryFile() as tmp:
             tmp.write(content.encode())
             tmp.flush()
             try:
+                reinit_macros()
                 with capture_stderr() as stderr:
                     # do a non-build parse first
                     spec = rpm.spec(tmp.name, rpm.RPMSPEC_ANYARCH | rpm.RPMSPEC_FORCE)
+                reinit_macros()
                 with RPM.make_dummy_sources([s for s, _, _ in spec.sources], sourcedir):
                     with capture_stderr() as stderr:
                         # do a full parse with dummy sources
