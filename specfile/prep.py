@@ -4,11 +4,10 @@
 import collections
 import re
 from abc import ABC
-from typing import Any, Dict, List, Optional, Union, cast, overload
+from typing import Any, Dict, List, Optional, SupportsIndex, Union, cast, overload
 
 from specfile.macro_options import MacroOptions
 from specfile.sections import Section
-from specfile.types import SupportsIndex
 
 
 class PrepMacro(ABC):

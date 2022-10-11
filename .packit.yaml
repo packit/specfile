@@ -47,40 +47,12 @@ jobs:
     dist_git_branches:
       - fedora-all
       - epel-9
-  - job: propose_downstream
-    trigger: release
-    specfile_path: epel8/python-specfile.spec
-    files_to_sync:
-      - epel8/python-specfile.spec
-      - .packit.yaml
-      - src: plans/
-        dest: plans/
-      - src: .fmf/
-        dest: .fmf/
-    dist_git_branches:
-      - epel-8
 
   - job: copr_build
     trigger: pull_request
-    identifier: fedora-and-epel
     targets:
       - fedora-all
       - epel-9
-  - &copr_build_pr_epel8
-    job: copr_build
-    trigger: pull_request
-    specfile_path: epel8/python-specfile.spec
-    identifier: epel8
-    actions:
-      create-archive:
-        - python3 setup.py sdist --dist-dir ./epel8/
-        - bash -c "ls -1t ./epel8/*.tar.gz | head -n 1"
-      get-current-version: python3 setup.py --version
-      pre-sync:
-        # FMF has to be installed on system where you are calling this tool.
-        - python3 plans/git_reference.py
-    targets:
-      - epel-8
 
   - job: copr_build
     trigger: commit
@@ -88,14 +60,6 @@ jobs:
     targets:
       - fedora-all
       - epel-9
-    project: packit-dev
-    list_on_homepage: True
-    preserve_project: True
-  - <<: *copr_build_pr_epel8
-    trigger: commit
-    branch: main
-    targets:
-      - epel-8
     project: packit-dev
     list_on_homepage: True
     preserve_project: True
@@ -109,27 +73,12 @@ jobs:
     project: packit-stable
     list_on_homepage: True
     preserve_project: True
-  - <<: *copr_build_pr_epel8
-    trigger: commit
-    branch: stable
-    targets:
-      - epel-8
-    project: packit-stable
-    list_on_homepage: True
-    preserve_project: True
 
   - job: copr_build
     trigger: release
     targets:
       - fedora-all
       - epel-9
-    project: packit-releases
-    list_on_homepage: True
-    preserve_project: True
-  - <<: *copr_build_pr_epel8
-    trigger: release
-    targets:
-      - epel-8
     project: packit-releases
     list_on_homepage: True
     preserve_project: True
@@ -142,11 +91,9 @@ jobs:
     dist_git_branches:
       - fedora-all
       - epel-9
-      - epel-8
   - job: bodhi_update
     trigger: commit
     packit_instances: ["stg"]
     dist_git_branches:
       - fedora-branched # rawhide updates are created automatically
       - epel-9
-      - epel-8

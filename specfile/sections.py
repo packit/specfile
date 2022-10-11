@@ -3,9 +3,7 @@
 
 import collections
 import re
-from typing import List, Optional, Union, overload
-
-from specfile.types import SupportsIndex
+from typing import List, Optional, SupportsIndex, Union, overload
 
 # valid section names as defined in build/parseSpec.c in RPM source
 SECTION_NAMES = {

@@ -2,12 +2,11 @@
 # SPDX-License-Identifier: MIT
 
 import collections
-from typing import List, Optional, overload
+from typing import List, Optional, SupportsIndex, overload
 
 from specfile.rpm import Macros
 from specfile.sections import Section
 from specfile.tags import Comments
-from specfile.types import SupportsIndex
 
 
 class SourcelistEntry:

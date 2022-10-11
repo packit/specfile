@@ -4,10 +4,9 @@
 import collections
 import itertools
 import re
-from typing import Any, Iterable, List, Optional, Union, overload
+from typing import Any, Iterable, List, Optional, SupportsIndex, Union, overload
 
 from specfile.sections import Section
-from specfile.types import SupportsIndex
 
 # valid tag names as defined in build/parsePreamble.c in RPM source
 TAG_NAMES = {

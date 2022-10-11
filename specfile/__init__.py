@@ -5,13 +5,9 @@
 A library for parsing and manipulating RPM spec files
 """
 
-from specfile.specfile import Specfile
+from importlib.metadata import PackageNotFoundError, distribution
 
-try:
-    from importlib.metadata import PackageNotFoundError, distribution
-except ImportError:
-    from importlib_metadata import PackageNotFoundError  # type: ignore[no-redef]
-    from importlib_metadata import distribution  # type: ignore[no-redef]
+from specfile.specfile import Specfile
 
 try:
     __version__ = distribution(__name__).version

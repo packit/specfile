@@ -3,9 +3,7 @@
 
 import collections
 import re
-from typing import List, Optional, Tuple, Union, overload
-
-from specfile.types import SupportsIndex
+from typing import List, Optional, SupportsIndex, Tuple, Union, overload
 
 
 class MacroDefinition:

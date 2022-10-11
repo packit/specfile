@@ -69,11 +69,7 @@ class MacroSubstitution(Node):
     """Node representing macro substitution, e.g. %version."""
 
     def __init__(self, body: str) -> None:
-        tokens = re.split(r"([?!]*)", body, maxsplit=1)
-        if len(tokens) == 1:
-            self.prefix, self.name = "", tokens[0]
-        else:
-            _, self.prefix, self.name = tokens
+        _, self.prefix, self.name = re.split(r"([?!]*)", body, maxsplit=1)
 
     def __repr__(self) -> str:
         return f"MacroSubstitution('{self.prefix}{self.name}')"
@@ -91,11 +87,7 @@ class EnclosedMacroSubstitution(Node):
     """Node representing macro substitution enclosed in brackets, e.g. %{?dist}."""
 
     def __init__(self, body: str) -> None:
-        tokens = re.split(r"([?!]*)", body, maxsplit=1)
-        if len(tokens) == 1:
-            self.prefix, rest = "", tokens[0]
-        else:
-            _, self.prefix, rest = tokens
+        _, self.prefix, rest = re.split(r"([?!]*)", body, maxsplit=1)
         self.name: str
         self.args: List[str]
         self.name, *self.args = rest.split()
@@ -122,11 +114,7 @@ class ConditionalMacroExpansion(Node):
     """Node representing conditional macro expansion, e.g. %{?prerel:0.}."""
 
     def __init__(self, condition: str, body: List[Node]) -> None:
-        tokens = re.split(r"([?!]*)", condition, maxsplit=1)
-        if len(tokens) == 1:
-            self.prefix, self.name = "", tokens[0]
-        else:
-            _, self.prefix, self.name = tokens
+        _, self.prefix, self.name = re.split(r"([?!]*)", condition, maxsplit=1)
         self.body = body
 
     def __repr__(self) -> str:
