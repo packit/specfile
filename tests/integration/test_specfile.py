@@ -279,3 +279,57 @@ def test_autochangelog(spec_rpmautospec):
     spec.add_changelog_entry("test")
     with spec.sections() as sections:
         assert sections.changelog == changelog
+
+
+def test_update_tag(spec_macros):
+    spec = Specfile(spec_macros)
+    spec.update_tag("Version", "1.2.3~beta4")
+    with spec.macro_definitions() as md:
+        assert md.majorver.body == "1"
+        assert md.minorver.body == "2"
+        assert md.patchver.body == "3"
+        assert md.prever.body == "beta4"
+        assert md.package_version.body == "%{majorver}.%{minorver}.%{patchver}"
+    assert spec.version == "%{package_version}%{?prever:~%{prever}}"
+    spec.update_tag("Version", "4.0~alpha1")
+    with spec.macro_definitions() as md:
+        assert md.majorver.body == "1"
+        assert md.minorver.body == "2"
+        assert md.patchver.body == "3"
+        assert md.prever.body == "alpha1"
+        assert md.package_version.body == "4.0"
+    assert spec.version == "%{package_version}%{?prever:~%{prever}}"
+    spec.update_tag("Version", "5.3.3")
+    with spec.macro_definitions() as md:
+        assert md.majorver.body == "1"
+        assert md.minorver.body == "2"
+        assert md.patchver.body == "3"
+        assert md.prever.body == "alpha1"
+        assert md.package_version.body == "4.0"
+    assert spec.version == "5.3.3"
+    spec.update_tag(
+        "Source0",
+        "https://example.com/archived_releases/test/v6.0.0/test-v6.0.0.tar.xz",
+    )
+    assert spec.version == "6.0.0"
+    with spec.sources() as sources:
+        assert (
+            sources[0].location
+            == "https://example.com/archived_releases/%{name}/v%{version}/"
+            "%{name}-v%{version}.tar.xz"
+        )
+    spec.update_tag(
+        "Source0", "https://example.com/archived_releases/test-v7.2.1.tar.xz"
+    )
+    assert spec.version == "6.0.0"
+    with spec.sources() as sources:
+        assert (
+            sources[0].location
+            == "https://example.com/archived_releases/test-v7.2.1.tar.xz"
+        )
+    spec.update_tag("Source1", "tests-86.tar.xz")
+    with spec.macro_definitions() as md:
+        assert md.majorver.body == "1"
+        assert md.minorver.body == "2"
+    with spec.sources() as sources:
+        assert sources[1].location == "tests-86.tar.xz"

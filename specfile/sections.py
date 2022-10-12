@@ -3,9 +3,7 @@
 
 import collections
 import re
-from typing import List, Optional, overload
-
-from specfile.types import SupportsIndex
+from typing import List, Optional, SupportsIndex, Union, overload
 
 # valid section names as defined in build/parseSpec.c in RPM source
 SECTION_NAMES = {
@@ -98,6 +96,11 @@ class Section(collections.UserList):
     def copy(self) -> "Section":
         return Section(self.name, self.data)
 
+    def get_raw_data(self) -> List[str]:
+        if self.name == PREAMBLE:
+            return self.data
+        return [f"%{self.name}"] + self.data
+
 
 class Sections(collections.UserList):
     """
@@ -140,7 +143,7 @@ class Sections(collections.UserList):
         except ValueError:
             raise AttributeError(name)
 
-    def __setattr__(self, name: str, value: List[str]) -> None:
+    def __setattr__(self, name: str, value: Union[Section, List[str]]) -> None:
         if name.split()[0].lower() not in SECTION_NAMES:
             return super().__setattr__(name, value)
         try:
@@ -170,12 +173,12 @@ class Sections(collections.UserList):
         raise ValueError
 
     @staticmethod
-    def parse(s: str) -> "Sections":
+    def parse(lines: List[str]) -> "Sections":
         """
-        Parses given string as spec file content.
+        Parses given lines into sections.
 
         Args:
-            s: String to parse.
+            lines: Lines to parse.
 
         Returns:
             Constructed instance of `Sections` class.
@@ -184,7 +187,6 @@ class Sections(collections.UserList):
             re.compile(rf"^%{re.escape(n)}\b.*", re.IGNORECASE) for n in SECTION_NAMES
         ]
         section_starts = []
-        lines = s.splitlines()
         for i, line in enumerate(lines):
             if line.startswith("%"):
                 for r in section_name_regexes:
@@ -196,3 +198,9 @@ class Sections(collections.UserList):
         for start, end in zip(section_starts, section_starts[1:]):
             data.append(Section(lines[start][1:], lines[start + 1 : end]))
         return Sections(data)
+
+    def get_raw_data(self) -> List[str]:
+        result = []
+        for section in self.data:
+            result.extend(section.get_raw_data())
+        return result

@@ -4,10 +4,9 @@
 import collections
 import itertools
 import re
-from typing import Any, Iterable, List, Optional, Union, overload
+from typing import Any, Iterable, List, Optional, SupportsIndex, Union, overload
 
 from specfile.sections import Section
-from specfile.types import SupportsIndex
 
 # valid tag names as defined in build/parsePreamble.c in RPM source
 TAG_NAMES = {
@@ -384,7 +383,7 @@ class Tags(collections.UserList):
         except ValueError:
             raise AttributeError(name)
 
-    def __setattr__(self, name: str, value: str) -> None:
+    def __setattr__(self, name: str, value: Union[Tag, str]) -> None:
         if name.lower().rstrip("0123456789") not in TAG_NAMES:
             return super().__setattr__(name, value)
         try:

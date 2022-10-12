@@ -6,17 +6,20 @@ import datetime
 import re
 import subprocess
 import types
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterator, List, Optional, Tuple, Type, Union
 
 from specfile.changelog import Changelog, ChangelogEntry
 from specfile.exceptions import SourceNumberException, SpecfileException
+from specfile.macro_definitions import MacroDefinition, MacroDefinitions
 from specfile.prep import Prep
 from specfile.rpm import RPM, Macros
-from specfile.sections import Sections
+from specfile.sections import Section, Sections
 from specfile.sourcelist import Sourcelist
 from specfile.sources import Patches, Sources
-from specfile.tags import Tags
+from specfile.tags import Tag, Tags
+from specfile.value_parser import SUBSTITUTION_GROUP_PREFIX, ValueParser
 
 
 class Specfile:
@@ -41,9 +44,18 @@ class Specfile:
         self.sourcedir = Path(sourcedir or self.path.parent)
         self.autosave = autosave
         self.macros = macros.copy() if macros is not None else []
-        self._sections = Sections.parse(self.path.read_text())
-        self._spec = RPM.parse(str(self._sections), self.sourcedir, self.macros)
-        self._parsed_sections = Sections.parse(self._spec.parsed)
+        self._lines = self.path.read_text().splitlines()
+        self._spec = RPM.parse(str(self), self.sourcedir, self.macros)
+
+    def __repr__(self) -> str:
+        path = repr(self.path)
+        sourcedir = repr(self.sourcedir)
+        autosave = repr(self.autosave)
+        macros = repr(self.macros)
+        return f"Specfile({path}, {sourcedir}, {autosave}, {macros})"
+
+    def __str__(self) -> str:
+        return "\n".join(self._lines) + "\n"
 
     def __enter__(self) -> "Specfile":
         return self
@@ -58,13 +70,12 @@ class Specfile:
 
     def reload(self) -> None:
         """Reload the spec file content."""
-        self._sections = Sections.parse(self.path.read_text())
-        self._spec = RPM.parse(str(self._sections), self.sourcedir, self.macros)
-        self._parsed_sections = Sections.parse(self._spec.parsed)
+        self._lines = self.path.read_text().splitlines()
+        self._spec = RPM.parse(str(self), self.sourcedir, self.macros)
 
     def save(self) -> None:
         """Save the spec file content."""
-        self.path.write_text(str(self._sections))
+        self.path.write_text(str(self))
 
     def expand(
         self, expression: str, extra_macros: Optional[List[Tuple[str, str]]] = None
@@ -79,10 +90,38 @@ class Specfile:
         Returns:
             Expanded expression.
         """
-        RPM.parse(
-            str(self._sections), self.sourcedir, self.macros + (extra_macros or [])
-        )
+        RPM.parse(str(self), self.sourcedir, self.macros + (extra_macros or []))
         return Macros.expand(expression)
+
+    @contextlib.contextmanager
+    def lines(self) -> Iterator[List[str]]:
+        """
+        Context manager for accessing spec file lines.
+
+        Yields:
+            Spec file lines as list of strings.
+        """
+        try:
+            yield self._lines
+        finally:
+            self._spec = RPM.parse(str(self), self.sourcedir, self.macros)
+            if self.autosave:
+                self.save()
+
+    @contextlib.contextmanager
+    def macro_definitions(self) -> Iterator[MacroDefinitions]:
+        """
+        Context manager for accessing macro definitions.
+
+        Yields:
+            Macro definitions in the spec file as `MacroDefinitions` object.
+        """
+        with self.lines() as lines:
+            macro_definitions = MacroDefinitions.parse(lines)
+            try:
+                yield macro_definitions
+            finally:
+                lines[:] = macro_definitions.get_raw_data()
 
     @contextlib.contextmanager
     def sections(self) -> Iterator[Sections]:
@@ -92,31 +131,47 @@ class Specfile:
         Yields:
             Spec file sections as `Sections` object.
         """
-        yield self._sections
-        self._spec = RPM.parse(str(self._sections), self.sourcedir, self.macros)
-        self._parsed_sections = Sections.parse(self._spec.parsed)
-        if self.autosave:
-            self.save()
+        with self.lines() as lines:
+            sections = Sections.parse(lines)
+            try:
+                yield sections
+            finally:
+                lines[:] = sections.get_raw_data()
+
+    @property
+    def parsed_sections(self) -> Sections:
+        """Parsed spec file sections."""
+        return Sections.parse(self._spec.parsed.splitlines())
 
     @contextlib.contextmanager
-    def tags(self, section: str = "package") -> Iterator[Tags]:
+    def tags(self, section: Union[str, Section] = "package") -> Iterator[Tags]:
         """
         Context manager for accessing tags in a specified section.
 
         Args:
-            section: Name of the requested section. Defaults to preamble.
+            section: Name of the requested section or an existing `Section` instance.
+              Defaults to preamble.
 
         Yields:
             Tags in the section as `Tags` object.
         """
-        with self.sections() as sections:
-            raw_section = getattr(sections, section)
-            parsed_section = getattr(self._parsed_sections, section, None)
+        if isinstance(section, Section):
+            raw_section = section
+            parsed_section = getattr(self.parsed_sections, section.name, None)
             tags = Tags.parse(raw_section, parsed_section)
             try:
                 yield tags
             finally:
                 raw_section.data = tags.get_raw_section_data()
+        else:
+            with self.sections() as sections:
+                raw_section = getattr(sections, section)
+                parsed_section = getattr(self.parsed_sections, section, None)
+                tags = Tags.parse(raw_section, parsed_section)
+                try:
+                    yield tags
+                finally:
+                    raw_section.data = tags.get_raw_section_data()
 
     @contextlib.contextmanager
     def changelog(self) -> Iterator[Optional[Changelog]]:
@@ -176,7 +231,7 @@ class Specfile:
         Yields:
             Spec file sources as `Sources` object.
         """
-        with self.sections() as sections, self.tags() as tags:
+        with self.sections() as sections, self.tags(sections.package) as tags:
             sourcelists = [
                 (s, Sourcelist.parse(s)) for s in sections if s.name == "sourcelist"
             ]
@@ -210,7 +265,7 @@ class Specfile:
         Yields:
             Spec file patches as `Patches` object.
         """
-        with self.sections() as sections, self.tags() as tags:
+        with self.sections() as sections, self.tags(sections.package) as tags:
             patchlists = [
                 (s, Sourcelist.parse(s)) for s in sections if s.name == "patchlist"
             ]
@@ -461,3 +516,118 @@ class Specfile:
             index = patches.insert_numbered(number, location)
             if comment:
                 patches[index].comments.extend(comment.splitlines())
+
+    def update_value(
+        self, value: str, requested_value: str, protected_entities: Optional[str] = None
+    ) -> str:
+        """
+        Updates a value from within the context of the spec file with a new value,
+        but tries to preserve substitutions of locally defined macros and tags,
+        updating the respective macro definitions and tag values instead.
+
+        Args:
+            value: Value to update.
+            requested_value: Requested new value.
+            protected_entities: Regular expression specifying protected tags and macro definitions,
+              ensuring their values won't be updated.
+
+        Returns:
+            Updated value. Can be equal to the original value.
+        """
+
+        @dataclass
+        class Entity:
+            value: str
+            type: Type
+            locked: bool = False
+            updated: bool = False
+
+        protected_regex = re.compile(
+            # (?!) doesn't match anything
+            protected_entities or "(?!)",
+            re.IGNORECASE,
+        )
+        # collect modifiable entities
+        entities = {}
+        with self.macro_definitions() as macro_definitions:
+            entities.update(
+                {
+                    md.name: Entity(md.body, type(md))
+                    for md in macro_definitions
+                    if not protected_regex.match(md.name)
+                    and not md.name.endswith(")")  # skip macro definitions with options
+                }
+            )
+        # order matters here - if there is a macro definition redefining a tag,
+        # we want to update the tag, not the macro definition
+        with self.tags() as tags:
+            entities.update(
+                {
+                    t.name.lower(): Entity(t.value, type(t))
+                    for t in tags
+                    if not protected_regex.match(t.name)
+                }
+            )
+        # tags can be referenced as %{tag} or %{TAG}
+        entities.update({k.upper(): v for k, v in entities.items() if v.type == Tag})
+
+        def update(value, requested_value):
+            regex, template = ValueParser.construct_regex(value, entities.keys())
+            m = regex.match(requested_value)
+            if m:
+                d = m.groupdict()
+                for grp, val in d.items():
+                    if grp.startswith(SUBSTITUTION_GROUP_PREFIX):
+                        continue
+                    if entities[grp].locked:
+                        # avoid infinite recursion
+                        return requested_value
+                    entities[grp].locked = True
+                    try:
+                        entities[grp].value = update(entities[grp].value, val)
+                    finally:
+                        entities[grp].locked = False
+                        entities[grp].updated = True
+                return template.substitute(d)
+            # no match, simply return the requested value
+            return requested_value
+
+        result = update(value, requested_value)
+        # synchronize back any changes
+        with self.macro_definitions() as macro_definitions:
+            for n, v in [
+                (n, v)
+                for n, v in entities.items()
+                if v.updated and v.type == MacroDefinition
+            ]:
+                getattr(macro_definitions, n).body = v.value
+        with self.tags() as tags:
+            for n, v in [
+                (n, v) for n, v in entities.items() if v.updated and v.type == Tag
+            ]:
+                getattr(tags, n).value = v.value
+        return result
+
+    def update_tag(
+        self, name: str, value: str, protected_entities: str = ".*name"
+    ) -> None:
+        """
+        Updates value of the given tag, trying to preserve substitutions
+        of locally defined macros and tags, updating the respective macro definitions
+        and tag values instead.
+
+        Args:
+            name: Tag name.
+            value: Requested new value.
+            protected_entities: Regular expression specifying protected tags and macro definitions,
+              ensuring their values won't be updated.
+        """
+        with self.tags() as tags:
+            original_value = getattr(tags, name).value
+        # we can't use update_value() within the context manager, because any changes
+        # made by it to tags or macro definitions would be thrown away
+        updated_value = self.update_value(
+            original_value, value, protected_entities=protected_entities
+        )
+        with self.tags() as tags:
+            getattr(tags, name).value = updated_value

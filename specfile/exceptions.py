@@ -31,6 +31,10 @@ class MacroOptionsException(SpecfileException):
     """Exception related to processing macro options."""
 
 
+class UnterminatedMacroException(SpecfileException):
+    """Exception related to parsing unterminated macro."""
+
+
 class DuplicateSourceException(SpecfileException):
     """Exception related to adding a duplicate source."""
 

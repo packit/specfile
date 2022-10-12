@@ -20,7 +20,7 @@ jobs:
         uses: packit/prepare-release@v0
         with:
           version: ${{ inputs.version }}
-          specfiles: fedora/python-specfile.spec,epel8/python-specfile.spec
+          specfiles: fedora/python-specfile.spec
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASEBOT_GITHUB_TOKEN }}
       - name: Create Pull Request

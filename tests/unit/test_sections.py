@@ -33,7 +33,20 @@ def test_get():
 
 def test_parse():
     sections = Sections.parse(
-        "0\n\n%prep\n0\n1\n2\n\n%package x\n%files y\n0\n%changelog"
+        [
+            "0",
+            "",
+            "",
+            "%prep",
+            "0",
+            "1",
+            "2",
+            "",
+            "%package x",
+            "%files y",
+            "0",
+            "%changelog",
+        ]
     )
     assert sections[0][0] == "0"
     assert sections[1].name == "prep"
@@ -44,7 +57,9 @@ def test_parse():
 
 
 def test_parse_case_insensitive():
-    sections = Sections.parse("0\n\n%Prep\n0\n1\n2\n\n%pAckage x\nRequires: bar")
+    sections = Sections.parse(
+        ["0", "", "%Prep", "0", "1", "2", "", "%pAckage x", "Requires: bar"]
+    )
     assert sections[0][0] == "0"
     assert sections[1].name == "Prep"
     assert sections.prep == ["0", "1", "2", ""]

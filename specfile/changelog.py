@@ -4,12 +4,11 @@
 import collections
 import datetime
 import re
-from typing import List, Optional, Union, overload
+from typing import List, Optional, SupportsIndex, Union, overload
 
 import rpm
 
 from specfile.sections import Section
-from specfile.types import SupportsIndex
 
 WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 MONTHS = (
