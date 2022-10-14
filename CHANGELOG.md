@@ -1,3 +1,6 @@
+# 0.8.0
+
+
 # 0.7.0
 
 - It is now possible to filter changelog entries by specifying lower bound EVR, upper bound EVR or both. (#104)
