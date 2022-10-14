@@ -1,3 +1,7 @@
+# 0.8.0
+
+- Added `Specfile.update_tag()` method that allows updating tag values while trying to preserve macro expansions. You can watch a demo on [YouTube](https://youtu.be/yzMfBPdFXZY). (#101)
+
 # 0.7.0
 
 - It is now possible to filter changelog entries by specifying lower bound EVR, upper bound EVR or both. (#104)
