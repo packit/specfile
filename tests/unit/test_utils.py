@@ -3,7 +3,7 @@
 
 import pytest
 
-from specfile.utils import get_filename_from_location
+from specfile.utils import EVR, NEVR, get_filename_from_location
 
 
 @pytest.mark.parametrize(
@@ -29,3 +29,55 @@ from specfile.utils import get_filename_from_location
 )
 def test_get_filename_from_location(location, filename):
     assert get_filename_from_location(location) == filename
+
+
+@pytest.mark.parametrize(
+    "evr, result",
+    [
+        ("0", EVR(version="0")),
+        ("12.0-1", EVR(version="12.0", release="1")),
+        ("2:56.8-5", EVR(epoch=2, version="56.8", release="5")),
+        ("0.8.0-1.fc37", EVR(version="0.8.0", release="1.fc37")),
+        ("0.5.0~rc2-1.el9", EVR(version="0.5.0~rc2", release="1.el9")),
+        ("7.3-0.2.rc1.fc38", EVR(version="7.3", release="0.2.rc1.fc38")),
+        (
+            "7.3~rc1^20200701gdeadf00f-12.fc38",
+            EVR(version="7.3~rc1^20200701gdeadf00f", release="12.fc38"),
+        ),
+    ],
+)
+def test_EVR_from_string(evr, result):
+    assert EVR.from_string(evr) == result
+
+
+@pytest.mark.parametrize(
+    "nevr, result",
+    [
+        ("package-0", NEVR(name="package", version="0")),
+        ("package-12.0-1", NEVR(name="package", version="12.0", release="1")),
+        (
+            "package-2:56.8-5",
+            NEVR(name="package", epoch=2, version="56.8", release="5"),
+        ),
+        (
+            "package-0.8.0-1.fc37",
+            NEVR(name="package", version="0.8.0", release="1.fc37"),
+        ),
+        (
+            "package-0.5.0~rc2-1.el9",
+            NEVR(name="package", version="0.5.0~rc2", release="1.el9"),
+        ),
+        (
+            "package-devel-7.3-0.2.rc1.fc38",
+            NEVR(name="package-devel", version="7.3", release="0.2.rc1.fc38"),
+        ),
+        (
+            "package-7.3~rc1^20200701gdeadf00f-12.fc38",
+            NEVR(
+                name="package", version="7.3~rc1^20200701gdeadf00f", release="12.fc38"
+            ),
+        ),
+    ],
+)
+def test_NEVR_from_string(nevr, result):
+    assert NEVR.from_string(nevr) == result
