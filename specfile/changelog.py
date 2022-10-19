@@ -8,7 +8,9 @@ from typing import List, Optional, SupportsIndex, Union, overload
 
 import rpm
 
+from specfile.exceptions import SpecfileException
 from specfile.sections import Section
+from specfile.utils import EVR
 
 WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 MONTHS = (
@@ -262,12 +264,11 @@ class Changelog(collections.UserList):
         """
 
         def parse_evr(s):
-            if not s:
+            try:
+                evr = EVR.from_string(s)
+            except SpecfileException:
                 return "0", "0", ""
-            m = re.match(r"^(?:(\d+):)?(.*?)(?:-([^-]*))?$", s)
-            if not m:
-                return "0", "0", ""
-            return m.group(1) or "0", m.group(2), m.group(3) or ""
+            return str(evr.epoch), evr.version or "0", evr.release
 
         if since is None:
             start_index = 0
