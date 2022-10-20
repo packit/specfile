@@ -87,8 +87,8 @@ class Sourcelist(collections.UserList):
     def copy(self) -> "Sourcelist":
         return Sourcelist(self.data, self._remainder)
 
-    @staticmethod
-    def parse(section: Section) -> "Sourcelist":
+    @classmethod
+    def parse(cls, section: Section) -> "Sourcelist":
         """
         Parses a section into sources/patches.
 
@@ -106,7 +106,7 @@ class Sourcelist(collections.UserList):
                 buffer = []
             else:
                 buffer.append(line)
-        return Sourcelist(data, buffer)
+        return cls(data, buffer)
 
     def get_raw_section_data(self) -> List[str]:
         """
