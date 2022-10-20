@@ -139,8 +139,9 @@ class ChangelogEntry:
             return ""
         return m.group("wsp") + (m.group("zp") or "")
 
-    @staticmethod
+    @classmethod
     def assemble(
+        cls,
         timestamp: Union[datetime.date, datetime.datetime],
         author: str,
         content: List[str],
@@ -178,7 +179,7 @@ class ChangelogEntry:
         header += f" {timestamp:%Y} {author}"
         if evr is not None:
             header += f" - {evr}"
-        return ChangelogEntry(header, content, [""] if append_newline else None)
+        return cls(header, content, [""] if append_newline else None)
 
 
 class Changelog(collections.UserList):
@@ -294,8 +295,8 @@ class Changelog(collections.UserList):
             )
         return self[start_index:end_index]
 
-    @staticmethod
-    def parse(section: Section) -> "Changelog":
+    @classmethod
+    def parse(cls, section: Section) -> "Changelog":
         """
         Parses a %changelog section.
 
@@ -326,7 +327,7 @@ class Changelog(collections.UserList):
                 predecessor.append(line)
         if header:
             data.insert(0, ChangelogEntry(header, content, following_lines))
-        return Changelog(data, predecessor)
+        return cls(data, predecessor)
 
     def get_raw_section_data(self) -> List[str]:
         """

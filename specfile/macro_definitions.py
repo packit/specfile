@@ -162,8 +162,8 @@ class MacroDefinitions(collections.UserList):
                 return i
         raise ValueError
 
-    @staticmethod
-    def parse(lines: List[str]) -> "MacroDefinitions":
+    @classmethod
+    def parse(cls, lines: List[str]) -> "MacroDefinitions":
         """
         Parses given lines into macro defintions.
 
@@ -213,7 +213,7 @@ class MacroDefinitions(collections.UserList):
                 buffer = []
             else:
                 buffer.append(line)
-        return MacroDefinitions(data, buffer)
+        return cls(data, buffer)
 
     def get_raw_data(self) -> List[str]:
         result = []

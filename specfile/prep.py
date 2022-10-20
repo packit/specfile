@@ -319,8 +319,8 @@ class Prep(collections.abc.Container):
         if index:
             del self.macros[index]
 
-    @staticmethod
-    def parse(section: Section) -> "Prep":
+    @classmethod
+    def parse(cls, section: Section) -> "Prep":
         """
         Parses a section into a `Prep` object.
 
@@ -350,25 +350,27 @@ class Prep(collections.abc.Container):
                     m.group("o"),
                 )
                 prefix, suffix = line[: m.start("m")], line[m.end("o") :]
-                cls = next(
+                klass = next(
                     (
-                        cls
-                        for cls in PrepMacro.__subclasses__()
-                        if name.startswith(cls.CANONICAL_NAME)
+                        klass
+                        for klass in PrepMacro.__subclasses__()
+                        if name.startswith(klass.CANONICAL_NAME)
                     ),
                     None,
                 )
-                if not cls:
+                if not klass:
                     buffer.append(line)
                     continue
                 options = MacroOptions(
-                    MacroOptions.tokenize(option_string), cls.OPTSTRING, cls.DEFAULTS
+                    MacroOptions.tokenize(option_string),
+                    klass.OPTSTRING,
+                    klass.DEFAULTS,
                 )
-                data.append(cls(name, options, delimiter, prefix, suffix, buffer))
+                data.append(klass(name, options, delimiter, prefix, suffix, buffer))
                 buffer = []
             else:
                 buffer.append(line)
-        return Prep(PrepMacros(data, buffer))
+        return cls(PrepMacros(data, buffer))
 
     def get_raw_section_data(self) -> List[str]:
         """

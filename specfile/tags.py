@@ -190,8 +190,8 @@ class Comments(collections.UserList):
                 item = Comment(item)
             self.data.append(item)
 
-    @staticmethod
-    def parse(lines: List[str]) -> "Comments":
+    @classmethod
+    def parse(cls, lines: List[str]) -> "Comments":
         """
         Parses list of lines into comments.
 
@@ -210,7 +210,7 @@ class Comments(collections.UserList):
                 preceding_lines.insert(0, line)
                 continue
             comments.insert(0, Comment(*reversed(m.groups())))
-        return Comments(comments, preceding_lines)
+        return cls(comments, preceding_lines)
 
     def get_raw_data(self) -> List[str]:
         return self._preceding_lines + [str(i) for i in self.data]
@@ -427,8 +427,10 @@ class Tags(collections.UserList):
             item.comments._preceding_lines[0:0] = lines[: index + 1]
             del lines[: index + 1]
 
-    @staticmethod
-    def parse(raw_section: Section, parsed_section: Optional[Section] = None) -> "Tags":
+    @classmethod
+    def parse(
+        cls, raw_section: Section, parsed_section: Optional[Section] = None
+    ) -> "Tags":
         """
         Parses a section into tags.
 
@@ -475,7 +477,7 @@ class Tags(collections.UserList):
                 buffer = []
             else:
                 buffer.append(line)
-        return Tags(data, buffer)
+        return cls(data, buffer)
 
     def get_raw_section_data(self) -> List[str]:
         """

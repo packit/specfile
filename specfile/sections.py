@@ -172,8 +172,8 @@ class Sections(collections.UserList):
                 return i
         raise ValueError
 
-    @staticmethod
-    def parse(lines: List[str]) -> "Sections":
+    @classmethod
+    def parse(cls, lines: List[str]) -> "Sections":
         """
         Parses given lines into sections.
 
@@ -197,7 +197,7 @@ class Sections(collections.UserList):
         data = [Section(PREAMBLE, lines[: section_starts[0]])]
         for start, end in zip(section_starts, section_starts[1:]):
             data.append(Section(lines[start][1:], lines[start + 1 : end]))
-        return Sections(data)
+        return cls(data)
 
     def get_raw_data(self) -> List[str]:
         result = []
