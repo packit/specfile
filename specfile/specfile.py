@@ -233,7 +233,9 @@ class Specfile:
         """
         with self.sections() as sections, self.tags(sections.package) as tags:
             sourcelists = [
-                (s, Sourcelist.parse(s)) for s in sections if s.name == "sourcelist"
+                (s, Sourcelist.parse(s, context=self))
+                for s in sections
+                if s.name == "sourcelist"
             ]
             try:
                 yield Sources(
@@ -242,6 +244,7 @@ class Specfile:
                     allow_duplicates,
                     default_to_implicit_numbering,
                     default_source_number_digits,
+                    context=self,
                 )
             finally:
                 for section, sourcelist in sourcelists:
@@ -267,7 +270,9 @@ class Specfile:
         """
         with self.sections() as sections, self.tags(sections.package) as tags:
             patchlists = [
-                (s, Sourcelist.parse(s)) for s in sections if s.name == "patchlist"
+                (s, Sourcelist.parse(s, context=self))
+                for s in sections
+                if s.name == "patchlist"
             ]
             try:
                 yield Patches(
@@ -276,6 +281,7 @@ class Specfile:
                     allow_duplicates,
                     default_to_implicit_numbering,
                     default_source_number_digits,
+                    context=self,
                 )
             finally:
                 for section, patchlist in patchlists:
@@ -572,7 +578,9 @@ class Specfile:
         entities.update({k.upper(): v for k, v in entities.items() if v.type == Tag})
 
         def update(value, requested_value):
-            regex, template = ValueParser.construct_regex(value, entities.keys())
+            regex, template = ValueParser.construct_regex(
+                value, entities.keys(), context=self
+            )
             m = regex.match(requested_value)
             if m:
                 d = m.groupdict()

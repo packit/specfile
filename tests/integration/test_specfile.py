@@ -333,3 +333,14 @@ def test_update_tag(spec_macros):
         assert md.minorver.body == "2"
     with spec.sources() as sources:
         assert sources[1].location == "tests-86.tar.xz"
+
+
+def test_multiple_instances(spec_minimal, spec_autosetup):
+    spec1 = Specfile(spec_minimal)
+    spec2 = Specfile(spec_autosetup)
+    spec1.version = "14.2"
+    assert spec2.expanded_version == "0.1"
+    with spec2.sources() as sources:
+        assert sources[0].expanded_location == "test-0.1.tar.xz"
+        sources.append("tests-%{version}.tar.xz")
+        assert sources[1].expanded_location == "tests-0.1.tar.xz"

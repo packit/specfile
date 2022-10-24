@@ -5,11 +5,14 @@ import itertools
 import re
 from abc import ABC
 from string import Template
-from typing import List, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple
 from typing.re import Pattern
 
 from specfile.exceptions import UnterminatedMacroException
 from specfile.rpm import Macros
+
+if TYPE_CHECKING:
+    from specfile.specfile import Specfile
 
 SUBSTITUTION_GROUP_PREFIX = "sub_"
 
@@ -227,7 +230,10 @@ class ValueParser:
 
     @classmethod
     def construct_regex(
-        cls, value: str, modifiable_entities: List[str]
+        cls,
+        value: str,
+        modifiable_entities: List[str],
+        context: Optional["Specfile"] = None,
     ) -> Tuple[Pattern, Template]:
         """
         Parses the given value and constructs a regex that allows matching
@@ -250,10 +256,16 @@ class ValueParser:
             value: Value string to parse.
             modifiable_entities: Names of modifiable entities, i.e. local macro definitions
               and tags.
+            context: `Specfile` instance that defines the context for macro expansions.
 
         Returns:
             Tuple in the form of (constructed regex, corresponding template).
         """
+
+        def expand(s):
+            if context:
+                return context.expand(s)
+            return Macros.expand(s)
 
         def flatten(nodes):
             # get rid of conditional macro expansions
@@ -261,7 +273,7 @@ class ValueParser:
             for node in nodes:
                 if isinstance(node, ConditionalMacroExpansion):
                     # evaluate the condition
-                    if Macros.expand(f"%{node.prefix}{node.name}"):
+                    if expand(f"%{node.prefix}{node.name}"):
                         result.append(f"%{{{node.prefix}{node.name}:")
                         result.extend(flatten(node.body))
                         result.append("}")
@@ -281,13 +293,13 @@ class ValueParser:
             elif isinstance(node, StringLiteral):
                 tokens.append(("v", node.value, ""))
             elif isinstance(node, (ShellExpansion, ExpressionExpansion)):
-                const = Macros.expand(str(node))
+                const = expand(str(node))
                 tokens.append(("c", const, str(node)))
             elif isinstance(node, MacroSubstitution):
                 if node.prefix.count("!") % 2 == 0 and node.name in modifiable_entities:
                     tokens.append(("g", node.name, str(node)))
                 else:
-                    const = Macros.expand(str(node))
+                    const = expand(str(node))
                     tokens.append(("c", const, str(node)))
             elif isinstance(node, EnclosedMacroSubstitution):
                 if (
@@ -297,7 +309,7 @@ class ValueParser:
                 ):
                     tokens.append(("g", node.name, str(node)))
                 else:
-                    const = Macros.expand(str(node))
+                    const = expand(str(node))
                     tokens.append(("c", const, str(node)))
 
         def escape(s):

@@ -5,13 +5,16 @@ import collections
 import re
 import urllib.parse
 from abc import ABC, abstractmethod
-from typing import Iterable, List, Optional, Tuple, Union, cast, overload
+from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple, Union, cast, overload
 
 from specfile.exceptions import DuplicateSourceException
 from specfile.rpm import Macros
 from specfile.sourcelist import Sourcelist, SourcelistEntry
 from specfile.tags import Comments, Tag, Tags
 from specfile.utils import get_filename_from_location
+
+if TYPE_CHECKING:
+    from specfile.specfile import Specfile
 
 
 class Source(ABC):
@@ -218,6 +221,7 @@ class Sources(collections.abc.MutableSequence):
         allow_duplicates: bool = False,
         default_to_implicit_numbering: bool = False,
         default_source_number_digits: int = 1,
+        context: Optional["Specfile"] = None,
     ) -> None:
         """
         Constructs a `Sources` object.
@@ -228,6 +232,7 @@ class Sources(collections.abc.MutableSequence):
             allow_duplicates: Whether to allow duplicate entries when adding new sources.
             default_to_implicit_numbering: Use implicit numbering (no source numbers) by default.
             default_source_number_digits: Default number of digits in a source number.
+            context: `Specfile` instance that defines the context for macro expansions.
 
         Returns:
             Constructed instance of `Sources` class.
@@ -237,6 +242,7 @@ class Sources(collections.abc.MutableSequence):
         self._allow_duplicates = allow_duplicates
         self._default_to_implicit_numbering = default_to_implicit_numbering
         self._default_source_number_digits = default_source_number_digits
+        self._context = context
 
     def __repr__(self) -> str:
         tags = repr(self._tags)
@@ -305,6 +311,11 @@ class Sources(collections.abc.MutableSequence):
         else:
             _, container, index = items[i]
             del container[index]
+
+    def _expand(self, s: str) -> str:
+        if self._context:
+            return self._context.expand(s)
+        return Macros.expand(s)
 
     def _get_tags(self) -> List[Tuple[TagSource, Tags, int]]:
         """
@@ -474,7 +485,7 @@ class Sources(collections.abc.MutableSequence):
                 name, separator = self._get_tag_format(source, number)
                 container.insert(
                     index,
-                    Tag(name, location, Macros.expand(location), separator, Comments()),
+                    Tag(name, location, self._expand(location), separator, Comments()),
                 )
                 self._deduplicate_tag_names(i)
             else:
@@ -488,7 +499,7 @@ class Sources(collections.abc.MutableSequence):
             index, name, separator = self._get_initial_tag_setup()
             self._tags.insert(
                 index,
-                Tag(name, location, Macros.expand(location), separator, Comments()),
+                Tag(name, location, self._expand(location), separator, Comments()),
             )
 
     def insert_numbered(self, number: int, location: str) -> int:
@@ -522,7 +533,7 @@ class Sources(collections.abc.MutableSequence):
             i = 0
             index, name, separator = self._get_initial_tag_setup(number)
         self._tags.insert(
-            index, Tag(name, location, Macros.expand(location), separator, Comments())
+            index, Tag(name, location, self._expand(location), separator, Comments())
         )
         self._deduplicate_tag_names(i)
         return i
