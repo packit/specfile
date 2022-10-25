@@ -2,11 +2,14 @@
 # SPDX-License-Identifier: MIT
 
 import collections
-from typing import List, Optional, SupportsIndex, overload
+from typing import TYPE_CHECKING, List, Optional, SupportsIndex, overload
 
 from specfile.rpm import Macros
 from specfile.sections import Section
 from specfile.tags import Comments
+
+if TYPE_CHECKING:
+    from specfile.specfile import Specfile
 
 
 class SourcelistEntry:
@@ -18,9 +21,23 @@ class SourcelistEntry:
         comments: List of comments associated with the source/patch.
     """
 
-    def __init__(self, location: str, comments: Comments) -> None:
+    def __init__(
+        self, location: str, comments: Comments, context: Optional["Specfile"] = None
+    ) -> None:
+        """
+        Constructs a `SourceListEntry` object.
+
+        Args:
+            location: Literal location of the source/patch as stored in the spec file.
+            comments: List of comments associated with the source/patch.
+            context: `Specfile` instance that defines the context for macro expansions.
+
+        Returns:
+            Constructed instance of `SourceListEntry` class.
+        """
         self.location = location
         self.comments = comments.copy()
+        self._context = context
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, SourcelistEntry):
@@ -34,6 +51,8 @@ class SourcelistEntry:
     @property
     def expanded_location(self) -> str:
         """URL of the source/patch after expanding macros."""
+        if self._context:
+            return self._context.expand(self.location)
         return Macros.expand(self.location)
 
 
@@ -88,12 +107,15 @@ class Sourcelist(collections.UserList):
         return Sourcelist(self.data, self._remainder)
 
     @classmethod
-    def parse(cls, section: Section) -> "Sourcelist":
+    def parse(
+        cls, section: Section, context: Optional["Specfile"] = None
+    ) -> "Sourcelist":
         """
         Parses a section into sources/patches.
 
         Args:
             section: %sourcelist/%patchlist section.
+            context: `Specfile` instance that defines the context for macro expansions.
 
         Returns:
             Constructed instance of `Sourcelist` class.
@@ -102,7 +124,7 @@ class Sourcelist(collections.UserList):
         buffer: List[str] = []
         for line in section:
             if line and not line.lstrip().startswith("#"):
-                data.append(SourcelistEntry(line, Comments.parse(buffer)))
+                data.append(SourcelistEntry(line, Comments.parse(buffer), context))
                 buffer = []
             else:
                 buffer.append(line)
