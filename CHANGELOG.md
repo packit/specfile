@@ -1,3 +1,8 @@
+# 0.9.0
+
+- Added utility classes for working with (N)EVR. (#113)
+- Fixed an issue with multiple instances of `Specfile` not expanding macros in the right context. (#117)
+
 # 0.8.0
 
 - Added `Specfile.update_tag()` method that allows updating tag values while trying to preserve macro expansions. You can watch a demo on [YouTube](https://youtu.be/yzMfBPdFXZY). (#101)
