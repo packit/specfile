@@ -16,13 +16,13 @@ from specfile.specfile import Specfile
 
 def test_parse(spec_multiple_sources):
     spec = Specfile(spec_multiple_sources)
-    prep = spec._spec.prep
+    prep = spec._parser.spec.prep
     # remove all sources
     for path in spec.sourcedir.iterdir():
         if not path.samefile(spec.path):
             path.unlink()
     spec = Specfile(spec_multiple_sources)
-    assert spec._spec.prep == prep
+    assert spec._parser.spec.prep == prep
 
 
 def test_prep_traditional(spec_traditional):
@@ -212,12 +212,16 @@ def test_set_version_and_release(spec_minimal, version, release):
     with spec.tags() as tags:
         assert tags.version.value == spec.version
         assert tags.release.value == spec.raw_release
-    assert spec._spec.sourceHeader[rpm.RPMTAG_VERSION] == spec.expanded_version
-    assert spec._spec.sourceHeader[rpm.RPMTAG_RELEASE] == spec.expanded_raw_release
+    assert spec._parser.spec.sourceHeader[rpm.RPMTAG_VERSION] == spec.expanded_version
+    assert (
+        spec._parser.spec.sourceHeader[rpm.RPMTAG_RELEASE] == spec.expanded_raw_release
+    )
     spec.raw_release = release
     with spec.tags() as tags:
         assert tags.release.value == release
-    assert spec._spec.sourceHeader[rpm.RPMTAG_RELEASE] == spec.expanded_raw_release
+    assert (
+        spec._parser.spec.sourceHeader[rpm.RPMTAG_RELEASE] == spec.expanded_raw_release
+    )
 
 
 @pytest.mark.parametrize(

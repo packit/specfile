@@ -14,7 +14,7 @@ from specfile.changelog import Changelog, ChangelogEntry
 from specfile.exceptions import SourceNumberException, SpecfileException
 from specfile.macro_definitions import MacroDefinition, MacroDefinitions
 from specfile.prep import Prep
-from specfile.rpm import RPM, Macros
+from specfile.rpm import Macros, SpecParser
 from specfile.sections import Section, Sections
 from specfile.sourcelist import Sourcelist
 from specfile.sources import Patches, Sources
@@ -31,6 +31,8 @@ class Specfile:
         sourcedir: Path to sources and patches.
         autosave: Whether to automatically save any changes made.
         macros: List of extra macro definitions.
+        ignore_missing_includes: Whether to attempt to parse the spec file even if one
+          or more files to be included using the %include directive are not available.
     """
 
     def __init__(
@@ -39,20 +41,23 @@ class Specfile:
         sourcedir: Optional[Union[Path, str]] = None,
         autosave: bool = False,
         macros: Optional[List[Tuple[str, str]]] = None,
+        ignore_missing_includes: bool = False,
     ) -> None:
         self.path = Path(path)
-        self.sourcedir = Path(sourcedir or self.path.parent)
         self.autosave = autosave
-        self.macros = macros.copy() if macros is not None else []
         self._lines = self.path.read_text().splitlines()
-        self._spec = RPM.parse(str(self), self.sourcedir, self.macros)
+        self._parser = SpecParser(
+            Path(sourcedir or self.path.parent), macros, ignore_missing_includes
+        )
+        self._parser.parse(str(self))
 
     def __repr__(self) -> str:
         path = repr(self.path)
-        sourcedir = repr(self.sourcedir)
+        sourcedir = repr(self._parser.sourcedir)
         autosave = repr(self.autosave)
-        macros = repr(self.macros)
-        return f"Specfile({path}, {sourcedir}, {autosave}, {macros})"
+        macros = repr(self._parser.macros)
+        ignore_missing_includes = repr(self._parser.ignore_missing_includes)
+        return f"Specfile({path}, {sourcedir}, {autosave}, {macros}, {ignore_missing_includes})"
 
     def __str__(self) -> str:
         return "\n".join(self._lines) + "\n"
@@ -68,10 +73,36 @@ class Specfile:
     ) -> None:
         self.save()
 
+    @property
+    def sourcedir(self) -> Path:
+        """Path to sources and patches."""
+        return self._parser.sourcedir
+
+    @property
+    def macros(self) -> List[Tuple[str, str]]:
+        """List of extra macro definitions."""
+        return self._parser.macros
+
+    @property
+    def ignore_missing_includes(self) -> bool:
+        """
+        Whether to attempt to parse the spec file even if one or more files
+        to be included using the %include directive are not available.
+        """
+        return self._parser.ignore_missing_includes
+
+    @property
+    def tainted(self) -> bool:
+        """
+        Indication that the spec file wasn't parsed completely and at least
+        one file to be included was ignored.
+        """
+        return self._parser.tainted
+
     def reload(self) -> None:
         """Reload the spec file content."""
         self._lines = self.path.read_text().splitlines()
-        self._spec = RPM.parse(str(self), self.sourcedir, self.macros)
+        self._parser.parse(str(self))
 
     def save(self) -> None:
         """Save the spec file content."""
@@ -90,7 +121,7 @@ class Specfile:
         Returns:
             Expanded expression.
         """
-        RPM.parse(str(self), self.sourcedir, self.macros + (extra_macros or []))
+        self._parser.parse(str(self), extra_macros)
         return Macros.expand(expression)
 
     @contextlib.contextmanager
@@ -104,7 +135,7 @@ class Specfile:
         try:
             yield self._lines
         finally:
-            self._spec = RPM.parse(str(self), self.sourcedir, self.macros)
+            self._parser.parse(str(self))
             if self.autosave:
                 self.save()
 
@@ -139,9 +170,11 @@ class Specfile:
                 lines[:] = sections.get_raw_data()
 
     @property
-    def parsed_sections(self) -> Sections:
+    def parsed_sections(self) -> Optional[Sections]:
         """Parsed spec file sections."""
-        return Sections.parse(self._spec.parsed.splitlines())
+        if not self._parser.spec:
+            return None
+        return Sections.parse(self._parser.spec.parsed.splitlines())
 
     @contextlib.contextmanager
     def tags(self, section: Union[str, Section] = "package") -> Iterator[Tags]:

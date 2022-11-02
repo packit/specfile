@@ -8,7 +8,7 @@ import rpm
 from flexmock import flexmock
 
 from specfile.exceptions import MacroRemovalException
-from specfile.rpm import RPM, Macro, MacroLevel, Macros
+from specfile.rpm import Macro, MacroLevel, Macros, SpecParser
 
 
 def test_macros_parse():
@@ -109,8 +109,9 @@ def test_macros_reinit():
     assert all(m.level == MacroLevel.BUILTIN for m in Macros.dump())
 
 
-def test_rpm_parse():
-    spec = RPM.parse(
+def test_spec_parser_do_parse():
+    parser = SpecParser(Path("."), [("dist", ".fc35")])
+    spec, _ = parser._do_parse(
         (
             "Name:           test\n"
             "Version:        0.1\n"
@@ -121,8 +122,6 @@ def test_rpm_parse():
             "%description\n"
             "Test package\n"
         ),
-        Path("."),
-        macros=[("dist", ".fc35")],
     )
     assert spec.sourceHeader[rpm.RPMTAG_NAME] == "test"
     assert spec.sourceHeader[rpm.RPMTAG_VERSION] == "0.1"
