@@ -9,6 +9,7 @@ from tests.constants import (
     SPEC_AUTOPATCH,
     SPEC_AUTOSETUP,
     SPEC_COMMENTED_PATCHES,
+    SPEC_INCLUDES,
     SPEC_MACROS,
     SPEC_MINIMAL,
     SPEC_MULTIPLE_SOURCES,
@@ -58,6 +59,13 @@ def spec_autopatch(tmp_path):
 def spec_patchlist(tmp_path):
     destination = tmp_path / "spec_patchlist"
     shutil.copytree(SPEC_PATCHLIST, destination)
+    return destination / SPECFILE
+
+
+@pytest.fixture(scope="function")
+def spec_includes(tmp_path):
+    destination = tmp_path / "spec_includes"
+    shutil.copytree(SPEC_INCLUDES, destination)
     return destination / SPECFILE
 
 

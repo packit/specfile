@@ -8,7 +8,7 @@ import pytest
 import rpm
 from flexmock import flexmock
 
-from specfile.exceptions import SpecfileException
+from specfile.exceptions import RPMException, SpecfileException
 from specfile.prep import AutopatchMacro, AutosetupMacro, PatchMacro, SetupMacro
 from specfile.sections import Section
 from specfile.specfile import Specfile
@@ -348,3 +348,24 @@ def test_multiple_instances(spec_minimal, spec_autosetup):
         assert sources[0].expanded_location == "test-0.1.tar.xz"
         sources.append("tests-%{version}.tar.xz")
         assert sources[1].expanded_location == "tests-0.1.tar.xz"
+
+
+def test_includes(spec_includes):
+    spec = Specfile(spec_includes)
+    assert not spec.tainted
+    with spec.patches() as patches:
+        assert not patches
+    assert spec.expand("%patches")
+    with spec.sections() as sections:
+        assert sections.description[0] == "%include %{SOURCE2}"
+    for inc in ["patches.inc", "description.inc"]:
+        (spec.sourcedir / inc).unlink()
+    with pytest.raises(RPMException):
+        spec = Specfile(spec_includes)
+    spec = Specfile(spec_includes, ignore_missing_includes=True)
+    assert spec.tainted
+    with spec.patches() as patches:
+        assert not patches
+    assert not spec.expand("%patches")
+    with spec.sections() as sections:
+        assert sections.description[0] == "%include %{SOURCE2}"
