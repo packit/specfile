@@ -4,7 +4,7 @@
 import collections
 import itertools
 import re
-from typing import Any, Iterable, List, Optional, SupportsIndex, Union, overload
+from typing import Any, Iterable, List, Optional, SupportsIndex, Union, cast, overload
 
 from specfile.sections import Section
 
@@ -61,6 +61,25 @@ TAG_NAMES = {
     "removepathpostfixes",
     "modularitylabel",
 }
+
+# tags that can optionally have an argument (language or qualifier)
+TAGS_WITH_ARG = {
+    "summary",
+    "group",
+    "requires",
+    "prereq",
+    "orderwithrequires",
+}
+
+
+def get_tag_name_regex(name: str) -> str:
+    """Contructs regex corresponding to the specified tag name."""
+    regex = re.escape(name)
+    if name in TAGS_WITH_ARG:
+        regex += r"(?:\s*\(\s*[^\s)]*\s*\))?"
+    elif name in ["source", "patch"]:
+        regex += r"\d*"
+    return regex
 
 
 class Comment:
@@ -249,7 +268,10 @@ class Tag:
         Returns:
             Constructed instance of `Tag` class.
         """
-        if not name or name.lower().rstrip("0123456789") not in TAG_NAMES:
+        name_regexes = [
+            re.compile(get_tag_name_regex(t), re.IGNORECASE) for t in TAG_NAMES
+        ]
+        if not name or not any(r.match(name) for r in name_regexes):
             raise ValueError(f"Invalid tag name: '{name}'")
         self.name = name
         self.value = value
@@ -375,8 +397,16 @@ class Tags(collections.UserList):
         else:
             delete(i)
 
+    def __contains__(self, name: object) -> bool:
+        try:
+            # use parent's __getattribute__() so this method can be called from __getattr__()
+            data = super().__getattribute__("data")
+        except AttributeError:
+            return False
+        return any(t.name.lower() == cast(str, name).lower() for t in data)
+
     def __getattr__(self, name: str) -> Tag:
-        if name.lower().rstrip("0123456789") not in TAG_NAMES:
+        if name not in self:
             return super().__getattribute__(name)
         try:
             return self.data[self.find(name)]
@@ -384,7 +414,7 @@ class Tags(collections.UserList):
             raise AttributeError(name)
 
     def __setattr__(self, name: str, value: Union[Tag, str]) -> None:
-        if name.lower().rstrip("0123456789") not in TAG_NAMES:
+        if name not in self:
             return super().__setattr__(name, value)
         try:
             if isinstance(value, Tag):
@@ -395,7 +425,7 @@ class Tags(collections.UserList):
             raise AttributeError(name)
 
     def __delattr__(self, name: str) -> None:
-        if name.lower().rstrip("0123456789") not in TAG_NAMES:
+        if name not in self:
             return super().__delattr__(name)
         try:
             del self.data[self.find(name)]
@@ -443,9 +473,8 @@ class Tags(collections.UserList):
         """
 
         def regex_pattern(tag):
-            name = re.escape(tag)
-            index = r"\d*" if tag in ["source", "patch"] else ""
-            return rf"^(?P<n>{name}{index})(?P<s>\s*:\s*)(?P<v>.+)"
+            name_regex = get_tag_name_regex(tag)
+            return rf"^(?P<n>{name_regex})(?P<s>\s*:\s*)(?P<v>.+)"
 
         tag_regexes = [re.compile(regex_pattern(t), re.IGNORECASE) for t in TAG_NAMES]
         data = []

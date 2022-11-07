@@ -40,6 +40,9 @@ def test_parse():
                 "%if 0",
                 "Epoch:   1",
                 "%endif",
+                "",
+                "Requires:          make",
+                "Requires(post):    bash",
             ],
         ),
         Section(
@@ -58,6 +61,9 @@ def test_parse():
                 "",
                 "",
                 "",
+                "",
+                "Requires:          make",
+                "Requires(post):    bash",
             ],
         ),
     )
@@ -72,6 +78,9 @@ def test_parse():
     assert tags.release.comments[0].prefix == "  # "
     assert tags.epoch.name == "Epoch"
     assert not tags.epoch.valid
+    assert tags.requires.value == "make"
+    assert "requires(post)" in tags
+    assert tags[-1].name == "Requires(post)"
 
 
 def test_get_raw_section_data():
@@ -99,8 +108,12 @@ def test_get_raw_section_data():
                 Comments([Comment("this is a valid comment", "  # ")]),
             ),
             Tag("Epoch", "1", "", ":   ", Comments([], ["", "%if 0"])),
+            Tag(
+                "Requires", "make", "make", ":          ", Comments([], ["%endif", ""])
+            ),
+            Tag("Requires(post)", "bash", "bash", ":    ", Comments()),
         ],
-        ["%endif"],
+        [],
     )
     assert tags.get_raw_section_data() == [
         "%global ver_major 1",
@@ -116,6 +129,9 @@ def test_get_raw_section_data():
         "%if 0",
         "Epoch:   1",
         "%endif",
+        "",
+        "Requires:          make",
+        "Requires(post):    bash",
     ]
 
 
