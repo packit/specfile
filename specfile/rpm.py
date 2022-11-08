@@ -316,6 +316,33 @@ class SpecParser:
         for path in dummy_sources:
             path.unlink()
 
+    @contextlib.contextmanager
+    def _sanitize_environment(self) -> Iterator[os._Environ]:
+        """
+        Context manager for sanitizing the environment for shell expansions.
+
+        Temporarily sets LANG and LC_ALL to C.UTF-8 locale.
+
+        Yields:
+            Sanitized environment.
+        """
+        env = os.environ.copy()
+
+        def restore(key):
+            try:
+                os.environ[key] = env[key]
+            except KeyError:
+                del os.environ[key]
+
+        keys = ["LANG", "LC_ALL"]
+        for key in keys:
+            os.environ[key] = "C.UTF-8"
+        try:
+            yield os.environ
+        finally:
+            for key in keys:
+                restore(key)
+
     def _do_parse(
         self, content: str, extra_macros: Optional[List[Tuple[str, str]]] = None
     ) -> Tuple[rpm.spec, bool]:
@@ -343,8 +370,9 @@ class SpecParser:
                 tmp.write(content.encode())
                 tmp.flush()
                 try:
-                    with capture_stderr() as stderr:
-                        return rpm.spec(tmp.name, flags)
+                    with self._sanitize_environment():
+                        with capture_stderr() as stderr:
+                            return rpm.spec(tmp.name, flags)
                 except ValueError as e:
                     raise RPMException(stderr=stderr) from e
 
