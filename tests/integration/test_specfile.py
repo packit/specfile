@@ -369,3 +369,9 @@ def test_includes(spec_includes):
     assert not spec.expand("%patches")
     with spec.sections() as sections:
         assert sections.description[0] == "%include %{SOURCE2}"
+
+
+def test_shell_expansions(spec_shell_expansions):
+    spec = Specfile(spec_shell_expansions)
+    assert spec.expanded_version == "1035.4200"
+    assert "C.UTF-8" in spec.expand("%numeric_locale")
