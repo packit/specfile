@@ -15,6 +15,7 @@ from tests.constants import (
     SPEC_MULTIPLE_SOURCES,
     SPEC_PATCHLIST,
     SPEC_RPMAUTOSPEC,
+    SPEC_SHELL_EXPANSIONS,
     SPEC_TRADITIONAL,
     SPECFILE,
 )
@@ -87,4 +88,11 @@ def spec_multiple_sources(tmp_path):
 def spec_commented_patches(tmp_path):
     destination = tmp_path / "spec_commented_patches"
     shutil.copytree(SPEC_COMMENTED_PATCHES, destination)
+    return destination / SPECFILE
+
+
+@pytest.fixture(scope="function")
+def spec_shell_expansions(tmp_path):
+    destination = tmp_path / "spec_shell_expansions"
+    shutil.copytree(SPEC_SHELL_EXPANSIONS, destination)
     return destination / SPECFILE
