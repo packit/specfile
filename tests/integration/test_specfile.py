@@ -356,9 +356,13 @@ def test_includes(spec_includes):
     with spec.patches() as patches:
         assert not patches
     assert spec.expand("%patches")
+    with spec.tags() as tags:
+        assert tags.provides.value.startswith("test0-%{version} %(")
+        for i in range(4):
+            assert f"test{i}-0.1" in tags.provides.expanded_value
     with spec.sections() as sections:
-        assert sections.description[0] == "%include %{SOURCE2}"
-    for inc in ["patches.inc", "description.inc"]:
+        assert sections.description[0] == "%include %{SOURCE3}"
+    for inc in ["patches.inc", "provides.inc", "description.inc"]:
         (spec.sourcedir / inc).unlink()
     with pytest.raises(RPMException):
         spec = Specfile(spec_includes)
@@ -367,8 +371,11 @@ def test_includes(spec_includes):
     with spec.patches() as patches:
         assert not patches
     assert not spec.expand("%patches")
+    with spec.tags() as tags:
+        assert tags.provides.value.startswith("test0-%{version} %(")
+        assert tags.provides.expanded_value == "test0-0.1"
     with spec.sections() as sections:
-        assert sections.description[0] == "%include %{SOURCE2}"
+        assert sections.description[0] == "%include %{SOURCE3}"
 
 
 def test_shell_expansions(spec_shell_expansions):

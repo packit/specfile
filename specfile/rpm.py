@@ -376,10 +376,11 @@ class SpecParser:
                 except ValueError as e:
                     raise RPMException(stderr=stderr) from e
 
-        def get_included_sources(content):
+        def collect_included_sources(content):
+            # collect sources included using %include
             include_regex = re.compile(r"^\s*%include\s+(.*)$")
             lines = content.splitlines()
-            sources = []
+            sources = set()
             while lines:
                 line = lines.pop(0)
                 m = include_regex.match(line)
@@ -394,7 +395,44 @@ class SpecParser:
                 source = Path(Macros.expand(arg))
                 # ignore files outside of sourcedir
                 if source.parent.samefile(self.sourcedir):
-                    sources.append(source.name)
+                    sources.add(source.name)
+            return sources
+
+        def collect_referenced_sources(content):
+            # collect sources referenced from shell expansions
+
+            def find_matching_parenthesis(index):
+                level = 0
+                for i in range(index, len(content)):
+                    if content[i] == "\\":
+                        continue
+                    elif content[i] == ")":
+                        level -= 1
+                        if level <= 0:
+                            return i + 1
+                    elif content[i] == "(":
+                        level += 1
+                return None
+
+            sources = set()
+            # find all shell expansions
+            start = 0
+            while start < len(content):
+                index = content.find("%(", start)
+                if index < 0:
+                    break
+                start = find_matching_parenthesis(index + 2)
+                shell_expansion = content[index:start]
+                # find source references (%SOURCEN, %{SOURCEN}, %{S:N})
+                for m in re.finditer(
+                    r"%((?P<b>{)?[?!]*SOURCE\d+(?(b)})|{S:\d+})", shell_expansion
+                ):
+                    # we can expand macros here because the first non-build parse,
+                    # even though it failed, populated the macro context
+                    source = Path(Macros.expand(m.group(0)))
+                    # ignore files outside of sourcedir
+                    if source.parent.samefile(self.sourcedir):
+                        sources.add(source.name)
             return sources
 
         tainted = False
@@ -404,7 +442,8 @@ class SpecParser:
             sources = [s for s, _, _ in spec.sources]
         except RPMException:
             if self.ignore_missing_includes:
-                sources = get_included_sources(content)
+                sources = collect_included_sources(content)
+                sources |= collect_referenced_sources(content)
                 if not sources:
                     # no point in trying again
                     raise
