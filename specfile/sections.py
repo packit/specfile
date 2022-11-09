@@ -3,7 +3,7 @@
 
 import collections
 import re
-from typing import List, Optional, SupportsIndex, Union, overload
+from typing import List, Optional, SupportsIndex, Union, cast, overload
 
 # valid section names as defined in build/parseSpec.c in RPM source
 SECTION_NAMES = {
@@ -135,8 +135,16 @@ class Sections(collections.UserList):
     def __copy__(self) -> "Sections":
         return Sections(self.data)
 
+    def __contains__(self, name: object) -> bool:
+        try:
+            # use parent's __getattribute__() so this method can be called from __getattr__()
+            data = super().__getattribute__("data")
+        except AttributeError:
+            return False
+        return any(s.name.lower() == cast(str, name).split()[0].lower() for s in data)
+
     def __getattr__(self, name: str) -> Section:
-        if name.split()[0].lower() not in SECTION_NAMES:
+        if name not in self:
             return super().__getattribute__(name)
         try:
             return self.get(name)
@@ -144,7 +152,7 @@ class Sections(collections.UserList):
             raise AttributeError(name)
 
     def __setattr__(self, name: str, value: Union[Section, List[str]]) -> None:
-        if name.split()[0].lower() not in SECTION_NAMES:
+        if name not in self:
             return super().__setattr__(name, value)
         try:
             if isinstance(value, Section):
@@ -155,7 +163,7 @@ class Sections(collections.UserList):
             raise AttributeError(name)
 
     def __delattr__(self, name: str) -> None:
-        if name.split()[0].lower() not in SECTION_NAMES:
+        if name not in self:
             return super().__delattr__(name)
         try:
             del self.data[self.find(name)]
@@ -184,7 +192,8 @@ class Sections(collections.UserList):
             Constructed instance of `Sections` class.
         """
         section_name_regexes = [
-            re.compile(rf"^%{re.escape(n)}\b.*", re.IGNORECASE) for n in SECTION_NAMES
+            re.compile(rf"^%{re.escape(n)}(\s+.*$|$)", re.IGNORECASE)
+            for n in SECTION_NAMES
         ]
         section_starts = []
         for i, line in enumerate(lines):

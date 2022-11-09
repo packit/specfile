@@ -67,6 +67,22 @@ def test_parse_case_insensitive():
     assert sections[2] == ["Requires: bar"]
 
 
+def test_parse_invalid_name():
+    sections = Sections.parse(
+        [
+            "%description",
+            "This is a description.",
+            "",
+            "%description(fr)",
+            "Ceci est une description.",
+            "",
+        ]
+    )
+    assert len(sections) == 2  # including empty preamble
+    assert sections[1].name == "description"
+    assert sections.description[2] == "%description(fr)"
+
+
 def test_copy_sections():
     sections = Sections([Section("package"), Section("package bar")])
     sections_copy = copy.deepcopy(sections)
