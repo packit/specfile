@@ -1,3 +1,8 @@
+# 0.9.1
+
+- `specfile` now supports localized tags (e.g. `Summary(fr)`) and tags with qualifiers (e.g. `Requires(post)`).
+  It also follows more closely rpm parsing logic and doesn't fail on invalid section names. (#132)
+
 # 0.9.0
 
 - Added utility classes for working with (N)EVR. (#113)
