@@ -138,6 +138,25 @@ class ConditionalMacroExpansion(Node):
         )
 
 
+class BuiltinMacro(Node):
+    """Node representing built-in macro, e.g. %{quote:Ancient Greek}."""
+
+    def __init__(self, name: str, body: str) -> None:
+        self.name = name
+        self.body = body
+
+    def __repr__(self) -> str:
+        return f"BuiltinMacro('{self.name}', '{self.body}')"
+
+    def __str__(self) -> str:
+        return f"%{{{self.name}:{self.body}}}"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.name == other.name and self.body == other.body
+
+
 class ValueParser:
     @classmethod
     def _parse(cls, value: str) -> List[Node]:
@@ -214,10 +233,14 @@ class ValueParser:
                 result.append(ExpressionExpansion(value[start + 2 : end - 1]))
             elif value[start + 1] == "{":
                 if ":" in value[start:end]:
-                    condition, body = value[start + 2 : end - 1].split(":")
-                    result.append(
-                        ConditionalMacroExpansion(condition, cls._parse(body))
-                    )
+                    condition, body = value[start + 2 : end - 1].split(":", maxsplit=1)
+                    _, prefix, _ = re.split(r"([?!]*)", condition, maxsplit=1)
+                    if "?" in prefix:
+                        result.append(
+                            ConditionalMacroExpansion(condition, cls._parse(body))
+                        )
+                    else:
+                        result.append(BuiltinMacro(condition, body))
                 else:
                     result.append(EnclosedMacroSubstitution(value[start + 2 : end - 1]))
             else:
@@ -292,7 +315,7 @@ class ValueParser:
                 tokens.append(("c", "", node))
             elif isinstance(node, StringLiteral):
                 tokens.append(("v", node.value, ""))
-            elif isinstance(node, (ShellExpansion, ExpressionExpansion)):
+            elif isinstance(node, (ShellExpansion, ExpressionExpansion, BuiltinMacro)):
                 const = expand(str(node))
                 tokens.append(("c", const, str(node)))
             elif isinstance(node, MacroSubstitution):
