@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, List, Optional, Tuple
 from typing.re import Pattern
 
 from specfile.exceptions import UnterminatedMacroException
-from specfile.rpm import Macros
+from specfile.macros import Macros
 
 if TYPE_CHECKING:
     from specfile.specfile import Specfile

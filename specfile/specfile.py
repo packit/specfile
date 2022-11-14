@@ -13,11 +13,12 @@ from typing import Iterator, List, Optional, Tuple, Type, Union
 from specfile.changelog import Changelog, ChangelogEntry
 from specfile.exceptions import SourceNumberException, SpecfileException
 from specfile.macro_definitions import MacroDefinition, MacroDefinitions
+from specfile.macros import Macros
 from specfile.prep import Prep
-from specfile.rpm import Macros, SpecParser
 from specfile.sections import Section, Sections
 from specfile.sourcelist import Sourcelist
 from specfile.sources import Patches, Sources
+from specfile.spec_parser import SpecParser
 from specfile.tags import Tag, Tags
 from specfile.value_parser import SUBSTITUTION_GROUP_PREFIX, ValueParser
 

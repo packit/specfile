@@ -1,14 +1,12 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
-from pathlib import Path
-
 import pytest
 import rpm
 from flexmock import flexmock
 
 from specfile.exceptions import MacroRemovalException
-from specfile.rpm import Macro, MacroLevel, Macros, SpecParser
+from specfile.macros import Macro, MacroLevel, Macros
 
 
 def test_macros_parse():
@@ -107,25 +105,3 @@ def test_macros_define():
 def test_macros_reinit():
     Macros.reinit(MacroLevel.BUILTIN)
     assert all(m.level == MacroLevel.BUILTIN for m in Macros.dump())
-
-
-def test_spec_parser_do_parse():
-    parser = SpecParser(Path("."), [("dist", ".fc35")])
-    spec, _ = parser._do_parse(
-        (
-            "Name:           test\n"
-            "Version:        0.1\n"
-            "Release:        1%{?dist}\n"
-            "Summary:        Test package\n"
-            "License:        MIT\n"
-            "\n"
-            "%description\n"
-            "Test package\n"
-        ),
-    )
-    assert spec.sourceHeader[rpm.RPMTAG_NAME] == "test"
-    assert spec.sourceHeader[rpm.RPMTAG_VERSION] == "0.1"
-    assert spec.sourceHeader[rpm.RPMTAG_RELEASE] == "1.fc35"
-    assert spec.sourceHeader[rpm.RPMTAG_SUMMARY] == "Test package"
-    assert spec.sourceHeader[rpm.RPMTAG_LICENSE] == "MIT"
-    assert spec.prep is None

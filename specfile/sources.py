@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple, Union, cast, overload
 
 from specfile.exceptions import DuplicateSourceException
-from specfile.rpm import Macros
+from specfile.macros import Macros
 from specfile.sourcelist import Sourcelist, SourcelistEntry
 from specfile.tags import Comments, Tag, Tags
 from specfile.utils import get_filename_from_location
