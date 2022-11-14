@@ -356,19 +356,31 @@ def test_includes(spec_includes):
     with spec.patches() as patches:
         assert not patches
     assert spec.expand("%patches")
+    with spec.tags() as tags:
+        assert tags.provides.value.startswith("%(")
+        for i in range(1, 4):
+            assert f"test{i}-0.1" in tags.provides.expanded_value
     with spec.sections() as sections:
-        assert sections.description[0] == "%include %{SOURCE2}"
-    for inc in ["patches.inc", "description.inc"]:
+        assert sections.description[0] == "%include %{SOURCE3}"
+        assert sections.description[1] == "%(cat %{S:4})"
+    assert spec.parsed_sections.description[0] == "Test package"
+    assert spec.parsed_sections.description[1] == "Additional description"
+    for inc in ["patches.inc", "provides.inc", "description1.inc", "description2.inc"]:
         (spec.sourcedir / inc).unlink()
     with pytest.raises(RPMException):
         spec = Specfile(spec_includes)
-    spec = Specfile(spec_includes, ignore_missing_includes=True)
+    spec = Specfile(spec_includes, force_parse=True)
     assert spec.tainted
     with spec.patches() as patches:
         assert not patches
     assert not spec.expand("%patches")
+    with spec.tags() as tags:
+        assert tags.provides.value.startswith("%(")
+        assert tags.provides.expanded_value == "DUMMY-0.1"
     with spec.sections() as sections:
-        assert sections.description[0] == "%include %{SOURCE2}"
+        assert sections.description[0] == "%include %{SOURCE3}"
+        assert sections.description[1] == "%(cat %{S:4})"
+    assert not "".join(spec.parsed_sections.description)
 
 
 def test_shell_expansions(spec_shell_expansions):

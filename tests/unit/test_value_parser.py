@@ -59,7 +59,7 @@ from specfile.value_parser import (
     ],
 )
 def test_parse(value, nodes):
-    assert ValueParser._parse(value) == nodes
+    assert ValueParser.parse(value) == nodes
 
 
 @pytest.mark.parametrize(

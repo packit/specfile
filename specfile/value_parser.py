@@ -159,7 +159,7 @@ class BuiltinMacro(Node):
 
 class ValueParser:
     @classmethod
-    def _parse(cls, value: str) -> List[Node]:
+    def parse(cls, value: str) -> List[Node]:
         """
         Parses a value into a list of nodes.
 
@@ -237,7 +237,7 @@ class ValueParser:
                     _, prefix, _ = re.split(r"([?!]*)", condition, maxsplit=1)
                     if "?" in prefix:
                         result.append(
-                            ConditionalMacroExpansion(condition, cls._parse(body))
+                            ConditionalMacroExpansion(condition, cls.parse(body))
                         )
                     else:
                         result.append(BuiltinMacro(condition, body))
@@ -306,7 +306,7 @@ class ValueParser:
                     result.append(node)
             return result
 
-        nodes = cls._parse(value)
+        nodes = cls.parse(value)
 
         # convert nodes into constant, variable and group tokens
         tokens = []

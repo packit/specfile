@@ -32,8 +32,10 @@ class Specfile:
         sourcedir: Path to sources and patches.
         autosave: Whether to automatically save any changes made.
         macros: List of extra macro definitions.
-        ignore_missing_includes: Whether to attempt to parse the spec file even if one
-          or more files to be included using the %include directive are not available.
+        force_parse: Whether to attempt to parse the spec file even if one or more
+          sources required to be present at parsing time are not available.
+          Such sources include sources referenced from shell expansions
+          in tag values and sources included using the %include directive.
     """
 
     def __init__(
@@ -42,13 +44,13 @@ class Specfile:
         sourcedir: Optional[Union[Path, str]] = None,
         autosave: bool = False,
         macros: Optional[List[Tuple[str, str]]] = None,
-        ignore_missing_includes: bool = False,
+        force_parse: bool = False,
     ) -> None:
         self.path = Path(path)
         self.autosave = autosave
         self._lines = self.path.read_text().splitlines()
         self._parser = SpecParser(
-            Path(sourcedir or self.path.parent), macros, ignore_missing_includes
+            Path(sourcedir or self.path.parent), macros, force_parse
         )
         self._parser.parse(str(self))
 
@@ -57,8 +59,8 @@ class Specfile:
         sourcedir = repr(self._parser.sourcedir)
         autosave = repr(self.autosave)
         macros = repr(self._parser.macros)
-        ignore_missing_includes = repr(self._parser.ignore_missing_includes)
-        return f"Specfile({path}, {sourcedir}, {autosave}, {macros}, {ignore_missing_includes})"
+        force_parse = repr(self._parser.force_parse)
+        return f"Specfile({path}, {sourcedir}, {autosave}, {macros}, {force_parse})"
 
     def __str__(self) -> str:
         return "\n".join(self._lines) + "\n"
@@ -85,18 +87,19 @@ class Specfile:
         return self._parser.macros
 
     @property
-    def ignore_missing_includes(self) -> bool:
+    def force_parse(self) -> bool:
         """
-        Whether to attempt to parse the spec file even if one or more files
-        to be included using the %include directive are not available.
+        Whether to attempt to parse the spec file even if one or more
+        sources required to be present at parsing time are not available.
         """
-        return self._parser.ignore_missing_includes
+        return self._parser.force_parse
 
     @property
     def tainted(self) -> bool:
         """
-        Indication that the spec file wasn't parsed completely and at least
-        one file to be included was ignored.
+        Indication that parsing of the spec file was forced and one or more
+        sources required to be present at parsing time were not available
+        and were replaced with dummy files.
         """
         return self._parser.tainted
 
