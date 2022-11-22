@@ -58,7 +58,7 @@ sed -i 's/rpm-py-installer/rpm/' setup.cfg
 %pyproject_save_files specfile
 
 
-%if 0%{?with_tests}
+%if %{with tests}
 %check
 %pytest
 %endif
