@@ -306,26 +306,30 @@ class Changelog(collections.UserList):
         Returns:
             Constructed instance of `Changelog` class.
         """
+
+        def extract_following_lines(content):
+            following_lines: List[str] = []
+            while content and not content[-1].strip():
+                following_lines.insert(0, content.pop())
+            return following_lines
+
         data: List[ChangelogEntry] = []
         predecessor = []
         header = None
         content: List[str] = []
-        following_lines: List[str] = []
         for line in section:
             if line.startswith("*"):
                 if header:
+                    following_lines = extract_following_lines(content)
                     data.insert(0, ChangelogEntry(header, content, following_lines))
                 header = line
                 content = []
-                following_lines = []
             elif header:
-                if line.strip():
-                    content.append(line)
-                else:
-                    following_lines.append(line)
+                content.append(line)
             else:
                 predecessor.append(line)
         if header:
+            following_lines = extract_following_lines(content)
             data.insert(0, ChangelogEntry(header, content, following_lines))
         return cls(data, predecessor)
 

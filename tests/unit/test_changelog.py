@@ -140,6 +140,12 @@ def test_parse():
         Section(
             "changelog",
             [
+                "* Mon Nov 21 2022 Nikola Forró <nforro@redhat.com> - 0.3-1",
+                "- this is a formatted",
+                "  changelog entry",
+                "",
+                "- here is another item",
+                "",
                 "* Thu Jan 13 08:12:41 UTC 2022 Nikola Forró <nforro@redhat.com> - 0.2-2",
                 "- rebuilt",
                 "",
@@ -155,7 +161,7 @@ def test_parse():
             ],
         )
     )
-    assert len(changelog) == 4
+    assert len(changelog) == 5
     assert (
         changelog[0].header
         == "* Tue May 04 2021 Nikola Forró <nforro@redhat.com> - 0.1-1"
@@ -182,6 +188,17 @@ def test_parse():
     )
     assert changelog[3].content == ["- rebuilt"]
     assert changelog[3].extended_timestamp
+    assert (
+        changelog[4].header
+        == "* Mon Nov 21 2022 Nikola Forró <nforro@redhat.com> - 0.3-1"
+    )
+    assert changelog[4].content == [
+        "- this is a formatted",
+        "  changelog entry",
+        "",
+        "- here is another item",
+    ]
+    assert not changelog[4].extended_timestamp
 
 
 def test_get_raw_section_data():
@@ -213,9 +230,26 @@ def test_get_raw_section_data():
                 ["- rebuilt"],
                 "0.2-2",
             ),
+            ChangelogEntry.assemble(
+                datetime.date(2022, 11, 21),
+                "Nikola Forró <nforro@redhat.com>",
+                [
+                    "- this is a formatted",
+                    "  changelog entry",
+                    "",
+                    "- here is another item",
+                ],
+                "0.3-1",
+            ),
         ]
     )
     assert changelog.get_raw_section_data() == [
+        "* Mon Nov 21 2022 Nikola Forró <nforro@redhat.com> - 0.3-1",
+        "- this is a formatted",
+        "  changelog entry",
+        "",
+        "- here is another item",
+        "",
         "* Thu Jan 13 08:12:41 UTC 2022 Nikola Forró <nforro@redhat.com> - 0.2-2",
         "- rebuilt",
         "",
