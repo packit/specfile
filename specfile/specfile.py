@@ -13,7 +13,7 @@ from typing import Iterator, List, Optional, Tuple, Type, Union
 from specfile.changelog import Changelog, ChangelogEntry
 from specfile.exceptions import SourceNumberException, SpecfileException
 from specfile.macro_definitions import MacroDefinition, MacroDefinitions
-from specfile.macros import Macros
+from specfile.macros import Macro, Macros
 from specfile.prep import Prep
 from specfile.sections import Section, Sections
 from specfile.sourcelist import Sourcelist
@@ -127,6 +127,19 @@ class Specfile:
         """
         self._parser.parse(str(self), extra_macros)
         return Macros.expand(expression)
+
+    def get_active_macros(self) -> List[Macro]:
+        """
+        Gets active macros in the context of the spec file.
+
+        This includes built-in RPM macros, macros loaded from macro files
+        and macros defined in the spec file itself.
+
+        Returns:
+            List of `Macro` objects.
+        """
+        self._parser.parse(str(self))
+        return Macros.dump()
 
     @contextlib.contextmanager
     def lines(self) -> Iterator[List[str]]:
