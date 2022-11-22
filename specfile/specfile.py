@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterator, List, Optional, Tuple, Type, Union
 
+import rpm
+
 from specfile.changelog import Changelog, ChangelogEntry
 from specfile.exceptions import SourceNumberException, SpecfileException
 from specfile.macro_definitions import MacroDefinition, MacroDefinitions
@@ -102,6 +104,11 @@ class Specfile:
         and were replaced with dummy files.
         """
         return self._parser.tainted
+
+    @property
+    def rpm_spec(self) -> rpm.spec:
+        """Underlying `rpm.spec` instance."""
+        return self._parser.spec
 
     def reload(self) -> None:
         """Reload the spec file content."""
