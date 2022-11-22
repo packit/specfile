@@ -5,8 +5,7 @@ import itertools
 import re
 from abc import ABC
 from string import Template
-from typing import TYPE_CHECKING, List, Optional, Tuple
-from typing.re import Pattern
+from typing import TYPE_CHECKING, List, Optional, Pattern, Tuple
 
 from specfile.exceptions import UnterminatedMacroException
 from specfile.macros import Macros
