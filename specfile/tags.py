@@ -298,6 +298,14 @@ class Tag:
         )
 
     @property
+    def normalized_name(self) -> str:
+        """
+        Normalized name of the tag. The first character is capitalized
+        and the rest lowercased.
+        """
+        return self.name.capitalize()
+
+    @property
     def valid(self) -> bool:
         """Validity of the tag. A tag is valid if it 'survives' the expansion of the spec file."""
         return self._expanded_value is not None
