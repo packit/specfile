@@ -2,9 +2,15 @@
 # SPDX-License-Identifier: MIT
 
 import collections
+import contextlib
+import io
+import os
 import re
+import sys
+import tempfile
 import urllib.parse
 from pathlib import Path
+from typing import Iterator, List
 
 from specfile.exceptions import SpecfileException
 
@@ -73,6 +79,30 @@ class NEVR(EVR):
             raise SpecfileException("Invalid NEVR string.")
         n, e, v, r = m.groups()
         return cls(name=n, epoch=int(e) if e else 0, version=v, release=r or "")
+
+
+@contextlib.contextmanager
+def capture_stderr() -> Iterator[List[bytes]]:
+    """
+    Context manager for capturing output to stderr. A stderr output of anything run
+    in its context will be captured in the target variable of the with statement.
+
+    Yields:
+        List of captured lines.
+    """
+    fileno = sys.__stderr__.fileno()
+    with tempfile.TemporaryFile() as stderr, os.fdopen(os.dup(fileno)) as backup:
+        sys.stderr.flush()
+        os.dup2(stderr.fileno(), fileno)
+        data: List[bytes] = []
+        try:
+            yield data
+        finally:
+            sys.stderr.flush()
+            os.dup2(backup.fileno(), fileno)
+            stderr.flush()
+            stderr.seek(0, io.SEEK_SET)
+            data.extend(stderr.readlines())
 
 
 def get_filename_from_location(location: str) -> str:

@@ -4,7 +4,7 @@
 import collections
 from typing import TYPE_CHECKING, List, Optional, SupportsIndex, overload
 
-from specfile.rpm import Macros
+from specfile.macros import Macros
 from specfile.sections import Section
 from specfile.tags import Comments
 

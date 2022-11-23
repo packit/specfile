@@ -5,6 +5,7 @@ import pytest
 from flexmock import flexmock
 
 from specfile.value_parser import (
+    BuiltinMacro,
     ConditionalMacroExpansion,
     EnclosedMacroSubstitution,
     Macros,
@@ -46,10 +47,19 @@ from specfile.value_parser import (
                 ),
             ],
         ),
+        (
+            '%{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(string.lower(ver))}',
+            [
+                BuiltinMacro(
+                    "lua",
+                    'ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(string.lower(ver))',
+                )
+            ],
+        ),
     ],
 )
 def test_parse(value, nodes):
-    assert ValueParser._parse(value) == nodes
+    assert ValueParser.parse(value) == nodes
 
 
 @pytest.mark.parametrize(
