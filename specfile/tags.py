@@ -6,70 +6,8 @@ import itertools
 import re
 from typing import Any, Iterable, List, Optional, SupportsIndex, Union, cast, overload
 
+from specfile.constants import TAG_NAMES, TAGS_WITH_ARG
 from specfile.sections import Section
-
-# valid tag names as defined in build/parsePreamble.c in RPM source
-TAG_NAMES = {
-    "name",
-    "version",
-    "release",
-    "epoch",
-    "summary",
-    "license",
-    "distribution",
-    "disturl",
-    "vendor",
-    "group",
-    "packager",
-    "url",
-    "vcs",
-    "source",
-    "patch",
-    "nosource",
-    "nopatch",
-    "excludearch",
-    "exclusivearch",
-    "excludeos",
-    "exclusiveos",
-    "icon",
-    "provides",
-    "requires",
-    "recommends",
-    "suggests",
-    "supplements",
-    "enhances",
-    "prereq",
-    "conflicts",
-    "obsoletes",
-    "prefixes",
-    "prefix",
-    "buildroot",
-    "buildarchitectures",
-    "buildarch",
-    "buildconflicts",
-    "buildprereq",
-    "buildrequires",
-    "autoreqprov",
-    "autoreq",
-    "autoprov",
-    "docdir",
-    "disttag",
-    "bugurl",
-    "translationurl",
-    "upstreamreleases",
-    "orderwithrequires",
-    "removepathpostfixes",
-    "modularitylabel",
-}
-
-# tags that can optionally have an argument (language or qualifier)
-TAGS_WITH_ARG = {
-    "summary",
-    "group",
-    "requires",
-    "prereq",
-    "orderwithrequires",
-}
 
 
 def get_tag_name_regex(name: str) -> str:
