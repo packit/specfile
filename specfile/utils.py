@@ -10,11 +10,14 @@ import sys
 import tempfile
 from typing import Iterator, List
 
+from specfile.constants import ARCH_NAMES
 from specfile.exceptions import SpecfileException
 
 
 class EVR(collections.abc.Hashable):
     """Class representing Epoch-Version-Release combination."""
+
+    _regex = r"(?:(\d+):)?([^-]+?)(?:-([^-]+))?"
 
     def __init__(self, *, version: str, release: str = "", epoch: int = 0) -> None:
         self.epoch = epoch
@@ -42,7 +45,7 @@ class EVR(collections.abc.Hashable):
 
     @classmethod
     def from_string(cls, evr: str) -> "EVR":
-        m = re.match(r"^(?:(\d+):)?([^-]+?)(?:-([^-]+))?$", evr)
+        m = re.match(f"^{cls._regex}$", evr)
         if not m:
             raise SpecfileException("Invalid EVR string.")
         e, v, r = m.groups()
@@ -51,6 +54,8 @@ class EVR(collections.abc.Hashable):
 
 class NEVR(EVR):
     """Class representing Name-Epoch-Version-Release combination."""
+
+    _regex = r"(.+?)-" + EVR._regex
 
     def __init__(
         self, *, name: str, version: str, release: str = "", epoch: int = 0
@@ -72,11 +77,47 @@ class NEVR(EVR):
 
     @classmethod
     def from_string(cls, nevr: str) -> "NEVR":
-        m = re.match(r"^(.+?)-(?:(\d+):)?([^-]+?)(?:-([^-]+))?$", nevr)
+        m = re.match(f"^{cls._regex}$", nevr)
         if not m:
             raise SpecfileException("Invalid NEVR string.")
         n, e, v, r = m.groups()
         return cls(name=n, epoch=int(e) if e else 0, version=v, release=r or "")
+
+
+class NEVRA(NEVR):
+    """Class representing Name-Epoch-Version-Release-Arch combination."""
+
+    _arches_regex = "(" + "|".join(re.escape(a) for a in ARCH_NAMES | {"noarch"}) + ")"
+    _regex = NEVR._regex + r"\." + _arches_regex
+
+    def __init__(
+        self, *, name: str, version: str, release: str, arch: str, epoch: int = 0
+    ) -> None:
+        if not re.match(f"^{self._arches_regex}$", arch):
+            raise SpecfileException("Invalid architecture name.")
+        self.arch = arch
+        super().__init__(name=name, epoch=epoch, version=version, release=release)
+
+    def _key(self) -> tuple:
+        return self.name, self.epoch, self.version, self.release, self.arch
+
+    def __repr__(self) -> str:
+        return (
+            f"NEVRA(name='{self.name}', epoch={self.epoch}, "
+            f"version='{self.version}', release='{self.release}', "
+            f"arch='{self.arch}')"
+        )
+
+    def __str__(self) -> str:
+        return super().__str__() + f".{self.arch}"
+
+    @classmethod
+    def from_string(cls, nevra: str) -> "NEVRA":
+        m = re.match(f"^{cls._regex}$", nevra)
+        if not m:
+            raise SpecfileException("Invalid NEVRA string.")
+        n, e, v, r, a = m.groups()
+        return cls(name=n, epoch=int(e) if e else 0, version=v, release=r, arch=a)
 
 
 @contextlib.contextmanager
