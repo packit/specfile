@@ -1,3 +1,8 @@
+# 0.10.0
+
+- Fixed an issue that caused empty lines originally inside changelog entries to appear at the end. (#140)
+- Renamed the `ignore_missing_includes` option to a more general `force_parse`. If specified, it allows to attempt to parse the spec file even if one or more sources required to be present at parsing time are not available. Such sources include sources referenced from shell expansions in tag values and sources included using the `%include` directive. (#137)
+
 # 0.9.1
 
 - `specfile` now supports localized tags (e.g. `Summary(fr)`) and tags with qualifiers (e.g. `Requires(post)`).
