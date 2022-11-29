@@ -10,10 +10,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterator, List, Optional, Tuple, Type, Union
 
+import rpm
+
 from specfile.changelog import Changelog, ChangelogEntry
 from specfile.exceptions import SourceNumberException, SpecfileException
 from specfile.macro_definitions import MacroDefinition, MacroDefinitions
-from specfile.macros import Macros
+from specfile.macros import Macro, Macros
 from specfile.prep import Prep
 from specfile.sections import Section, Sections
 from specfile.sourcelist import Sourcelist
@@ -103,6 +105,11 @@ class Specfile:
         """
         return self._parser.tainted
 
+    @property
+    def rpm_spec(self) -> rpm.spec:
+        """Underlying `rpm.spec` instance."""
+        return self._parser.spec
+
     def reload(self) -> None:
         """Reload the spec file content."""
         self._lines = self.path.read_text().splitlines()
@@ -127,6 +134,19 @@ class Specfile:
         """
         self._parser.parse(str(self), extra_macros)
         return Macros.expand(expression)
+
+    def get_active_macros(self) -> List[Macro]:
+        """
+        Gets active macros in the context of the spec file.
+
+        This includes built-in RPM macros, macros loaded from macro files
+        and macros defined in the spec file itself.
+
+        Returns:
+            List of `Macro` objects.
+        """
+        self._parser.parse(str(self))
+        return Macros.dump()
 
     @contextlib.contextmanager
     def lines(self) -> Iterator[List[str]]:

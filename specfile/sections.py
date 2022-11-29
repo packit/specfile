@@ -5,45 +5,7 @@ import collections
 import re
 from typing import List, Optional, SupportsIndex, Union, cast, overload
 
-# valid section names as defined in build/parseSpec.c in RPM source
-SECTION_NAMES = {
-    "package",
-    "prep",
-    "generate_buildrequires",
-    "conf",
-    "build",
-    "install",
-    "check",
-    "clean",
-    "preun",
-    "postun",
-    "pretrans",
-    "posttrans",
-    "pre",
-    "post",
-    "files",
-    "changelog",
-    "description",
-    "triggerpostun",
-    "triggerprein",
-    "triggerun",
-    "triggerin",
-    "trigger",
-    "verifyscript",
-    "sepolicy",
-    "filetriggerin",
-    "filetrigger",
-    "filetriggerun",
-    "filetriggerpostun",
-    "transfiletriggerin",
-    "transfiletrigger",
-    "transfiletriggerun",
-    "transfiletriggerpostun",
-    "end",
-    "patchlist",
-    "sourcelist",
-}
-
+from specfile.constants import SECTION_NAMES
 
 # name for the implicit "preamble" section
 PREAMBLE = "package"
@@ -92,6 +54,11 @@ class Section(collections.UserList):
             return Section(self.name, self.data[i])
         else:
             return self.data[i]
+
+    @property
+    def normalized_name(self) -> str:
+        """Normalized name of the section. All characters are lowercased."""
+        return self.name.lower()
 
     def copy(self) -> "Section":
         return Section(self.name, self.data)
