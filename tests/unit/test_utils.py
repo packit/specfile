@@ -11,7 +11,8 @@ from specfile.utils import EVR, NEVR, get_filename_from_location
     [
         ("", ""),
         ("tarball-0.1.tar.gz", "tarball-0.1.tar.gz"),
-        ("https://example.com", ""),
+        ("https://example.com", "example.com"),
+        ("https://example.com#fragment", "example.com#fragment"),
         ("https://example.com/archive/tarball-0.1.tar.gz", "tarball-0.1.tar.gz"),
         (
             "https://example.com/archive/tarball-0.1.tar.gz#fragment",

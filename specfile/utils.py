@@ -8,8 +8,6 @@ import os
 import re
 import sys
 import tempfile
-import urllib.parse
-from pathlib import Path
 from typing import Iterator, List
 
 from specfile.exceptions import SpecfileException
@@ -117,9 +115,7 @@ def get_filename_from_location(location: str) -> str:
     Returns:
         Extracted filename that can be empty if there is none.
     """
-    url = urllib.parse.urlsplit(location)
-    if url.fragment:
-        if "/" in url.fragment:
-            return Path(url.fragment).name.split("=")[-1]
-        return Path(f"{url.path}#{url.fragment}").name
-    return Path(url.path).name
+    slash = location.rfind("/")
+    if slash < 0:
+        return location
+    return location[slash + 1 :].split("=")[-1]
