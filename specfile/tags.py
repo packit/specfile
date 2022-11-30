@@ -187,7 +187,7 @@ class Tag:
         self,
         name: str,
         value: str,
-        expanded_value: str,
+        expanded_value: Optional[str],
         separator: str,
         comments: Comments,
     ) -> None:
@@ -230,8 +230,9 @@ class Tag:
 
     def __repr__(self) -> str:
         comments = repr(self.comments)
+        expanded_value = repr(self._expanded_value)
         return (
-            f"Tag('{self.name}', '{self.value}', '{self._expanded_value}', "
+            f"Tag('{self.name}', '{self.value}', {expanded_value}, "
             f"'{self._separator}', {comments})"
         )
 
@@ -249,7 +250,7 @@ class Tag:
         return self._expanded_value is not None
 
     @property
-    def expanded_value(self) -> str:
+    def expanded_value(self) -> Optional[str]:
         """Value of the tag after expanding macros and evaluating all conditions."""
         return self._expanded_value
 

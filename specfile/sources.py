@@ -38,7 +38,7 @@ class Source(ABC):
 
     @property
     @abstractmethod
-    def expanded_location(self) -> str:
+    def expanded_location(self) -> Optional[str]:
         """Location of the source after expanding macros."""
         ...
 
@@ -56,7 +56,7 @@ class Source(ABC):
 
     @property
     @abstractmethod
-    def expanded_filename(self) -> str:
+    def expanded_filename(self) -> Optional[str]:
         """Filename of the source after expanding macros."""
         ...
 
@@ -133,7 +133,7 @@ class TagSource(Source):
         self._tag.value = value
 
     @property
-    def expanded_location(self) -> str:
+    def expanded_location(self) -> Optional[str]:
         """Location of the source after expanding macros."""
         return self._tag.expanded_value
 
@@ -143,8 +143,10 @@ class TagSource(Source):
         return get_filename_from_location(self._tag.value)
 
     @property
-    def expanded_filename(self) -> str:
+    def expanded_filename(self) -> Optional[str]:
         """Filename of the source after expanding macros."""
+        if self._tag.expanded_value is None:
+            return None
         return get_filename_from_location(self._tag.expanded_value)
 
     @property
