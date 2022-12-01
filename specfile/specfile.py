@@ -530,7 +530,7 @@ class Specfile:
     @property
     def expanded_release(self) -> str:
         """Release string without the dist suffix with macros expanded."""
-        return self.expand(self.release)
+        return self.expand(self.release, extra_macros=[("dist", "")])
 
     def set_version_and_release(self, version: str, release: str = "1") -> None:
         """
