@@ -5,7 +5,7 @@ import itertools
 import re
 from abc import ABC
 from string import Template
-from typing import TYPE_CHECKING, List, Optional, Pattern, Tuple
+from typing import TYPE_CHECKING, List, Optional, Pattern, Set, Tuple
 
 from specfile.exceptions import UnterminatedMacroException
 from specfile.macros import Macros
@@ -254,7 +254,7 @@ class ValueParser:
     def construct_regex(
         cls,
         value: str,
-        modifiable_entities: List[str],
+        modifiable_entities: Set[str],
         context: Optional["Specfile"] = None,
     ) -> Tuple[Pattern, Template]:
         """
