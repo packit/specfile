@@ -86,7 +86,9 @@ class TagSource(Source):
 
     def __repr__(self) -> str:
         tag = repr(self._tag)
-        return f"TagSource({tag}, {self._number})"
+        # determine class name dynamically so that inherited classes
+        # don't have to reimplement __repr__()
+        return f"{self.__class__.__name__}({tag}, {self._number})"
 
     def _extract_number(self) -> Optional[str]:
         """
@@ -156,7 +158,7 @@ class TagSource(Source):
 
 
 class ListSource(Source):
-    """Class that represents a source backed by a line in a %sourcelist/%patchlist section."""
+    """Class that represents a source backed by a line in a %sourcelist section."""
 
     def __init__(self, source: SourcelistEntry, number: int) -> None:
         """
@@ -174,7 +176,9 @@ class ListSource(Source):
 
     def __repr__(self) -> str:
         source = repr(self._source)
-        return f"ListSource({source}, {self._number})"
+        # determine class name dynamically so that inherited classes
+        # don't have to reimplement __repr__()
+        return f"{self.__class__.__name__}({source}, {self._number})"
 
     @property
     def number(self) -> int:
@@ -215,6 +219,8 @@ class Sources(collections.abc.MutableSequence):
     """Class that represents a sequence of all sources."""
 
     prefix: str = "Source"
+    tag_class: type = TagSource
+    list_class: type = ListSource
 
     def __init__(
         self,
@@ -334,9 +340,9 @@ class Sources(collections.abc.MutableSequence):
         for i, tag in enumerate(self._tags):
             if tag.normalized_name == self.prefix:
                 last_number += 1
-                ts = TagSource(tag, last_number)
+                ts = self.tag_class(tag, last_number)
             elif tag.normalized_name.startswith(self.prefix):
-                ts = TagSource(tag)
+                ts = self.tag_class(tag)
                 last_number = ts.number
             else:
                 continue
@@ -358,7 +364,7 @@ class Sources(collections.abc.MutableSequence):
         )
         last_number = result[-1][0].number if result else -1
         result.extend(
-            (ListSource(sl[i], last_number + 1 + i), sl, i)
+            (self.list_class(sl[i], last_number + 1 + i), sl, i)
             for sl in self._sourcelists
             for i in range(len(sl))
         )
@@ -481,8 +487,8 @@ class Sources(collections.abc.MutableSequence):
             else:
                 source, container, index = items[i]
                 number = source.number
-            if isinstance(source, TagSource):
-                name, separator = self._get_tag_format(source, number)
+            if isinstance(source, self.tag_class):
+                name, separator = self._get_tag_format(cast(TagSource, source), number)
                 container.insert(
                     index,
                     Tag(name, location, self._expand(location), separator, Comments()),
@@ -580,10 +586,24 @@ class Sources(collections.abc.MutableSequence):
         return len([s for s in list(zip(*items))[0] if s.location == location])
 
 
+class Patch(Source):
+    """Class that represents a patch."""
+
+
+class TagPatch(TagSource, Patch):
+    """Class that represents a patch backed by a spec file tag."""
+
+
+class ListPatch(ListSource, Patch):
+    """Class that represents a patch backed by a line in a %patchlist section."""
+
+
 class Patches(Sources):
     """Class that represents a sequence of all patches."""
 
     prefix: str = "Patch"
+    tag_class: type = TagPatch
+    list_class: type = ListPatch
 
     def _get_initial_tag_setup(self, number: int = 0) -> Tuple[int, str, str]:
         """
@@ -599,7 +619,7 @@ class Patches(Sources):
         """
         try:
             index, source = [
-                (i, TagSource(t))
+                (i, Sources.tag_class(t))
                 for i, t in enumerate(self._tags)
                 if t.normalized_name.startswith(Sources.prefix)
             ][-1]
