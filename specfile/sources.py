@@ -214,7 +214,7 @@ class ListSource(Source):
 class Sources(collections.abc.MutableSequence):
     """Class that represents a sequence of all sources."""
 
-    PREFIX: str = "Source"
+    prefix: str = "Source"
 
     def __init__(
         self,
@@ -332,10 +332,10 @@ class Sources(collections.abc.MutableSequence):
         result = []
         last_number = -1
         for i, tag in enumerate(self._tags):
-            if tag.name.capitalize() == self.PREFIX.capitalize():
+            if tag.normalized_name == self.prefix:
                 last_number += 1
                 ts = TagSource(tag, last_number)
-            elif tag.name.capitalize().startswith(self.PREFIX.capitalize()):
+            elif tag.normalized_name.startswith(self.prefix):
                 ts = TagSource(tag)
                 last_number = ts.number
             else:
@@ -401,7 +401,6 @@ class Sources(collections.abc.MutableSequence):
         Returns:
             Tuple in the form of (name, separator).
         """
-        prefix = self.PREFIX.capitalize()
         if number_digits_override is not None:
             number_digits = number_digits_override
         else:
@@ -410,7 +409,7 @@ class Sources(collections.abc.MutableSequence):
             suffix = ""
         else:
             suffix = f"{number:0{number_digits}}"
-        name = f"{prefix}{suffix}"
+        name = f"{self.prefix}{suffix}"
         diff = len(reference._tag.name) - len(name)
         if diff >= 0:
             return name, reference._tag._separator + " " * diff
@@ -428,7 +427,6 @@ class Sources(collections.abc.MutableSequence):
         Returns:
             Tuple in the form of (index, name, separator).
         """
-        prefix = self.PREFIX.capitalize()
         if (
             self._default_to_implicit_numbering
             or self._default_source_number_digits == 0
@@ -436,7 +434,7 @@ class Sources(collections.abc.MutableSequence):
             suffix = ""
         else:
             suffix = f"{number:0{self._default_source_number_digits}}"
-        return len(self._tags) if self._tags else 0, f"{prefix}{suffix}", ": "
+        return len(self._tags) if self._tags else 0, f"{self.prefix}{suffix}", ": "
 
     def _deduplicate_tag_names(self, start: int = 0) -> None:
         """
@@ -471,7 +469,7 @@ class Sources(collections.abc.MutableSequence):
               already is a source with the same location.
         """
         if not self._allow_duplicates and location in self:
-            raise DuplicateSourceException(f"Source '{location}' already exists")
+            raise DuplicateSourceException(f"{self.prefix} '{location}' already exists")
         items = self._get_items()
         if i > len(items):
             i = len(items)
@@ -520,7 +518,7 @@ class Sources(collections.abc.MutableSequence):
               already is a source with the same location.
         """
         if not self._allow_duplicates and location in self:
-            raise DuplicateSourceException(f"Source '{location}' already exists")
+            raise DuplicateSourceException(f"{self.prefix} '{location}' already exists")
         tags = self._get_tags()
         if tags:
             # find the nearest source tag
@@ -585,7 +583,7 @@ class Sources(collections.abc.MutableSequence):
 class Patches(Sources):
     """Class that represents a sequence of all patches."""
 
-    PREFIX: str = "Patch"
+    prefix: str = "Patch"
 
     def _get_initial_tag_setup(self, number: int = 0) -> Tuple[int, str, str]:
         """
@@ -603,7 +601,7 @@ class Patches(Sources):
             index, source = [
                 (i, TagSource(t))
                 for i, t in enumerate(self._tags)
-                if t.name.capitalize().startswith("Source")
+                if t.normalized_name.startswith(Sources.prefix)
             ][-1]
         except IndexError:
             return super()._get_initial_tag_setup(number)
