@@ -581,7 +581,11 @@ class Specfile:
                 patches[index].comments.extend(comment.splitlines())
 
     def update_value(
-        self, value: str, requested_value: str, protected_entities: Optional[str] = None
+        self,
+        value: str,
+        requested_value: str,
+        position: int,
+        protected_entities: Optional[str] = None,
     ) -> str:
         """
         Updates a value from within the context of the spec file with a new value,
@@ -591,6 +595,7 @@ class Specfile:
         Args:
             value: Value to update.
             requested_value: Requested new value.
+            position: Position (line number) of the value in the spec file.
             protected_entities: Regular expression specifying protected tags and macro definitions,
               ensuring their values won't be updated.
 
@@ -600,8 +605,10 @@ class Specfile:
 
         @dataclass
         class Entity:
+            name: str
             value: str
             type: Type
+            position: int
             locked: bool = False
             updated: bool = False
 
@@ -611,32 +618,38 @@ class Specfile:
             re.IGNORECASE,
         )
         # collect modifiable entities
-        entities = {}
+        entities = []
         with self.macro_definitions() as macro_definitions:
-            entities.update(
-                {
-                    md.name: Entity(md.body, type(md))
+            entities.extend(
+                [
+                    Entity(
+                        md.name, md.body, type(md), md.get_position(macro_definitions)
+                    )
                     for md in macro_definitions
                     if not protected_regex.match(md.name)
                     and not md.name.endswith(")")  # skip macro definitions with options
-                }
+                ]
             )
-        # order matters here - if there is a macro definition redefining a tag,
-        # we want to update the tag, not the macro definition
         with self.tags() as tags:
-            entities.update(
-                {
-                    t.name.lower(): Entity(t.value, type(t))
+            entities.extend(
+                [
+                    Entity(t.name.lower(), t.value, type(t), t.get_position(tags))
                     for t in tags
                     if not protected_regex.match(t.name)
-                }
+                ]
             )
-        # tags can be referenced as %{tag} or %{TAG}
-        entities.update({k.upper(): v for k, v in entities.items() if v.type == Tag})
+        entities.sort(key=lambda e: e.position)
 
-        def update(value, requested_value):
+        def update(value, requested_value, position):
+            modifiable_entities = {e.name for e in entities if e.position < position}
+            # tags can be referenced as %{tag} or %{TAG}
+            modifiable_entities.update(
+                e.name.upper()
+                for e in entities
+                if e.position < position and e.type == Tag
+            )
             regex, template = ValueParser.construct_regex(
-                value, entities.keys(), context=self
+                value, modifiable_entities, context=self
             )
             m = regex.match(requested_value)
             if m:
@@ -644,33 +657,41 @@ class Specfile:
                 for grp, val in d.items():
                     if grp.startswith(SUBSTITUTION_GROUP_PREFIX):
                         continue
-                    if entities[grp].locked:
+                    # find the closest matching entity
+                    entity = [
+                        e
+                        for e in entities
+                        if e.position < position
+                        and (
+                            e.name == grp
+                            and e.type == MacroDefinition
+                            or e.name == grp.lower()
+                            and e.type == Tag
+                        )
+                    ][-1]
+                    if entity.locked:
                         # avoid infinite recursion
                         return requested_value
-                    entities[grp].locked = True
+                    entity.locked = True
                     try:
-                        entities[grp].value = update(entities[grp].value, val)
+                        entity.value = update(entity.value, val, entity.position)
                     finally:
-                        entities[grp].locked = False
-                        entities[grp].updated = True
+                        entity.locked = False
+                        entity.updated = True
                 return template.substitute(d)
             # no match, simply return the requested value
             return requested_value
 
-        result = update(value, requested_value)
+        result = update(value, requested_value, position)
         # synchronize back any changes
         with self.macro_definitions() as macro_definitions:
-            for n, v in [
-                (n, v)
-                for n, v in entities.items()
-                if v.updated and v.type == MacroDefinition
+            for entity in [
+                e for e in entities if e.updated and e.type == MacroDefinition
             ]:
-                getattr(macro_definitions, n).body = v.value
+                getattr(macro_definitions, entity.name).body = entity.value
         with self.tags() as tags:
-            for n, v in [
-                (n, v) for n, v in entities.items() if v.updated and v.type == Tag
-            ]:
-                getattr(tags, n).value = v.value
+            for entity in [e for e in entities if e.updated and e.type == Tag]:
+                getattr(tags, entity.name).value = entity.value
         return result
 
     def update_tag(
@@ -688,11 +709,13 @@ class Specfile:
               ensuring their values won't be updated.
         """
         with self.tags() as tags:
-            original_value = getattr(tags, name).value
+            tag = getattr(tags, name)
+            original_value = tag.value
+            position = tag.get_position(tags)
         # we can't use update_value() within the context manager, because any changes
         # made by it to tags or macro definitions would be thrown away
         updated_value = self.update_value(
-            original_value, value, protected_entities=protected_entities
+            original_value, value, position, protected_entities=protected_entities
         )
         with self.tags() as tags:
             getattr(tags, name).value = updated_value

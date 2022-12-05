@@ -37,6 +37,20 @@ class MacroDefinition:
         macro = "%global" if self.is_global else "%define"
         return f"{ws[0]}{macro}{ws[1]}{self.name}{ws[2]}{self.body}{ws[3]}"
 
+    def get_position(self, container: "MacroDefinitions") -> int:
+        """
+        Gets position of this macro definition in the spec file.
+
+        Args:
+            container: `MacroDefinitions` instance that contains this macro definition.
+
+        Returns:
+            Position expressed as line number (starting from 0).
+        """
+        return sum(
+            len(md.get_raw_data()) for md in container[: container.index(self)]
+        ) + len(self._preceding_lines)
+
     def get_raw_data(self) -> List[str]:
         result = self._preceding_lines.copy()
         ws = self._whitespace

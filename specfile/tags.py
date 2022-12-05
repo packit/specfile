@@ -254,6 +254,21 @@ class Tag:
         """Value of the tag after expanding macros and evaluating all conditions."""
         return self._expanded_value
 
+    def get_position(self, container: "Tags") -> int:
+        """
+        Gets position of this tag in a section.
+
+        Args:
+            container: `Tags` instance that contains this tag.
+
+        Returns:
+            Position expressed as line number (starting from 0).
+        """
+        return sum(
+            len(t.comments.get_raw_data()) + 1
+            for t in container[: container.index(self)]
+        ) + len(self.comments.get_raw_data())
+
 
 class Tags(collections.UserList):
     """

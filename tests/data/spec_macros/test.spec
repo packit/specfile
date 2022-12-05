@@ -3,11 +3,12 @@
 %global patchver 2
 %global prever rc2
 %global package_version %{majorver}.%{minorver}.%{patchver}
+%global release 1%{?dist}
 
 
 Name:           test
 Version:        %{package_version}%{?prever:~%{prever}}
-Release:        1%{?dist}
+Release:        %{release}
 Summary:        Test package
 
 License:        MIT
