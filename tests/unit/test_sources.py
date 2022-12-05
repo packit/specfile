@@ -246,7 +246,7 @@ def test_sources_insert(tags, sourcelists, index, location, number, cls):
             for sl in sourcelists
         ],
     )
-    if location in [v for t, v in tags if t.startswith(Sources.PREFIX)] + [
+    if location in [v for t, v in tags if t.startswith(Sources.prefix)] + [
         s for sl in sourcelists for s in sl
     ]:
         with pytest.raises(SpecfileException):
@@ -333,7 +333,7 @@ def test_sources_insert(tags, sourcelists, index, location, number, cls):
 )
 def test_sources_insert_numbered(tags, number, location, index):
     sources = Sources(Tags([Tag(t, v, v, ": ", Comments()) for t, v in tags]), [])
-    if location in [v for t, v in tags if t.startswith(Sources.PREFIX)]:
+    if location in [v for t, v in tags if t.startswith(Sources.prefix)]:
         with pytest.raises(SpecfileException):
             sources.insert_numbered(number, location)
     else:

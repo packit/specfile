@@ -86,7 +86,9 @@ class TagSource(Source):
 
     def __repr__(self) -> str:
         tag = repr(self._tag)
-        return f"TagSource({tag}, {self._number})"
+        # determine class name dynamically so that inherited classes
+        # don't have to reimplement __repr__()
+        return f"{self.__class__.__name__}({tag}, {self._number})"
 
     def _extract_number(self) -> Optional[str]:
         """
@@ -156,7 +158,7 @@ class TagSource(Source):
 
 
 class ListSource(Source):
-    """Class that represents a source backed by a line in a %sourcelist/%patchlist section."""
+    """Class that represents a source backed by a line in a %sourcelist section."""
 
     def __init__(self, source: SourcelistEntry, number: int) -> None:
         """
@@ -174,7 +176,9 @@ class ListSource(Source):
 
     def __repr__(self) -> str:
         source = repr(self._source)
-        return f"ListSource({source}, {self._number})"
+        # determine class name dynamically so that inherited classes
+        # don't have to reimplement __repr__()
+        return f"{self.__class__.__name__}({source}, {self._number})"
 
     @property
     def number(self) -> int:
@@ -214,7 +218,9 @@ class ListSource(Source):
 class Sources(collections.abc.MutableSequence):
     """Class that represents a sequence of all sources."""
 
-    PREFIX: str = "Source"
+    prefix: str = "Source"
+    tag_class: type = TagSource
+    list_class: type = ListSource
 
     def __init__(
         self,
@@ -332,11 +338,11 @@ class Sources(collections.abc.MutableSequence):
         result = []
         last_number = -1
         for i, tag in enumerate(self._tags):
-            if tag.name.capitalize() == self.PREFIX.capitalize():
+            if tag.normalized_name == self.prefix:
                 last_number += 1
-                ts = TagSource(tag, last_number)
-            elif tag.name.capitalize().startswith(self.PREFIX.capitalize()):
-                ts = TagSource(tag)
+                ts = self.tag_class(tag, last_number)
+            elif tag.normalized_name.startswith(self.prefix):
+                ts = self.tag_class(tag)
                 last_number = ts.number
             else:
                 continue
@@ -358,7 +364,7 @@ class Sources(collections.abc.MutableSequence):
         )
         last_number = result[-1][0].number if result else -1
         result.extend(
-            (ListSource(sl[i], last_number + 1 + i), sl, i)
+            (self.list_class(sl[i], last_number + 1 + i), sl, i)
             for sl in self._sourcelists
             for i in range(len(sl))
         )
@@ -401,7 +407,6 @@ class Sources(collections.abc.MutableSequence):
         Returns:
             Tuple in the form of (name, separator).
         """
-        prefix = self.PREFIX.capitalize()
         if number_digits_override is not None:
             number_digits = number_digits_override
         else:
@@ -410,7 +415,7 @@ class Sources(collections.abc.MutableSequence):
             suffix = ""
         else:
             suffix = f"{number:0{number_digits}}"
-        name = f"{prefix}{suffix}"
+        name = f"{self.prefix}{suffix}"
         diff = len(reference._tag.name) - len(name)
         if diff >= 0:
             return name, reference._tag._separator + " " * diff
@@ -428,7 +433,6 @@ class Sources(collections.abc.MutableSequence):
         Returns:
             Tuple in the form of (index, name, separator).
         """
-        prefix = self.PREFIX.capitalize()
         if (
             self._default_to_implicit_numbering
             or self._default_source_number_digits == 0
@@ -436,7 +440,7 @@ class Sources(collections.abc.MutableSequence):
             suffix = ""
         else:
             suffix = f"{number:0{self._default_source_number_digits}}"
-        return len(self._tags) if self._tags else 0, f"{prefix}{suffix}", ": "
+        return len(self._tags) if self._tags else 0, f"{self.prefix}{suffix}", ": "
 
     def _deduplicate_tag_names(self, start: int = 0) -> None:
         """
@@ -471,7 +475,7 @@ class Sources(collections.abc.MutableSequence):
               already is a source with the same location.
         """
         if not self._allow_duplicates and location in self:
-            raise DuplicateSourceException(f"Source '{location}' already exists")
+            raise DuplicateSourceException(f"{self.prefix} '{location}' already exists")
         items = self._get_items()
         if i > len(items):
             i = len(items)
@@ -483,8 +487,8 @@ class Sources(collections.abc.MutableSequence):
             else:
                 source, container, index = items[i]
                 number = source.number
-            if isinstance(source, TagSource):
-                name, separator = self._get_tag_format(source, number)
+            if isinstance(source, self.tag_class):
+                name, separator = self._get_tag_format(cast(TagSource, source), number)
                 container.insert(
                     index,
                     Tag(name, location, self._expand(location), separator, Comments()),
@@ -520,7 +524,7 @@ class Sources(collections.abc.MutableSequence):
               already is a source with the same location.
         """
         if not self._allow_duplicates and location in self:
-            raise DuplicateSourceException(f"Source '{location}' already exists")
+            raise DuplicateSourceException(f"{self.prefix} '{location}' already exists")
         tags = self._get_tags()
         if tags:
             # find the nearest source tag
@@ -582,10 +586,24 @@ class Sources(collections.abc.MutableSequence):
         return len([s for s in list(zip(*items))[0] if s.location == location])
 
 
+class Patch(Source):
+    """Class that represents a patch."""
+
+
+class TagPatch(TagSource, Patch):
+    """Class that represents a patch backed by a spec file tag."""
+
+
+class ListPatch(ListSource, Patch):
+    """Class that represents a patch backed by a line in a %patchlist section."""
+
+
 class Patches(Sources):
     """Class that represents a sequence of all patches."""
 
-    PREFIX: str = "Patch"
+    prefix: str = "Patch"
+    tag_class: type = TagPatch
+    list_class: type = ListPatch
 
     def _get_initial_tag_setup(self, number: int = 0) -> Tuple[int, str, str]:
         """
@@ -601,9 +619,9 @@ class Patches(Sources):
         """
         try:
             index, source = [
-                (i, TagSource(t))
+                (i, Sources.tag_class(t))
                 for i, t in enumerate(self._tags)
-                if t.name.capitalize().startswith("Source")
+                if t.normalized_name.startswith(Sources.prefix)
             ][-1]
         except IndexError:
             return super()._get_initial_tag_setup(number)
