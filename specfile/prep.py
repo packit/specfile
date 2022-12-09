@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, SupportsIndex, Union, cast, overlo
 
 from specfile.macro_options import MacroOptions
 from specfile.sections import Section
+from specfile.utils import split_conditional_macro_expansion
 
 
 class PrepMacro(ABC):
@@ -330,18 +331,13 @@ class Prep(collections.abc.Container):
         Returns:
             Constructed instance of `Prep` class.
         """
-        # match also macros enclosed in conditionalized macro expansion
-        # e.g.: %{?with_system_nss:%patch30 -p3 -b .nss_pkcs11_v3}
         macro_regex = re.compile(
-            r"(?P<c>%{!?\?\w+:)?.*?"
-            r"(?P<m>%(setup|patch\d*|autopatch|autosetup))"
-            r"(?P<d>\s*)"
-            r"(?P<o>.*?)"
-            r"(?(c)}|$)"
+            r"(?P<m>%(setup|patch\d*|autopatch|autosetup))(?P<d>\s*)(?P<o>.*?)$"
         )
         data = []
         buffer: List[str] = []
         for line in section:
+            line, prefix, suffix = split_conditional_macro_expansion(line)
             m = macro_regex.search(line)
             if m:
                 name, delimiter, option_string = (
@@ -349,7 +345,8 @@ class Prep(collections.abc.Container):
                     m.group("d"),
                     m.group("o"),
                 )
-                prefix, suffix = line[: m.start("m")], line[m.end("o") :]
+                prefix += line[: m.start("m")]
+                suffix = line[m.end("o") :] + suffix
                 klass = next(
                     (
                         klass

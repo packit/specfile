@@ -3,9 +3,11 @@
 
 import collections
 import re
+from typing import Tuple
 
 from specfile.constants import ARCH_NAMES
-from specfile.exceptions import SpecfileException
+from specfile.exceptions import SpecfileException, UnterminatedMacroException
+from specfile.value_parser import ConditionalMacroExpansion, ValueParser
 
 
 class EVR(collections.abc.Hashable):
@@ -130,3 +132,27 @@ def get_filename_from_location(location: str) -> str:
     if slash < 0:
         return location
     return location[slash + 1 :].split("=")[-1]
+
+
+def split_conditional_macro_expansion(value: str) -> Tuple[str, str, str]:
+    """
+    Splits conditional macro expansion into its body and prefix and suffix of it.
+    If the passed string isn't a conditional macro expansion, returns it as it is.
+
+    Args:
+        value: String to be split.
+
+    Returns:
+        Tuple of body, prefix, suffix. Prefix and suffix will be empty if the passed string
+        isn't a conditional macro expansion.
+    """
+    try:
+        nodes = ValueParser.parse(value)
+    except UnterminatedMacroException:
+        return value, "", ""
+    if len(nodes) != 1:
+        return value, "", ""
+    node = nodes[0]
+    if not isinstance(node, ConditionalMacroExpansion):
+        return value, "", ""
+    return "".join(str(n) for n in node.body), f"%{{{node.prefix}{node.name}:", "}"

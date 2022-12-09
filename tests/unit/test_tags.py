@@ -43,6 +43,8 @@ def test_parse():
                 "",
                 "Requires:          make",
                 "Requires(post):    bash",
+                "",
+                "%{?fedora:Suggests:          diffutils}",
             ],
         ),
         Section(
@@ -64,6 +66,8 @@ def test_parse():
                 "",
                 "Requires:          make",
                 "Requires(post):    bash",
+                "",
+                "Suggests:          diffutils",
             ],
         ),
     )
@@ -80,7 +84,9 @@ def test_parse():
     assert not tags.epoch.valid
     assert tags.requires.value == "make"
     assert "requires(post)" in tags
-    assert tags[-1].name == "Requires(post)"
+    assert tags[-2].name == "Requires(post)"
+    assert tags[-1].name == "Suggests"
+    assert tags.suggests.value == "diffutils"
 
 
 def test_get_raw_section_data():
@@ -112,6 +118,15 @@ def test_get_raw_section_data():
                 "Requires", "make", "make", ":          ", Comments([], ["%endif", ""])
             ),
             Tag("Requires(post)", "bash", "bash", ":    ", Comments()),
+            Tag(
+                "Suggests",
+                "diffutils",
+                "diffutils",
+                ":          ",
+                Comments([], [""]),
+                "%{?fedora:",
+                "}",
+            ),
         ],
         [],
     )
@@ -132,6 +147,8 @@ def test_get_raw_section_data():
         "",
         "Requires:          make",
         "Requires(post):    bash",
+        "",
+        "%{?fedora:Suggests:          diffutils}",
     ]
 
 
