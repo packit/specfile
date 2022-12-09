@@ -1,6 +1,5 @@
 # 0.11.0
 
-
 # 0.10.0
 
 - Fixed an issue that caused empty lines originally inside changelog entries to appear at the end. (#140)
