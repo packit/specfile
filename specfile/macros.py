@@ -8,8 +8,8 @@ from typing import List, Optional
 
 import rpm
 
+from specfile.context_management import capture_stderr
 from specfile.exceptions import MacroRemovalException, RPMException
-from specfile.utils import capture_stderr
 
 MAX_REMOVAL_RETRIES = 20
 

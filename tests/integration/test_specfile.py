@@ -391,3 +391,18 @@ def test_shell_expansions(spec_shell_expansions):
     spec = Specfile(spec_shell_expansions)
     assert spec.expanded_version == "1035.4200"
     assert "C.UTF-8" in spec.expand("%numeric_locale")
+
+
+def test_context_management(spec_autosetup):
+    spec = Specfile(spec_autosetup)
+    with spec.tags() as tags:
+        tags.license.value = "BSD"
+        assert spec.license == "BSD"
+        spec.license = "BSD-3-Clause"
+        tags.patch0.value = "first_patch.patch"
+        with spec.patches() as patches:
+            assert patches[0].location == "first_patch.patch"
+            patches[0].location = "patch_0.patch"
+    assert spec.license == "BSD-3-Clause"
+    with spec.patches() as patches:
+        assert patches[0].location == "patch_0.patch"

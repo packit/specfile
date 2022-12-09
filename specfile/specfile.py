@@ -1,18 +1,18 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
-import contextlib
 import datetime
 import re
 import subprocess
 import types
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator, List, Optional, Tuple, Type, Union
+from typing import Generator, List, Optional, Tuple, Type, Union
 
 import rpm
 
 from specfile.changelog import Changelog, ChangelogEntry
+from specfile.context_management import ContextManager
 from specfile.exceptions import SourceNumberException, SpecfileException
 from specfile.macro_definitions import MacroDefinition, MacroDefinitions
 from specfile.macros import Macro, Macros
@@ -148,8 +148,8 @@ class Specfile:
         self._parser.parse(str(self))
         return Macros.dump()
 
-    @contextlib.contextmanager
-    def lines(self) -> Iterator[List[str]]:
+    @ContextManager
+    def lines(self) -> Generator[List[str], None, None]:
         """
         Context manager for accessing spec file lines.
 
@@ -163,8 +163,8 @@ class Specfile:
             if self.autosave:
                 self.save()
 
-    @contextlib.contextmanager
-    def macro_definitions(self) -> Iterator[MacroDefinitions]:
+    @ContextManager
+    def macro_definitions(self) -> Generator[MacroDefinitions, None, None]:
         """
         Context manager for accessing macro definitions.
 
@@ -178,8 +178,8 @@ class Specfile:
             finally:
                 lines[:] = macro_definitions.get_raw_data()
 
-    @contextlib.contextmanager
-    def sections(self) -> Iterator[Sections]:
+    @ContextManager
+    def sections(self) -> Generator[Sections, None, None]:
         """
         Context manager for accessing spec file sections.
 
@@ -200,8 +200,10 @@ class Specfile:
             return None
         return Sections.parse(self._parser.spec.parsed.splitlines())
 
-    @contextlib.contextmanager
-    def tags(self, section: Union[str, Section] = "package") -> Iterator[Tags]:
+    @ContextManager
+    def tags(
+        self, section: Union[str, Section] = "package"
+    ) -> Generator[Tags, None, None]:
         """
         Context manager for accessing tags in a specified section.
 
@@ -212,26 +214,21 @@ class Specfile:
         Yields:
             Tags in the section as `Tags` object.
         """
-        if isinstance(section, Section):
-            raw_section = section
-            parsed_section = getattr(self.parsed_sections, section.name, None)
+        with self.sections() as sections:
+            if isinstance(section, Section):
+                raw_section = section
+                parsed_section = getattr(self.parsed_sections, section.name, None)
+            else:
+                raw_section = getattr(sections, section)
+                parsed_section = getattr(self.parsed_sections, section, None)
             tags = Tags.parse(raw_section, parsed_section)
             try:
                 yield tags
             finally:
                 raw_section.data = tags.get_raw_section_data()
-        else:
-            with self.sections() as sections:
-                raw_section = getattr(sections, section)
-                parsed_section = getattr(self.parsed_sections, section, None)
-                tags = Tags.parse(raw_section, parsed_section)
-                try:
-                    yield tags
-                finally:
-                    raw_section.data = tags.get_raw_section_data()
 
-    @contextlib.contextmanager
-    def changelog(self) -> Iterator[Optional[Changelog]]:
+    @ContextManager
+    def changelog(self) -> Generator[Optional[Changelog], None, None]:
         """
         Context manager for accessing changelog.
 
@@ -250,8 +247,8 @@ class Specfile:
                 finally:
                     section.data = changelog.get_raw_section_data()
 
-    @contextlib.contextmanager
-    def prep(self) -> Iterator[Optional[Prep]]:
+    @ContextManager
+    def prep(self) -> Generator[Optional[Prep], None, None]:
         """
         Context manager for accessing %prep section.
 
@@ -270,13 +267,13 @@ class Specfile:
                 finally:
                     section.data = prep.get_raw_section_data()
 
-    @contextlib.contextmanager
+    @ContextManager
     def sources(
         self,
         allow_duplicates: bool = False,
         default_to_implicit_numbering: bool = False,
         default_source_number_digits: int = 1,
-    ) -> Iterator[Sources]:
+    ) -> Generator[Sources, None, None]:
         """
         Context manager for accessing sources.
 
@@ -288,7 +285,7 @@ class Specfile:
         Yields:
             Spec file sources as `Sources` object.
         """
-        with self.sections() as sections, self.tags(sections.package) as tags:
+        with self.sections() as sections, self.tags() as tags:
             sourcelists = [
                 (s, Sourcelist.parse(s, context=self))
                 for s in sections
@@ -307,13 +304,13 @@ class Specfile:
                 for section, sourcelist in sourcelists:
                     section.data = sourcelist.get_raw_section_data()
 
-    @contextlib.contextmanager
+    @ContextManager
     def patches(
         self,
         allow_duplicates: bool = False,
         default_to_implicit_numbering: bool = False,
         default_source_number_digits: int = 1,
-    ) -> Iterator[Patches]:
+    ) -> Generator[Patches, None, None]:
         """
         Context manager for accessing patches.
 
@@ -325,7 +322,7 @@ class Specfile:
         Yields:
             Spec file patches as `Patches` object.
         """
-        with self.sections() as sections, self.tags(sections.package) as tags:
+        with self.sections() as sections, self.tags() as tags:
             patchlists = [
                 (s, Sourcelist.parse(s, context=self))
                 for s in sections

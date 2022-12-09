@@ -11,11 +11,12 @@ from typing import Iterator, List, Optional, Set, Tuple
 
 import rpm
 
+from specfile.context_management import capture_stderr
 from specfile.exceptions import RPMException
 from specfile.macros import Macros
 from specfile.sections import Section
 from specfile.tags import Tags
-from specfile.utils import capture_stderr, get_filename_from_location
+from specfile.utils import get_filename_from_location
 from specfile.value_parser import ConditionalMacroExpansion, ShellExpansion, ValueParser
 
 logger = logging.getLogger(__name__)
