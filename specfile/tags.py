@@ -8,6 +8,7 @@ from typing import Any, Iterable, List, Optional, SupportsIndex, Union, cast, ov
 
 from specfile.constants import TAG_NAMES, TAGS_WITH_ARG
 from specfile.sections import Section
+from specfile.utils import split_conditional_macro_expansion
 
 
 def get_tag_name_regex(name: str) -> str:
@@ -190,6 +191,8 @@ class Tag:
         expanded_value: Optional[str],
         separator: str,
         comments: Comments,
+        prefix: Optional[str] = None,
+        suffix: Optional[str] = None,
     ) -> None:
         """
         Constructs a `Tag` object.
@@ -202,6 +205,8 @@ class Tag:
               Separator between name and literal value (colon usually surrounded by some
               amount of whitespace).
             comments: List of comments associated with the tag.
+            prefix: Characters preceding the tag on a line.
+            suffix: Characters following the tag on a line.
 
         Returns:
             Constructed instance of `Tag` class.
@@ -216,6 +221,8 @@ class Tag:
         self._expanded_value = expanded_value
         self._separator = separator
         self.comments = comments.copy()
+        self._prefix = prefix or ""
+        self._suffix = suffix or ""
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Tag):
@@ -226,6 +233,8 @@ class Tag:
             and self._expanded_value == other._expanded_value
             and self._separator == other._separator
             and self.comments == other.comments
+            and self._prefix == other._prefix
+            and self._suffix == other._suffix
         )
 
     def __repr__(self) -> str:
@@ -233,7 +242,7 @@ class Tag:
         expanded_value = repr(self._expanded_value)
         return (
             f"Tag('{self.name}', '{self.value}', {expanded_value}, "
-            f"'{self._separator}', {comments})"
+            f"'{self._separator}', {comments}, '{self._prefix}', '{self._suffix}')"
         )
 
     @property
@@ -442,6 +451,7 @@ class Tags(collections.UserList):
         data = []
         buffer: List[str] = []
         for line in raw_section:
+            line, prefix, suffix = split_conditional_macro_expansion(line)
             # find out if there is a match for one of the tag regexes
             m = next((m for m in (r.match(line) for r in tag_regexes) if m), None)
             if m:
@@ -463,6 +473,8 @@ class Tags(collections.UserList):
                         expanded_value,
                         m.group("s"),
                         Comments.parse(buffer),
+                        prefix,
+                        suffix,
                     )
                 )
                 buffer = []
@@ -480,6 +492,8 @@ class Tags(collections.UserList):
         result = []
         for tag in self.data:
             result.extend(tag.comments.get_raw_data())
-            result.append(f"{tag.name}{tag._separator}{tag.value}")
+            result.append(
+                f"{tag._prefix}{tag.name}{tag._separator}{tag.value}{tag._suffix}"
+            )
         result.extend(self._remainder)
         return result
