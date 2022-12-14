@@ -103,11 +103,12 @@ class ContextManager:
         return types.MethodType(self, obj)
 
     def __call__(self, *args: Any, **kwargs: Any) -> GeneratorContextManager:
-        # serialize the passed arguments, excluding cls/self if present
-        key = pickle.dumps(
-            (args[1:] if self.is_bound else args, sorted(kwargs.items())),
-            protocol=pickle.HIGHEST_PROTOCOL,
-        )
+        # serialize the passed arguments
+        payload = list(args) + sorted(kwargs.items())
+        if payload and self.is_bound:
+            # do not attempt to pickle self/cls
+            payload[0] = (type(payload[0]), id(payload[0]))
+        key = pickle.dumps(payload, protocol=pickle.HIGHEST_PROTOCOL)
         if (
             key in self.generators
             # gi_frame is None only in case generator is exhausted
