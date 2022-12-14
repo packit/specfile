@@ -1,3 +1,8 @@
+# 0.11.1
+
+- Tags enclosed in conditional macro expansions are not ignored anymore. (#156)
+- Fixed context managers being shared between Specfile instances. (#157)
+
 # 0.11.0
 
 - Context managers (`Specfile.sections()`, `Specfile.tags()` etc.) can now be nested and combined together (with one exception - `Specfile.macro_definitions()`), and it is also possible to use tag properties (e.g. `Specfile.version`, `Specfile.license`) inside them. It is also possible to access the data directly, avoiding the `with` statement, by using the `content` property (e.g. `Specfile.tags().content`), but be aware that no modifications done to such data will be preserved. You must use `with` to make changes. (#153)
