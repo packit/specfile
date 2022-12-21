@@ -477,6 +477,9 @@ class Specfile:
     license = _tag("license", "License as stored in the spec file.")
     expanded_license = _expanded_tag("license", "License with macros expanded.")
 
+    epoch = _tag("epoch", "Epoch as stored in the spec file.")
+    expanded_epoch = _expanded_tag("epoch", "Epoch with macros expanded.")
+
     url = _tag("url", "URL as stored in the spec file.")
     expanded_url = _expanded_tag("url", "URL with macros expanded.")
 
