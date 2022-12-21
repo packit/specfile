@@ -58,7 +58,11 @@ class Section(collections.UserList):
     @property
     def normalized_name(self) -> str:
         """Normalized name of the section. All characters are lowercased."""
-        return self.name.lower()
+        tokens = re.split(r"(\s+)", self.name)
+        if len(tokens) == 1:
+            return tokens[0].lower()
+        name, *rest = tokens
+        return name.lower() + "".join(rest)
 
     def copy(self) -> "Section":
         return Section(self.name, self.data)
