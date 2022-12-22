@@ -3,6 +3,7 @@
 
 import collections
 import contextlib
+import functools
 import io
 import os
 import pickle
@@ -85,6 +86,7 @@ class ContextManager:
         self.is_bound = False
         self.generators: Dict[bytes, Generator[Any, None, None]] = {}
         self.values: Dict[bytes, Any] = {}
+        functools.update_wrapper(self, function)
 
     @overload
     def __get__(self, obj: None, objtype: Optional[type] = None) -> "ContextManager":
