@@ -217,7 +217,7 @@ class Specfile:
         with self.sections() as sections:
             if isinstance(section, Section):
                 raw_section = section
-                parsed_section = getattr(self.parsed_sections, section.name, None)
+                parsed_section = getattr(self.parsed_sections, section.id, None)
             else:
                 raw_section = getattr(sections, section)
                 parsed_section = getattr(self.parsed_sections, section, None)
@@ -289,7 +289,7 @@ class Specfile:
             sourcelists = [
                 (s, Sourcelist.parse(s, context=self))
                 for s in sections
-                if s.name == "sourcelist"
+                if s.id == "sourcelist"
             ]
             try:
                 yield Sources(
@@ -326,7 +326,7 @@ class Specfile:
             patchlists = [
                 (s, Sourcelist.parse(s, context=self))
                 for s in sections
-                if s.name == "patchlist"
+                if s.id == "patchlist"
             ]
             try:
                 yield Patches(
