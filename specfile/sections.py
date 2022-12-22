@@ -60,8 +60,12 @@ class Section(collections.UserList):
 
     @property
     def normalized_id(self) -> str:
-        """Normalized ID of the section. All characters are lowercased."""
-        return self.id.lower()
+        """Normalized ID of the section. All characters of name are lowercased."""
+        tokens = re.split(r"(\s+)", self.id)
+        if len(tokens) == 1:
+            return tokens[0].lower()
+        name, *rest = tokens
+        return name.lower() + "".join(rest)
 
     def copy(self) -> "Section":
         return Section(self.id, self.data)
