@@ -8,6 +8,7 @@ from enum import Enum, auto
 from typing import Dict, Iterable, Iterator, List, Optional, Tuple, Union, overload
 
 from specfile.exceptions import MacroOptionsException
+from specfile.formatter import formatted
 
 
 class TokenType(Enum):
@@ -30,9 +31,9 @@ class Token(collections.abc.Hashable):
         self.type = type
         self.value = value
 
+    @formatted
     def __repr__(self) -> str:
-        type = repr(self.type)
-        return f"Token({type}, '{self.value}')"
+        return f"Token({self.type!r}, {self.value!r})"
 
     def __str__(self) -> str:
         if self.type == TokenType.WHITESPACE:
@@ -75,9 +76,9 @@ class Positionals(collections.abc.MutableSequence):
         """
         self._options = options
 
+    @formatted
     def __repr__(self) -> str:
-        options = repr(self._options)
-        return f"Positionals({options})"
+        return f"Positionals({self._options!r})"
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, (Positionals, list)):
@@ -242,10 +243,9 @@ class MacroOptions(collections.abc.MutableMapping):
         self.optstring = optstring or ""
         self.defaults = defaults.copy() if defaults is not None else {}
 
+    @formatted
     def __repr__(self) -> str:
-        tokens = repr(self._tokens)
-        defaults = repr(self.defaults)
-        return f"MacroOptions({tokens}, '{self.optstring}', {defaults})"
+        return f"MacroOptions({self._tokens!r}, {self.optstring!r}, {self.defaults!r})"
 
     def __str__(self) -> str:
         return "".join(str(t) for t in self._tokens)

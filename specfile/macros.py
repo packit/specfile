@@ -10,6 +10,7 @@ import rpm
 
 from specfile.context_management import capture_stderr
 from specfile.exceptions import MacroRemovalException, RPMException
+from specfile.formatter import formatted
 
 MAX_REMOVAL_RETRIES = 20
 
@@ -63,10 +64,12 @@ class Macro(collections.abc.Hashable):
             return NotImplemented
         return self._key() == other._key()
 
+    @formatted
     def __repr__(self) -> str:
-        options = f"'{self.options}'" if self.options else "None"
-        level = repr(self.level)
-        return f"Macro('{self.name}', {options}, '{self.body}', {level}, {self.used})"
+        return (
+            f"Macro({self.name!r}, {self.options!r}, {self.body!r}, "
+            f"{self.level!r}, {self.used!r})"
+        )
 
 
 class Macros:

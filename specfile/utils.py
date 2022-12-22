@@ -7,6 +7,7 @@ from typing import Tuple
 
 from specfile.constants import ARCH_NAMES
 from specfile.exceptions import SpecfileException, UnterminatedMacroException
+from specfile.formatter import formatted
 from specfile.value_parser import ConditionalMacroExpansion, ValueParser
 
 
@@ -31,8 +32,9 @@ class EVR(collections.abc.Hashable):
             return NotImplemented
         return self._key() == other._key()
 
+    @formatted
     def __repr__(self) -> str:
-        return f"EVR(epoch={self.epoch}, version='{self.version}', release='{self.release}')"
+        return f"EVR(epoch={self.epoch!r}, version={self.version!r}, release={self.release!r})"
 
     def __str__(self) -> str:
         epoch = f"{self.epoch}:" if self.epoch > 0 else ""
@@ -62,10 +64,11 @@ class NEVR(EVR):
     def _key(self) -> tuple:
         return self.name, self.epoch, self.version, self.release
 
+    @formatted
     def __repr__(self) -> str:
         return (
-            f"NEVR(name='{self.name}', epoch={self.epoch}, "
-            f"version='{self.version}', release='{self.release}')"
+            f"NEVR(name={self.name!r}, epoch={self.epoch!r}, "
+            f"version={self.version!r}, release={self.release!r})"
         )
 
     def __str__(self) -> str:
@@ -97,11 +100,12 @@ class NEVRA(NEVR):
     def _key(self) -> tuple:
         return self.name, self.epoch, self.version, self.release, self.arch
 
+    @formatted
     def __repr__(self) -> str:
         return (
-            f"NEVRA(name='{self.name}', epoch={self.epoch}, "
-            f"version='{self.version}', release='{self.release}', "
-            f"arch='{self.arch}')"
+            f"NEVRA(name={self.name!r}, epoch={self.epoch!r}, "
+            f"version={self.version!r}, release={self.release!r}, "
+            f"arch={self.arch!r})"
         )
 
     def __str__(self) -> str:
