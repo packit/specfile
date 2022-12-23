@@ -49,11 +49,11 @@ def test_parse():
         ]
     )
     assert sections[0][0] == "0"
-    assert sections[1].name == "prep"
+    assert sections[1].id == "prep"
     assert sections.prep == ["0", "1", "2", ""]
-    assert sections[2].name == "package x"
+    assert sections[2].id == "package x"
     assert not sections[2]
-    assert sections[-1].name == "changelog"
+    assert sections[-1].id == "changelog"
 
 
 def test_parse_case_insensitive():
@@ -61,9 +61,9 @@ def test_parse_case_insensitive():
         ["0", "", "%Prep", "0", "1", "2", "", "%pAckage x", "Requires: bar"]
     )
     assert sections[0][0] == "0"
-    assert sections[1].name == "Prep"
+    assert sections[1].id == "Prep"
     assert sections.prep == ["0", "1", "2", ""]
-    assert sections[2].name == "pAckage x"
+    assert sections[2].id == "pAckage x"
     assert sections[2] == ["Requires: bar"]
 
 
@@ -79,7 +79,7 @@ def test_parse_invalid_name():
         ]
     )
     assert len(sections) == 2  # including empty preamble
-    assert sections[1].name == "description"
+    assert sections[1].id == "description"
     assert sections.description[2] == "%description(fr)"
 
 

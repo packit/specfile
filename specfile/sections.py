@@ -16,30 +16,33 @@ class Section(collections.UserList):
     Class that represents a spec file section.
 
     Attributes:
-        name: Name of the section (without the leading '%').
+        id: ID of the section (name and optional arguments, without the leading '%').
         data: List of lines forming the content of the section, not including newline characters.
     """
 
-    def __init__(self, name: str, data: Optional[List[str]] = None) -> None:
+    def __init__(self, id: str, data: Optional[List[str]] = None) -> None:
         super().__init__()
-        if not name or name.split()[0].lower() not in SECTION_NAMES:
+        if not id:
+            raise ValueError("Section ID can't be empty")
+        name = id.split()[0]
+        if name.lower() not in SECTION_NAMES:
             raise ValueError(f"Invalid section name: '{name}'")
-        self.name = name
+        self.id = id
         if data is not None:
             self.data = data.copy()
 
     def __str__(self) -> str:
         data = "".join(f"{i}\n" for i in self.data)
-        if self.name == PREAMBLE:
+        if self.id == PREAMBLE:
             return data
-        return f"%{self.name}\n{data}"
+        return f"%{self.id}\n{data}"
 
     def __repr__(self) -> str:
         data = repr(self.data)
-        return f"Section('{self.name}', {data})"
+        return f"Section('{self.id}', {data})"
 
     def __copy__(self) -> "Section":
-        return Section(self.name, self.data)
+        return Section(self.id, self.data)
 
     @overload
     def __getitem__(self, i: SupportsIndex) -> str:
@@ -51,29 +54,33 @@ class Section(collections.UserList):
 
     def __getitem__(self, i):
         if isinstance(i, slice):
-            return Section(self.name, self.data[i])
+            return Section(self.id, self.data[i])
         else:
             return self.data[i]
 
     @property
-    def normalized_name(self) -> str:
-        """Normalized name of the section. All characters are lowercased."""
-        return self.name.lower()
+    def normalized_id(self) -> str:
+        """Normalized ID of the section. All characters of name are lowercased."""
+        tokens = re.split(r"(\s+)", self.id)
+        if len(tokens) == 1:
+            return tokens[0].lower()
+        name, *rest = tokens
+        return name.lower() + "".join(rest)
 
     def copy(self) -> "Section":
-        return Section(self.name, self.data)
+        return Section(self.id, self.data)
 
     def get_raw_data(self) -> List[str]:
-        if self.name == PREAMBLE:
+        if self.id == PREAMBLE:
             return self.data
-        return [f"%{self.name}"] + self.data
+        return [f"%{self.id}"] + self.data
 
 
 class Sections(collections.UserList):
     """
     Class that represents all spec file sections, hence the entire spec file.
 
-    Sections can be accessed by index or conveniently by name as attributes:
+    Sections can be accessed by index or conveniently by id as attributes:
     ```
     # print the third line of the first section
     print(sections[0][2])
@@ -102,48 +109,47 @@ class Sections(collections.UserList):
     def __copy__(self) -> "Sections":
         return Sections(self.data)
 
-    def __contains__(self, name: object) -> bool:
+    def __contains__(self, id: object) -> bool:
         try:
             # use parent's __getattribute__() so this method can be called from __getattr__()
             data = super().__getattribute__("data")
         except AttributeError:
             return False
-        return any(s.name.lower() == cast(str, name).split()[0].lower() for s in data)
+        return any(s.normalized_id == cast(str, id).lower() for s in data)
 
-    def __getattr__(self, name: str) -> Section:
-        if name not in self:
-            return super().__getattribute__(name)
+    def __getattr__(self, id: str) -> Section:
+        if id not in self:
+            return super().__getattribute__(id)
         try:
-            return self.get(name)
+            return self.get(id)
         except ValueError:
-            raise AttributeError(name)
+            raise AttributeError(id)
 
-    def __setattr__(self, name: str, value: Union[Section, List[str]]) -> None:
-        if name not in self:
-            return super().__setattr__(name, value)
+    def __setattr__(self, id: str, value: Union[Section, List[str]]) -> None:
+        if id not in self:
+            return super().__setattr__(id, value)
         try:
             if isinstance(value, Section):
-                self.data[self.find(name)] = value
+                self.data[self.find(id)] = value
             else:
-                self.data[self.find(name)].data = value
+                self.data[self.find(id)].data = value
         except ValueError:
-            raise AttributeError(name)
+            raise AttributeError(id)
 
-    def __delattr__(self, name: str) -> None:
-        if name not in self:
-            return super().__delattr__(name)
+    def __delattr__(self, id: str) -> None:
+        if id not in self:
+            return super().__delattr__(id)
         try:
-            del self.data[self.find(name)]
+            del self.data[self.find(id)]
         except ValueError:
-            raise AttributeError(name)
+            raise AttributeError(id)
 
-    def get(self, name: str) -> Section:
-        return self.data[self.find(name)]
+    def get(self, id: str) -> Section:
+        return self.data[self.find(id)]
 
-    def find(self, name: str) -> int:
-        name = name.lower()
+    def find(self, id: str) -> int:
         for i, section in enumerate(self.data):
-            if section.name.lower() == name:
+            if section.normalized_id == id.lower():
                 return i
         raise ValueError
 
@@ -158,14 +164,14 @@ class Sections(collections.UserList):
         Returns:
             Constructed instance of `Sections` class.
         """
-        section_name_regexes = [
+        section_id_regexes = [
             re.compile(rf"^%{re.escape(n)}(\s+.*$|$)", re.IGNORECASE)
             for n in SECTION_NAMES
         ]
         section_starts = []
         for i, line in enumerate(lines):
             if line.startswith("%"):
-                for r in section_name_regexes:
+                for r in section_id_regexes:
                     if r.match(line):
                         section_starts.append(i)
                         break
