@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple, Union, cast, overload
 
 from specfile.exceptions import DuplicateSourceException
+from specfile.formatter import formatted
 from specfile.macros import Macros
 from specfile.sourcelist import Sourcelist, SourcelistEntry
 from specfile.tags import Comments, Tag, Tags
@@ -84,11 +85,11 @@ class TagSource(Source):
         self._tag = tag
         self._number = number
 
+    @formatted
     def __repr__(self) -> str:
-        tag = repr(self._tag)
         # determine class name dynamically so that inherited classes
         # don't have to reimplement __repr__()
-        return f"{self.__class__.__name__}({tag}, {self._number})"
+        return f"{self.__class__.__name__}({self._tag!r}, {self._number!r})"
 
     def _extract_number(self) -> Optional[str]:
         """
@@ -174,11 +175,11 @@ class ListSource(Source):
         self._source = source
         self._number = number
 
+    @formatted
     def __repr__(self) -> str:
-        source = repr(self._source)
         # determine class name dynamically so that inherited classes
         # don't have to reimplement __repr__()
-        return f"{self.__class__.__name__}({source}, {self._number})"
+        return f"{self.__class__.__name__}({self._source!r}, {self._number!r})"
 
     @property
     def number(self) -> int:
@@ -252,16 +253,14 @@ class Sources(collections.abc.MutableSequence):
         self._default_source_number_digits = default_source_number_digits
         self._context = context
 
+    @formatted
     def __repr__(self) -> str:
-        tags = repr(self._tags)
-        sourcelists = repr(self._sourcelists)
-        allow_duplicates = repr(self._allow_duplicates)
-        default_to_implicit_numbering = repr(self._default_to_implicit_numbering)
         # determine class name dynamically so that inherited classes
         # don't have to reimplement __repr__()
         return (
-            f"{self.__class__.__name__}({tags}, {sourcelists}, {allow_duplicates}, "
-            f"{default_to_implicit_numbering}, {self._default_source_number_digits})"
+            f"{self.__class__.__name__}({self._tags!r}, {self._sourcelists!r}, "
+            f"{self._allow_duplicates!r}, {self._default_to_implicit_numbering!r}, "
+            f"{self._default_source_number_digits!r})"
         )
 
     def __contains__(self, location: object) -> bool:

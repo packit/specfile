@@ -6,6 +6,7 @@ import re
 from typing import List, Optional, SupportsIndex, Union, cast, overload
 
 from specfile.constants import SECTION_NAMES
+from specfile.formatter import formatted
 
 # name for the implicit "preamble" section
 PREAMBLE = "package"
@@ -37,9 +38,9 @@ class Section(collections.UserList):
             return data
         return f"%{self.id}\n{data}"
 
+    @formatted
     def __repr__(self) -> str:
-        data = repr(self.data)
-        return f"Section('{self.id}', {data})"
+        return f"Section({self.id!r}, {self.data!r})"
 
     def __copy__(self) -> "Section":
         return Section(self.id, self.data)
@@ -102,9 +103,9 @@ class Sections(collections.UserList):
     def __str__(self) -> str:
         return "".join(str(i) for i in self.data)
 
+    @formatted
     def __repr__(self) -> str:
-        data = repr(self.data)
-        return f"Sections({data})"
+        return f"Sections({self.data!r})"
 
     def __copy__(self) -> "Sections":
         return Sections(self.data)

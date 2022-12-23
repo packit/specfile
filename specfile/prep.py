@@ -6,6 +6,7 @@ import re
 from abc import ABC
 from typing import Any, Dict, List, Optional, SupportsIndex, Union, cast, overload
 
+from specfile.formatter import formatted
 from specfile.macro_options import MacroOptions
 from specfile.sections import Section
 from specfile.utils import split_conditional_macro_expansion
@@ -56,15 +57,14 @@ class PrepMacro(ABC):
             preceding_lines.copy() if preceding_lines is not None else []
         )
 
+    @formatted
     def __repr__(self) -> str:
-        options = repr(self.options)
-        preceding_lines = repr(self._preceding_lines)
         # determine class name dynamically so that inherited classes
         # don't have to reimplement __repr__()
         return (
-            f"{self.__class__.__name__}('{self.name}', {options}, "
-            f"'{self._delimiter}', '{self._prefix}', '{self._suffix}', "
-            f"{preceding_lines})"
+            f"{self.__class__.__name__}({self.name!r}, {self.options!r}, "
+            f"{self._delimiter!r}, {self._prefix!r}, {self._suffix!r}, "
+            f"{self._preceding_lines!r})"
         )
 
     def get_raw_data(self) -> List[str]:
@@ -159,10 +159,9 @@ class PrepMacros(collections.UserList):
             self.data = data.copy()
         self._remainder = remainder.copy() if remainder is not None else []
 
+    @formatted
     def __repr__(self) -> str:
-        data = repr(self.data)
-        remainder = repr(self._remainder)
-        return f"PrepMacros({data}, {remainder})"
+        return f"PrepMacros({self.data!r}, {self._remainder!r})"
 
     def __contains__(self, item: object) -> bool:
         if isinstance(item, type):
@@ -251,9 +250,9 @@ class Prep(collections.abc.Container):
     def __init__(self, macros: PrepMacros) -> None:
         self.macros = macros.copy()
 
+    @formatted
     def __repr__(self) -> str:
-        macros = repr(self.macros)
-        return f"Prep({macros})"
+        return f"Prep({self.macros!r})"
 
     def __contains__(self, item: object) -> bool:
         return item in self.macros

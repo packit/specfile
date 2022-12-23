@@ -7,6 +7,7 @@ import re
 from typing import Any, Iterable, List, Optional, SupportsIndex, Union, cast, overload
 
 from specfile.constants import TAG_NAMES, TAGS_WITH_ARG
+from specfile.formatter import formatted
 from specfile.sections import Section
 from specfile.utils import split_conditional_macro_expansion
 
@@ -37,8 +38,9 @@ class Comment:
     def __str__(self) -> str:
         return f"{self.prefix}{self.text}"
 
+    @formatted
     def __repr__(self) -> str:
-        return f"Comment('{self.text}', '{self.prefix}')"
+        return f"Comment({self.text!r}, {self.prefix!r})"
 
 
 class Comments(collections.UserList):
@@ -72,10 +74,9 @@ class Comments(collections.UserList):
             preceding_lines.copy() if preceding_lines is not None else []
         )
 
+    @formatted
     def __repr__(self) -> str:
-        data = repr(self.data)
-        preceding_lines = repr(self._preceding_lines)
-        return f"Comments({data}, {preceding_lines})"
+        return f"Comments({self.data!r}, {self._preceding_lines!r})"
 
     def __contains__(self, item: object) -> bool:
         if isinstance(item, str):
@@ -237,12 +238,11 @@ class Tag:
             and self._suffix == other._suffix
         )
 
+    @formatted
     def __repr__(self) -> str:
-        comments = repr(self.comments)
-        expanded_value = repr(self._expanded_value)
         return (
-            f"Tag('{self.name}', '{self.value}', {expanded_value}, "
-            f"'{self._separator}', {comments}, '{self._prefix}', '{self._suffix}')"
+            f"Tag({self.name!r}, {self.value!r}, {self._expanded_value!r}, "
+            f"{self._separator!r}, {self.comments!r}, {self._prefix!r}, {self._suffix!r})"
         )
 
     @property
@@ -317,10 +317,9 @@ class Tags(collections.UserList):
             self.data = data.copy()
         self._remainder = remainder.copy() if remainder is not None else []
 
+    @formatted
     def __repr__(self) -> str:
-        data = repr(self.data)
-        remainder = repr(self._remainder)
-        return f"Tags({data}, {remainder})"
+        return f"Tags({self.data!r}, {self._remainder!r})"
 
     @overload
     def __getitem__(self, i: SupportsIndex) -> Tag:

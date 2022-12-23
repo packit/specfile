@@ -9,6 +9,7 @@ from typing import List, Optional, SupportsIndex, Union, overload
 import rpm
 
 from specfile.exceptions import SpecfileException
+from specfile.formatter import formatted
 from specfile.sections import Section
 from specfile.utils import EVR
 
@@ -64,10 +65,9 @@ class ChangelogEntry:
     def __str__(self) -> str:
         return f"{self.header}\n" + "\n".join(self.content) + "\n"
 
+    @formatted
     def __repr__(self) -> str:
-        content = repr(self.content)
-        following_lines = repr(self._following_lines)
-        return f"ChangelogEntry('{self.header}', {content}, {following_lines})"
+        return f"ChangelogEntry({self.header!r}, {self.content!r}, {self._following_lines!r})"
 
     @property
     def evr(self) -> Optional[str]:
@@ -214,10 +214,9 @@ class Changelog(collections.UserList):
     def __str__(self) -> str:
         return "\n".join(str(i) for i in reversed(self.data))
 
+    @formatted
     def __repr__(self) -> str:
-        data = repr(self.data)
-        predecessor = repr(self._predecessor)
-        return f"Changelog({data}, {predecessor})"
+        return f"Changelog({self.data!r}, {self._predecessor!r})"
 
     @overload
     def __getitem__(self, i: SupportsIndex) -> ChangelogEntry:

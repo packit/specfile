@@ -8,6 +8,7 @@ from string import Template
 from typing import TYPE_CHECKING, List, Optional, Pattern, Set, Tuple
 
 from specfile.exceptions import UnterminatedMacroException
+from specfile.formatter import formatted
 from specfile.macros import Macros
 
 if TYPE_CHECKING:
@@ -28,8 +29,9 @@ class StringLiteral(Node):
     def __init__(self, value: str) -> None:
         self.value = value
 
+    @formatted
     def __repr__(self) -> str:
-        return f"StringLiteral('{self.value}')"
+        return f"StringLiteral({self.value!r})"
 
     def __str__(self) -> str:
         return self.value
@@ -46,10 +48,11 @@ class ShellExpansion(Node):
     def __init__(self, body: str) -> None:
         self.body = body
 
+    @formatted
     def __repr__(self) -> str:
         # determine class name dynamically so that inherited classes
         # don't have to reimplement __repr__()
-        return f"{self.__class__.__name__}('{self.body}')"
+        return f"{self.__class__.__name__}({self.body!r})"
 
     def __str__(self) -> str:
         return f"%({self.body})"
@@ -73,8 +76,9 @@ class MacroSubstitution(Node):
     def __init__(self, body: str) -> None:
         _, self.prefix, self.name = re.split(r"([?!]*)", body, maxsplit=1)
 
+    @formatted
     def __repr__(self) -> str:
-        return f"MacroSubstitution('{self.prefix}{self.name}')"
+        return f"MacroSubstitution({(self.prefix + self.name)!r})"
 
     def __str__(self) -> str:
         return f"%{self.prefix}{self.name}"
@@ -94,9 +98,10 @@ class EnclosedMacroSubstitution(Node):
         self.args: List[str]
         self.name, *self.args = rest.split()
 
+    @formatted
     def __repr__(self) -> str:
         args = (" " + " ".join(self.args)) if self.args else ""
-        return f"EnclosedMacroSubstitution('{self.prefix}{self.name}{args}')"
+        return f"EnclosedMacroSubstitution({(self.prefix + self.name + args)!r})"
 
     def __str__(self) -> str:
         args = (" " + " ".join(self.args)) if self.args else ""
@@ -119,9 +124,11 @@ class ConditionalMacroExpansion(Node):
         _, self.prefix, self.name = re.split(r"([?!]*)", condition, maxsplit=1)
         self.body = body
 
+    @formatted
     def __repr__(self) -> str:
-        body = repr(self.body)
-        return f"ConditionalMacroExpansion('{self.prefix}{self.name}', {body})"
+        return (
+            f"ConditionalMacroExpansion({(self.prefix + self.name)!r}, {self.body!r})"
+        )
 
     def __str__(self) -> str:
         body = "".join(str(n) for n in self.body)
@@ -144,8 +151,9 @@ class BuiltinMacro(Node):
         self.name = name
         self.body = body
 
+    @formatted
     def __repr__(self) -> str:
-        return f"BuiltinMacro('{self.name}', '{self.body}')"
+        return f"BuiltinMacro({self.name!r}, {self.body!r})"
 
     def __str__(self) -> str:
         return f"%{{{self.name}:{self.body}}}"

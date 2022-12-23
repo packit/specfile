@@ -14,6 +14,7 @@ import rpm
 from specfile.changelog import Changelog, ChangelogEntry
 from specfile.context_management import ContextManager
 from specfile.exceptions import SourceNumberException, SpecfileException
+from specfile.formatter import formatted
 from specfile.macro_definitions import MacroDefinition, MacroDefinitions
 from specfile.macros import Macro, Macros
 from specfile.prep import Prep
@@ -56,13 +57,12 @@ class Specfile:
         )
         self._parser.parse(str(self))
 
+    @formatted
     def __repr__(self) -> str:
-        path = repr(self.path)
-        sourcedir = repr(self._parser.sourcedir)
-        autosave = repr(self.autosave)
-        macros = repr(self._parser.macros)
-        force_parse = repr(self._parser.force_parse)
-        return f"Specfile({path}, {sourcedir}, {autosave}, {macros}, {force_parse})"
+        return (
+            f"Specfile({self.path!r}, {self._parser.sourcedir!r}, {self.autosave!r}, "
+            f"{self._parser.macros!r}, {self._parser.force_parse!r})"
+        )
 
     def __str__(self) -> str:
         return "\n".join(self._lines) + "\n"

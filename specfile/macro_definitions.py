@@ -5,6 +5,8 @@ import collections
 import re
 from typing import List, Optional, SupportsIndex, Tuple, Union, overload
 
+from specfile.formatter import formatted
+
 
 class MacroDefinition:
     def __init__(
@@ -23,13 +25,11 @@ class MacroDefinition:
             preceding_lines.copy() if preceding_lines is not None else []
         )
 
+    @formatted
     def __repr__(self) -> str:
-        is_global = repr(self.is_global)
-        whitespace = repr(self._whitespace)
-        preceding_lines = repr(self._preceding_lines)
         return (
-            f"MacroDefinition('{self.name}', '{self.body}', {is_global}, "
-            f"{whitespace}, {preceding_lines})"
+            f"MacroDefinition({self.name!r}, {self.body!r}, {self.is_global!r}, "
+            f"{self._whitespace!r}, {self._preceding_lines!r})"
         )
 
     def __str__(self) -> str:
@@ -93,10 +93,9 @@ class MacroDefinitions(collections.UserList):
             self.data = data.copy()
         self._remainder = remainder.copy() if remainder is not None else []
 
+    @formatted
     def __repr__(self) -> str:
-        data = repr(self.data)
-        remainder = repr(self._remainder)
-        return f"MacroDefinitions({data}, {remainder})"
+        return f"MacroDefinitions({self.data!r}, {self._remainder!r})"
 
     def __contains__(self, name: object) -> bool:
         try:

@@ -13,6 +13,7 @@ import rpm
 
 from specfile.context_management import capture_stderr
 from specfile.exceptions import RPMException
+from specfile.formatter import formatted
 from specfile.macros import Macros
 from specfile.sections import Section
 from specfile.tags import Tags
@@ -51,11 +52,9 @@ class SpecParser:
         self.spec = None
         self.tainted = False
 
+    @formatted
     def __repr__(self) -> str:
-        sourcedir = repr(self.sourcedir)
-        macros = repr(self.macros)
-        force_parse = repr(self.force_parse)
-        return f"SpecParser({sourcedir}, {macros}, {force_parse})"
+        return f"SpecParser({self.sourcedir!r}, {self.macros!r}, {self.force_parse!r})"
 
     @contextlib.contextmanager
     def _make_dummy_sources(

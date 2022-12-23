@@ -4,6 +4,7 @@
 import collections
 from typing import TYPE_CHECKING, List, Optional, SupportsIndex, overload
 
+from specfile.formatter import formatted
 from specfile.macros import Macros
 from specfile.sections import Section
 from specfile.tags import Comments
@@ -44,9 +45,9 @@ class SourcelistEntry:
             return NotImplemented
         return self.location == other.location and self.comments == other.comments
 
+    @formatted
     def __repr__(self) -> str:
-        comments = repr(self.comments)
-        return f"SourcelistEntry('{self.location}', {comments})"
+        return f"SourcelistEntry({self.location!r}, {self.comments!r})"
 
     @property
     def expanded_location(self) -> str:
@@ -84,10 +85,9 @@ class Sourcelist(collections.UserList):
             self.data = data.copy()
         self._remainder = remainder.copy() if remainder is not None else []
 
+    @formatted
     def __repr__(self) -> str:
-        data = repr(self.data)
-        remainder = repr(self._remainder)
-        return f"Sourcelist({data}, {remainder})"
+        return f"Sourcelist({self.data!r}, {self._remainder!r})"
 
     @overload
     def __getitem__(self, i: SupportsIndex) -> SourcelistEntry:
