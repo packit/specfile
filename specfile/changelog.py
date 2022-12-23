@@ -340,7 +340,7 @@ class Changelog(collections.UserList):
         Returns:
             List of lines forming the reconstructed section data.
         """
-        result = self._predecessor
+        result = self._predecessor.copy()
         for entry in reversed(self.data):
             result.append(entry.header)
             result.extend(entry.content)
