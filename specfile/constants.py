@@ -40,6 +40,40 @@ SECTION_NAMES = {
     "sourcelist",
 }
 
+SIMPLE_SCRIPT_SECTIONS = {
+    "conf",
+    "generate_buildrequires",
+    "build",
+    "install",
+    "check",
+    "clean",
+}
+
+SCRIPT_SECTIONS = {
+    "pre",
+    "post",
+    "preun",
+    "postun",
+    "pretrans",
+    "posttrans",
+    "preuntrans",
+    "postuntrans",
+    "verifyscript",
+    "triggerprein",
+    "trigger",
+    "triggerin",
+    "triggerun",
+    "triggerpostun",
+    "filetrigger",
+    "filetriggerin",
+    "filetriggerun",
+    "filetriggerpostun",
+    "transfiletrigger",
+    "transfiletriggerin",
+    "transfiletriggerun",
+    "transfiletriggerpostun",
+}
+
 # valid tag names as defined in build/parsePreamble.c in RPM source
 TAG_NAMES = {
     "name",
