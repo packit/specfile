@@ -31,8 +31,12 @@ def format_expression(expression: str, line_length_threshold: int = 80) -> str:
         result = " " * indent + prefix
         if isinstance(node, ast.Constant):
             result += repr(node.value)
-        elif isinstance(node, (ast.List, ast.Dict, ast.Call)):
-            if isinstance(node, ast.List):
+        elif isinstance(node, (ast.Tuple, ast.List, ast.Dict, ast.Call)):
+            if isinstance(node, ast.Tuple):
+                start, end = "(", ")" if multiline or len(node.elts) != 1 else ",)"
+                items = [(None, e) for e in node.elts]
+                delimiter = None
+            elif isinstance(node, ast.List):
                 start, end = "[", "]"
                 items = [(None, e) for e in node.elts]
                 delimiter = None
