@@ -7,7 +7,7 @@ import os
 import re
 import tempfile
 from pathlib import Path
-from typing import Iterator, List, Optional, Set, Tuple
+from typing import Generator, List, Optional, Set, Tuple
 
 import rpm
 
@@ -59,7 +59,7 @@ class SpecParser:
     @contextlib.contextmanager
     def _make_dummy_sources(
         self, sources: Set[str], non_empty_sources: Set[str]
-    ) -> Iterator[List[Path]]:
+    ) -> Generator[List[Path], None, None]:
         """
         Context manager for creating temporary dummy sources to enable a spec file
         to be fully parsed by RPM.
@@ -110,12 +110,14 @@ class SpecParser:
                 continue
             dummy_sources.append(path)
             path.write_text("DUMMY")
-        yield dummy_sources
-        for path in dummy_sources:
-            path.unlink()
+        try:
+            yield dummy_sources
+        finally:
+            for path in dummy_sources:
+                path.unlink()
 
     @contextlib.contextmanager
-    def _sanitize_environment(self) -> Iterator[os._Environ]:
+    def _sanitize_environment(self) -> Generator[os._Environ, None, None]:
         """
         Context manager for sanitizing the environment for shell expansions.
 
@@ -250,19 +252,20 @@ class SpecParser:
                 with self._make_dummy_sources(
                     sources, non_empty_sources
                 ) as dummy_sources:
-                    if dummy_sources:
-                        filelist = "\n".join(str(ds) for ds in dummy_sources)
-                        logger.warning(
-                            f"Created dummy sources for nonexistent files:\n{filelist}"
-                        )
-                        tainted = True
-                        # do a non-build parse again with dummy sources
-                        spec = get_rpm_spec(
-                            content, rpm.RPMSPEC_ANYARCH | rpm.RPMSPEC_FORCE
-                        )
-                        # spec.sources contains also previously collected
-                        # non empty sources (if any), remove them
-                        sources = {s for s, _, _ in spec.sources} - non_empty_sources
+                    if not dummy_sources:
+                        raise
+                    filelist = "\n".join(str(ds) for ds in dummy_sources)
+                    logger.warning(
+                        f"Created dummy sources for nonexistent files:\n{filelist}"
+                    )
+                    tainted = True
+                    # do a non-build parse again with dummy sources
+                    spec = get_rpm_spec(
+                        content, rpm.RPMSPEC_ANYARCH | rpm.RPMSPEC_FORCE
+                    )
+                    # spec.sources contains also previously collected
+                    # non empty sources (if any), remove them
+                    sources = {s for s, _, _ in spec.sources} - non_empty_sources
 
         # workaround RPM lua tables feature/bug
         #
