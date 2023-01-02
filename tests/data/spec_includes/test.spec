@@ -10,6 +10,8 @@ Source1:        patches.inc
 Source2:        provides.inc
 Source3:        description1.inc
 Source4:        description2.inc
+Source5:        macros1.inc
+Source6:        macros2.inc
 
 %include %{SOURCE1}
 
@@ -21,8 +23,15 @@ Provides:       %(sed "s/$/-%{version}/" %{SOURCE2} | tr "\n" " ")
 %(cat %{S:4})
 
 
+%include %{SOURCE5}
+%{load:%{SOURCE6}}
+
+
 %prep
 %autosetup -p1
+%if 0%{macro1} && 0%{macro2}
+# noop
+%endif
 
 
 %changelog
