@@ -5,7 +5,7 @@ import itertools
 import re
 from abc import ABC
 from string import Template
-from typing import TYPE_CHECKING, List, Optional, Pattern, Set, Tuple
+from typing import TYPE_CHECKING, Generator, List, Optional, Pattern, Set, Tuple
 
 from specfile.exceptions import UnterminatedMacroException
 from specfile.formatter import formatted
@@ -165,6 +165,24 @@ class BuiltinMacro(Node):
 
 
 class ValueParser:
+    @classmethod
+    def flatten(cls, nodes: List[Node]) -> Generator[Node, None, None]:
+        """
+        Generator that yields flattened nodes. Conditional macro expansions are treated
+        as if their conditions were true and their bodies are flattened.
+
+        Args:
+            nodes: List of nodes to be flattened.
+
+        Yields:
+            Individual nodes.
+        """
+        for node in nodes:
+            if isinstance(node, ConditionalMacroExpansion):
+                yield from cls.flatten(node.body)
+            else:
+                yield node
+
     @classmethod
     def parse(cls, value: str) -> List[Node]:
         """

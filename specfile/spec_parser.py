@@ -18,7 +18,7 @@ from specfile.macros import Macros
 from specfile.sections import Section
 from specfile.tags import Tags
 from specfile.utils import get_filename_from_location
-from specfile.value_parser import ConditionalMacroExpansion, ShellExpansion, ValueParser
+from specfile.value_parser import BuiltinMacro, ShellExpansion, ValueParser
 
 logger = logging.getLogger(__name__)
 
@@ -178,19 +178,9 @@ class SpecParser:
 
         def collect_sources_referenced_from_tags(content):
             # collect sources referenced from shell expansions in tag values
-
-            def flatten(nodes):
-                result = []
-                for node in nodes:
-                    if isinstance(node, ConditionalMacroExpansion):
-                        result.extend(flatten(node.body))
-                    else:
-                        result.append(node)
-                return result
-
+            sources = set()
             # source references: %SOURCEN, %{SOURCEN}, %{S:N}
             source_ref_regex = re.compile(r"%((?P<b>{)?[?!]*SOURCE\d+(?(b)})|{S:\d+})")
-            sources = set()
             for tag in Tags.parse(Section("package", content.splitlines())):
                 # we can expand macros here because the first non-build parse,
                 # even though it failed, populated the macro context
@@ -199,7 +189,7 @@ class SpecParser:
                     # break parsing, we can skip this tag
                     continue
                 refs = []
-                for node in flatten(ValueParser.parse(tag.value)):
+                for node in ValueParser.flatten(ValueParser.parse(tag.value)):
                     if isinstance(node, ShellExpansion):
                         for m in source_ref_regex.finditer(node.body):
                             refs.append(m.group(0))
@@ -214,9 +204,9 @@ class SpecParser:
 
         def collect_included_sources(content):
             # collect sources included using %include
+            sources = set()
             include_regex = re.compile(r"^\s*%include\s+(.*)$")
             lines = content.splitlines()
-            sources = set()
             while lines:
                 line = lines.pop(0)
                 m = include_regex.match(line)
@@ -234,6 +224,19 @@ class SpecParser:
                     sources.add(source.name)
             return sources
 
+        def collect_loaded_sources(content):
+            # collect sources loaded using %{load:...}
+            sources = set()
+            for node in ValueParser.flatten(ValueParser.parse(content)):
+                if isinstance(node, BuiltinMacro) and node.name == "load":
+                    # we can expand macros here because the first non-build parse,
+                    # even though it failed, populated the macro context
+                    source = Path(Macros.expand(node.body))
+                    # ignore files outside of sourcedir
+                    if source.parent.samefile(self.sourcedir):
+                        sources.add(source.name)
+            return sources
+
         tainted = False
         try:
             # do a non-build parse first, to get a list of sources
@@ -244,7 +247,9 @@ class SpecParser:
             if not self.force_parse:
                 raise
             else:
-                sources = collect_included_sources(content)
+                sources = collect_included_sources(content) | collect_loaded_sources(
+                    content
+                )
                 non_empty_sources = collect_sources_referenced_from_tags(content)
                 if not sources and not non_empty_sources:
                     # no point in trying again
