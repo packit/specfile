@@ -87,3 +87,16 @@ def test_copy_sections():
     sections = Sections([Section("package"), Section("package bar")])
     sections_copy = copy.deepcopy(sections)
     assert sections == sections_copy
+
+
+@pytest.mark.parametrize(
+    "section, is_script",
+    [
+        ("package", False),
+        ("install", True),
+        ("PostUn", True),
+        ("SourceList", False),
+    ],
+)
+def test_is_script(section, is_script):
+    assert Section(section).is_script == is_script

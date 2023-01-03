@@ -5,7 +5,7 @@ import collections
 import re
 from typing import List, Optional, SupportsIndex, Union, cast, overload
 
-from specfile.constants import SECTION_NAMES
+from specfile.constants import SCRIPT_SECTIONS, SECTION_NAMES, SIMPLE_SCRIPT_SECTIONS
 from specfile.formatter import formatted
 
 # name for the implicit "preamble" section
@@ -67,6 +67,12 @@ class Section(collections.UserList):
             return tokens[0].lower()
         name, *rest = tokens
         return name.lower() + "".join(rest)
+
+    @property
+    def is_script(self) -> bool:
+        """Whether the content of the section is a shell script."""
+        normalized_name = self.normalized_id.split()[0]
+        return normalized_name in SCRIPT_SECTIONS | SIMPLE_SCRIPT_SECTIONS
 
     def copy(self) -> "Section":
         return Section(self.id, self.data)
