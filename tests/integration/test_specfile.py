@@ -385,6 +385,11 @@ def test_includes(spec_includes):
         assert sections.description[0] == "%include %{SOURCE3}"
         assert sections.description[1] == "%(cat %{S:4})"
     assert not "".join(spec.parsed_sections.description)
+    for inc in ["macros1.inc", "macros2.inc"]:
+        (spec.sourcedir / inc).unlink()
+        with pytest.raises(RPMException):
+            spec = Specfile(spec_includes, force_parse=True)
+        assert not (spec.sourcedir / inc).is_file()
 
 
 def test_shell_expansions(spec_shell_expansions):
