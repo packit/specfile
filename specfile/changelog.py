@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import collections
+import copy
 import datetime
 import re
 from typing import List, Optional, SupportsIndex, Union, overload
@@ -246,6 +247,9 @@ class Changelog(collections.UserList):
                 delete(index)
         else:
             delete(i)
+
+    def copy(self) -> "Changelog":
+        return copy.copy(self)
 
     def filter(
         self, since: Optional[str] = None, until: Optional[str] = None

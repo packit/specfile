@@ -2,12 +2,13 @@
 # SPDX-License-Identifier: MIT
 
 import contextlib
+import copy
 import logging
 import os
 import re
 import tempfile
 from pathlib import Path
-from typing import Generator, List, Optional, Set, Tuple
+from typing import Any, Dict, Generator, List, Optional, Set, Tuple
 
 import rpm
 
@@ -55,6 +56,17 @@ class SpecParser:
     @formatted
     def __repr__(self) -> str:
         return f"SpecParser({self.sourcedir!r}, {self.macros!r}, {self.force_parse!r})"
+
+    def __deepcopy__(self, memo: Dict[int, Any]) -> "SpecParser":
+        result = self.__class__.__new__(self.__class__)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            if k in ["spec", "tainted"]:
+                continue
+            setattr(result, k, copy.deepcopy(v, memo))
+        result.spec = None
+        result.tainted = False
+        return result
 
     @contextlib.contextmanager
     def _make_dummy_sources(

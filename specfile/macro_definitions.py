@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import collections
+import copy
 import re
 from typing import List, Optional, SupportsIndex, Tuple, Union, overload
 
@@ -164,7 +165,7 @@ class MacroDefinitions(collections.UserList):
             delete(i)
 
     def copy(self) -> "MacroDefinitions":
-        return MacroDefinitions(self.data, self._remainder)
+        return copy.copy(self)
 
     def get(self, name: str) -> MacroDefinition:
         return self.data[self.find(name)]

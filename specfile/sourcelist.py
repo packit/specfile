@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: MIT
 
 import collections
-from typing import TYPE_CHECKING, List, Optional, SupportsIndex, overload
+import copy
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, SupportsIndex, overload
 
 from specfile.formatter import formatted
 from specfile.macros import Macros
@@ -47,7 +48,19 @@ class SourcelistEntry:
 
     @formatted
     def __repr__(self) -> str:
-        return f"SourcelistEntry({self.location!r}, {self.comments!r})"
+        return (
+            f"SourcelistEntry({self.location!r}, {self.comments!r}, {self._context!r})"
+        )
+
+    def __deepcopy__(self, memo: Dict[int, Any]) -> "SourcelistEntry":
+        result = self.__class__.__new__(self.__class__)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            if k == "_context":
+                continue
+            setattr(result, k, copy.deepcopy(v, memo))
+        result._context = self._context
+        return result
 
     @property
     def expanded_location(self) -> str:
@@ -104,7 +117,7 @@ class Sourcelist(collections.UserList):
             return self.data[i]
 
     def copy(self) -> "Sourcelist":
-        return Sourcelist(self.data, self._remainder)
+        return copy.copy(self)
 
     @classmethod
     def parse(

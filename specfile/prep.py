@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import collections
+import copy
 import re
 from abc import ABC
 from typing import Any, Dict, List, Optional, SupportsIndex, Union, cast, overload
@@ -223,7 +224,7 @@ class PrepMacros(collections.UserList):
         return name in ("setup", "autosetup", "autopatch") or name.startswith("patch")
 
     def copy(self) -> "PrepMacros":
-        return PrepMacros(self.data, self._remainder)
+        return copy.copy(self)
 
     def find(self, name: str) -> int:
         for i, macro in enumerate(self.data):

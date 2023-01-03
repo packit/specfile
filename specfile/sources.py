@@ -2,10 +2,22 @@
 # SPDX-License-Identifier: MIT
 
 import collections
+import copy
 import re
 import urllib.parse
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple, Union, cast, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+    overload,
+)
 
 from specfile.exceptions import DuplicateSourceException
 from specfile.formatter import formatted
@@ -260,8 +272,18 @@ class Sources(collections.abc.MutableSequence):
         return (
             f"{self.__class__.__name__}({self._tags!r}, {self._sourcelists!r}, "
             f"{self._allow_duplicates!r}, {self._default_to_implicit_numbering!r}, "
-            f"{self._default_source_number_digits!r})"
+            f"{self._default_source_number_digits!r}, {self._context!r})"
         )
+
+    def __deepcopy__(self, memo: Dict[int, Any]) -> "Sources":
+        result = self.__class__.__new__(self.__class__)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            if k == "_context":
+                continue
+            setattr(result, k, copy.deepcopy(v, memo))
+        result._context = self._context
+        return result
 
     def __contains__(self, location: object) -> bool:
         items = self._get_items()
