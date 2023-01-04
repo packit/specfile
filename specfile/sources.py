@@ -97,6 +97,11 @@ class TagSource(Source):
         self._tag = tag
         self._number = number
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, TagSource):
+            return NotImplemented
+        return self._tag == other._tag and self._number == other._number
+
     @formatted
     def __repr__(self) -> str:
         # determine class name dynamically so that inherited classes
@@ -187,6 +192,11 @@ class ListSource(Source):
         self._source = source
         self._number = number
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ListSource):
+            return NotImplemented
+        return self._source == other._source and self._number == other._number
+
     @formatted
     def __repr__(self) -> str:
         # determine class name dynamically so that inherited classes
@@ -264,6 +274,19 @@ class Sources(collections.abc.MutableSequence):
         self._default_to_implicit_numbering = default_to_implicit_numbering
         self._default_source_number_digits = default_source_number_digits
         self._context = context
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Sources):
+            return NotImplemented
+        return (
+            self._tags == other._tags
+            and self._sourcelists == other._sourcelists
+            and self._allow_duplicates == other._allow_duplicates
+            and self._default_to_implicit_numbering
+            == other._default_to_implicit_numbering
+            and self._default_source_number_digits
+            == other._default_source_number_digits
+        )
 
     @formatted
     def __repr__(self) -> str:

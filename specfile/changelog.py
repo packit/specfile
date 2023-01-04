@@ -63,6 +63,15 @@ class ChangelogEntry:
             following_lines.copy() if following_lines is not None else []
         )
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ChangelogEntry):
+            return NotImplemented
+        return (
+            self.header == other.header
+            and self.content == other.content
+            and self._following_lines == other._following_lines
+        )
+
     def __str__(self) -> str:
         return f"{self.header}\n" + "\n".join(self.content) + "\n"
 

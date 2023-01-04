@@ -26,6 +26,17 @@ class MacroDefinition:
             preceding_lines.copy() if preceding_lines is not None else []
         )
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, MacroDefinition):
+            return NotImplemented
+        return (
+            self.name == other.name
+            and self.body == other.body
+            and self.is_global == other.is_global
+            and self._whitespace == other._whitespace
+            and self._preceding_lines == other._preceding_lines
+        )
+
     @formatted
     def __repr__(self) -> str:
         return (

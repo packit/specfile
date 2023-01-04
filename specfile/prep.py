@@ -62,6 +62,18 @@ class PrepMacro(ABC):
             preceding_lines.copy() if preceding_lines is not None else []
         )
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, PrepMacro):
+            return NotImplemented
+        return (
+            self.name == other.name
+            and self.options == other.options
+            and self._delimiter == other._delimiter
+            and self._prefix == other._prefix
+            and self._suffix == other._suffix
+            and self._preceding_lines == other._preceding_lines
+        )
+
     @formatted
     def __repr__(self) -> str:
         # determine class name dynamically so that inherited classes
@@ -250,6 +262,11 @@ class Prep(collections.abc.Container):
 
     def __init__(self, macros: PrepMacros) -> None:
         self.macros = macros.copy()
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Prep):
+            return NotImplemented
+        return self.macros == other.macros
 
     @formatted
     def __repr__(self) -> str:

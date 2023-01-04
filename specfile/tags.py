@@ -36,6 +36,11 @@ class Comment:
         self.text = text
         self.prefix = prefix
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Comment):
+            return NotImplemented
+        return self.text == other.text and self.prefix == other.prefix
+
     def __str__(self) -> str:
         return f"{self.prefix}{self.text}"
 

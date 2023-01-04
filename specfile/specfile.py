@@ -67,6 +67,16 @@ class Specfile:
         # parse here to fail early on parsing errors
         self._parser.parse(str(self))
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Specfile):
+            return NotImplemented
+        return (
+            self.autosave == other.autosave
+            and self._path == other._path
+            and self._lines == other._lines
+            and self._parser == other._parser
+        )
+
     @formatted
     def __repr__(self) -> str:
         return (

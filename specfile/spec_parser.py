@@ -53,6 +53,15 @@ class SpecParser:
         self.spec = None
         self.tainted = False
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, SpecParser):
+            return NotImplemented
+        return (
+            self.sourcedir == other.sourcedir
+            and self.macros == other.macros
+            and self.force_parse == other.force_parse
+        )
+
     @formatted
     def __repr__(self) -> str:
         return f"SpecParser({self.sourcedir!r}, {self.macros!r}, {self.force_parse!r})"
