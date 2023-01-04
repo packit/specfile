@@ -13,6 +13,10 @@ from specfile.sections import Section
 from specfile.utils import split_conditional_macro_expansion
 
 
+def valid_prep_macro(name: str) -> bool:
+    return name in ("setup", "autosetup", "autopatch") or name.startswith("patch")
+
+
 class PrepMacro(ABC):
     """
     Class that represents a %prep macro.
@@ -204,7 +208,7 @@ class PrepMacros(collections.UserList):
             delete(i)
 
     def __getattr__(self, name: str) -> PrepMacro:
-        if not self.valid_prep_macro(name):
+        if not valid_prep_macro(name):
             return super().__getattribute__(name)
         try:
             return self.data[self.find(f"%{name}")]
@@ -212,16 +216,12 @@ class PrepMacros(collections.UserList):
             raise AttributeError(name)
 
     def __delattr__(self, name: str) -> None:
-        if not self.valid_prep_macro(name):
+        if not valid_prep_macro(name):
             return super().__delattr__(name)
         try:
             self.__delitem__(self.find(f"%{name}"))
         except ValueError:
             raise AttributeError(name)
-
-    @staticmethod
-    def valid_prep_macro(name: str) -> bool:
-        return name in ("setup", "autosetup", "autopatch") or name.startswith("patch")
 
     def copy(self) -> "PrepMacros":
         return copy.copy(self)
@@ -259,12 +259,12 @@ class Prep(collections.abc.Container):
         return item in self.macros
 
     def __getattr__(self, name: str) -> PrepMacro:
-        if not self.macros.valid_prep_macro(name):
+        if not valid_prep_macro(name):
             return super().__getattribute__(name)
         return getattr(self.macros, name)
 
     def __delattr__(self, name: str) -> None:
-        if not self.macros.valid_prep_macro(name):
+        if not valid_prep_macro(name):
             return super().__delattr__(name)
         return delattr(self.macros, name)
 
