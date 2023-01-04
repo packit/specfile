@@ -1,6 +1,8 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
+import copy
+
 import pytest
 
 from specfile.macro_definitions import MacroDefinition, MacroDefinitions
@@ -113,3 +115,24 @@ def test_get_raw_data():
         "%define desc(x) Test spec file containing several \\",
         "macro definitions in various formats (%?1)",
     ]
+
+
+def test_copy_macro_definitions():
+    macro_definitions = MacroDefinitions(
+        [
+            MacroDefinition(
+                "commit",
+                "9ab9717cf7d1be1a85b165a8eacb71b9e5831113",
+                True,
+                ("", " ", "      ", ""),
+            ),
+        ],
+    )
+    shallow_copy = copy.copy(macro_definitions)
+    assert shallow_copy == macro_definitions
+    assert shallow_copy is not macro_definitions
+    assert shallow_copy[0] is macro_definitions[0]
+    deep_copy = copy.deepcopy(macro_definitions)
+    assert deep_copy == macro_definitions
+    assert deep_copy is not macro_definitions
+    assert deep_copy[0] is not macro_definitions[0]

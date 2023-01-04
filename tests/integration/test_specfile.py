@@ -1,6 +1,7 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
+import copy
 import datetime
 import subprocess
 
@@ -414,3 +415,17 @@ def test_context_management(spec_autosetup, spec_traditional):
     with spec1.tags() as tags1, spec2.tags() as tags2:
         assert tags1 is not tags2
         assert tags1 == tags2
+
+
+def test_copy(spec_autosetup):
+    spec = Specfile(spec_autosetup)
+    shallow_copy = copy.copy(spec)
+    assert shallow_copy == spec
+    assert shallow_copy is not spec
+    assert shallow_copy._lines is spec._lines
+    assert shallow_copy._parser is spec._parser
+    deep_copy = copy.deepcopy(spec)
+    assert deep_copy == spec
+    assert deep_copy is not spec
+    assert deep_copy._lines is not spec._lines
+    assert deep_copy._parser is not spec._parser

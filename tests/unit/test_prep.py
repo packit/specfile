@@ -1,10 +1,12 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
+import copy
+
 import pytest
 
 from specfile.macro_options import MacroOptions, Token, TokenType
-from specfile.prep import PatchMacro, Prep, PrepMacros, SetupMacro
+from specfile.prep import AutosetupMacro, PatchMacro, Prep, PrepMacros, SetupMacro
 from specfile.sections import Section
 
 
@@ -169,3 +171,27 @@ def test_prep_get_raw_section_data():
         "%{!?skip_patch2:%patch2 -p2}",
         "",
     ]
+
+
+def test_copy_prep():
+    prep = Prep(
+        PrepMacros(
+            [
+                AutosetupMacro(
+                    AutosetupMacro.CANONICAL_NAME,
+                    MacroOptions([]),
+                    "",
+                ),
+            ],
+        )
+    )
+    shallow_copy = copy.copy(prep)
+    assert shallow_copy == prep
+    assert shallow_copy is not prep
+    assert shallow_copy.macros is prep.macros
+    assert shallow_copy.macros[0] is prep.macros[0]
+    deep_copy = copy.deepcopy(prep)
+    assert deep_copy == prep
+    assert deep_copy is not prep
+    assert deep_copy.macros is not prep.macros
+    assert deep_copy.macros[0] is not prep.macros[0]

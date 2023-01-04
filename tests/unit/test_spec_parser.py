@@ -1,6 +1,7 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
+import copy
 from pathlib import Path
 
 import rpm
@@ -28,3 +29,13 @@ def test_spec_parser_do_parse():
     assert spec.sourceHeader[rpm.RPMTAG_SUMMARY] == "Test package"
     assert spec.sourceHeader[rpm.RPMTAG_LICENSE] == "MIT"
     assert spec.prep is None
+
+
+def test_copy_spec_parser():
+    parser = SpecParser(Path("."), [("dist", ".fc35")])
+    shallow_copy = copy.copy(parser)
+    assert shallow_copy == parser
+    assert shallow_copy is not parser
+    deep_copy = copy.deepcopy(parser)
+    assert deep_copy == parser
+    assert deep_copy is not parser
