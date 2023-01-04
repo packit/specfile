@@ -31,14 +31,7 @@ class Specfile:
     Class that represents a spec file.
 
     Attributes:
-        path: Path to the spec file.
-        sourcedir: Path to sources and patches.
         autosave: Whether to automatically save any changes made.
-        macros: List of extra macro definitions.
-        force_parse: Whether to attempt to parse the spec file even if one or more
-          sources required to be present at parsing time are not available.
-          Such sources include sources referenced from shell expansions
-          in tag values and sources included using the %include directive.
     """
 
     def __init__(
@@ -49,12 +42,29 @@ class Specfile:
         macros: Optional[List[Tuple[str, str]]] = None,
         force_parse: bool = False,
     ) -> None:
-        self.path = Path(path)
+        """
+        Constructs a `Specfile` object.
+
+        Args:
+            path: Path to the spec file.
+            sourcedir: Path to sources and patches.
+            autosave: Whether to automatically save any changes made.
+            macros: List of extra macro definitions.
+            force_parse: Whether to attempt to parse the spec file even if one or more
+              sources required to be present at parsing time are not available.
+              Such sources include sources referenced from shell expansions
+              in tag values and sources included using the %include directive.
+
+        Returns:
+            Constructed instance of `Specfile` class.
+        """
         self.autosave = autosave
+        self._path = Path(path)
         self._lines = self.path.read_text().splitlines()
         self._parser = SpecParser(
             Path(sourcedir or self.path.parent), macros, force_parse
         )
+        # parse here to fail early on parsing errors
         self._parser.parse(str(self))
 
     @formatted
@@ -79,9 +89,22 @@ class Specfile:
         self.save()
 
     @property
+    def path(self) -> Path:
+        """Path to the spec file."""
+        return self._path
+
+    @path.setter
+    def path(self, value: Union[Path, str]) -> None:
+        self._path = Path(value)
+
+    @property
     def sourcedir(self) -> Path:
         """Path to sources and patches."""
         return self._parser.sourcedir
+
+    @sourcedir.setter
+    def sourcedir(self, value: Union[Path, str]) -> None:
+        self._parser.sourcedir = Path(value)
 
     @property
     def macros(self) -> List[Tuple[str, str]]:
@@ -96,6 +119,10 @@ class Specfile:
         """
         return self._parser.force_parse
 
+    @force_parse.setter
+    def force_parse(self, value: bool) -> None:
+        self._parser.force_parse = value
+
     @property
     def tainted(self) -> bool:
         """
@@ -103,17 +130,18 @@ class Specfile:
         sources required to be present at parsing time were not available
         and were replaced with dummy files.
         """
+        self._parser.parse(str(self))
         return self._parser.tainted
 
     @property
     def rpm_spec(self) -> rpm.spec:
         """Underlying `rpm.spec` instance."""
+        self._parser.parse(str(self))
         return self._parser.spec
 
     def reload(self) -> None:
         """Reload the spec file content."""
         self._lines = self.path.read_text().splitlines()
-        self._parser.parse(str(self))
 
     def save(self) -> None:
         """Save the spec file content."""
@@ -159,7 +187,6 @@ class Specfile:
         try:
             yield self._lines
         finally:
-            self._parser.parse(str(self))
             if self.autosave:
                 self.save()
 
@@ -194,11 +221,9 @@ class Specfile:
                 lines[:] = sections.get_raw_data()
 
     @property
-    def parsed_sections(self) -> Optional[Sections]:
+    def parsed_sections(self) -> Sections:
         """Parsed spec file sections."""
-        if not self._parser.spec:
-            return None
-        return Sections.parse(self._parser.spec.parsed.splitlines())
+        return Sections.parse(self.rpm_spec.parsed.splitlines())
 
     @ContextManager
     def tags(
