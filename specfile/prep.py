@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import collections
+import copy
 import re
 from abc import ABC
 from typing import Any, Dict, List, Optional, SupportsIndex, Union, cast, overload
@@ -10,6 +11,10 @@ from specfile.formatter import formatted
 from specfile.macro_options import MacroOptions
 from specfile.sections import Section
 from specfile.utils import split_conditional_macro_expansion
+
+
+def valid_prep_macro(name: str) -> bool:
+    return name in ("setup", "autosetup", "autopatch") or name.startswith("patch")
 
 
 class PrepMacro(ABC):
@@ -55,6 +60,18 @@ class PrepMacro(ABC):
         self._suffix = suffix or ""
         self._preceding_lines = (
             preceding_lines.copy() if preceding_lines is not None else []
+        )
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, PrepMacro):
+            return NotImplemented
+        return (
+            self.name == other.name
+            and self.options == other.options
+            and self._delimiter == other._delimiter
+            and self._prefix == other._prefix
+            and self._suffix == other._suffix
+            and self._preceding_lines == other._preceding_lines
         )
 
     @formatted
@@ -203,7 +220,7 @@ class PrepMacros(collections.UserList):
             delete(i)
 
     def __getattr__(self, name: str) -> PrepMacro:
-        if not self.valid_prep_macro(name):
+        if not valid_prep_macro(name):
             return super().__getattribute__(name)
         try:
             return self.data[self.find(f"%{name}")]
@@ -211,19 +228,15 @@ class PrepMacros(collections.UserList):
             raise AttributeError(name)
 
     def __delattr__(self, name: str) -> None:
-        if not self.valid_prep_macro(name):
+        if not valid_prep_macro(name):
             return super().__delattr__(name)
         try:
             self.__delitem__(self.find(f"%{name}"))
         except ValueError:
             raise AttributeError(name)
 
-    @staticmethod
-    def valid_prep_macro(name: str) -> bool:
-        return name in ("setup", "autosetup", "autopatch") or name.startswith("patch")
-
     def copy(self) -> "PrepMacros":
-        return PrepMacros(self.data, self._remainder)
+        return copy.copy(self)
 
     def find(self, name: str) -> int:
         for i, macro in enumerate(self.data):
@@ -250,6 +263,11 @@ class Prep(collections.abc.Container):
     def __init__(self, macros: PrepMacros) -> None:
         self.macros = macros.copy()
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Prep):
+            return NotImplemented
+        return self.macros == other.macros
+
     @formatted
     def __repr__(self) -> str:
         return f"Prep({self.macros!r})"
@@ -258,12 +276,12 @@ class Prep(collections.abc.Container):
         return item in self.macros
 
     def __getattr__(self, name: str) -> PrepMacro:
-        if not self.macros.valid_prep_macro(name):
+        if not valid_prep_macro(name):
             return super().__getattribute__(name)
         return getattr(self.macros, name)
 
     def __delattr__(self, name: str) -> None:
-        if not self.macros.valid_prep_macro(name):
+        if not valid_prep_macro(name):
             return super().__delattr__(name)
         return delattr(self.macros, name)
 

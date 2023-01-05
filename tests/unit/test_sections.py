@@ -84,9 +84,15 @@ def test_parse_invalid_name():
 
 
 def test_copy_sections():
-    sections = Sections([Section("package"), Section("package bar")])
-    sections_copy = copy.deepcopy(sections)
-    assert sections == sections_copy
+    sections = Sections([Section("package", ["Name: test", "Version: 0.1"])])
+    shallow_copy = copy.copy(sections)
+    assert shallow_copy == sections
+    assert shallow_copy is not sections
+    assert shallow_copy[0] is sections[0]
+    deep_copy = copy.deepcopy(sections)
+    assert deep_copy == sections
+    assert deep_copy is not sections
+    assert deep_copy[0] is not sections[0]
 
 
 @pytest.mark.parametrize(

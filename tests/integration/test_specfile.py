@@ -1,6 +1,7 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
+import copy
 import datetime
 import subprocess
 
@@ -16,13 +17,13 @@ from specfile.specfile import Specfile
 
 def test_parse(spec_multiple_sources):
     spec = Specfile(spec_multiple_sources)
-    prep = spec._parser.spec.prep
+    prep = spec.rpm_spec.prep
     # remove all sources
     for path in spec.sourcedir.iterdir():
         if not path.samefile(spec.path):
             path.unlink()
     spec = Specfile(spec_multiple_sources)
-    assert spec._parser.spec.prep == prep
+    assert spec.rpm_spec.prep == prep
 
 
 def test_prep_traditional(spec_traditional):
@@ -212,16 +213,12 @@ def test_set_version_and_release(spec_minimal, version, release):
     with spec.tags() as tags:
         assert tags.version.value == spec.version
         assert tags.release.value == spec.raw_release
-    assert spec._parser.spec.sourceHeader[rpm.RPMTAG_VERSION] == spec.expanded_version
-    assert (
-        spec._parser.spec.sourceHeader[rpm.RPMTAG_RELEASE] == spec.expanded_raw_release
-    )
+    assert spec.rpm_spec.sourceHeader[rpm.RPMTAG_VERSION] == spec.expanded_version
+    assert spec.rpm_spec.sourceHeader[rpm.RPMTAG_RELEASE] == spec.expanded_raw_release
     spec.raw_release = release
     with spec.tags() as tags:
         assert tags.release.value == release
-    assert (
-        spec._parser.spec.sourceHeader[rpm.RPMTAG_RELEASE] == spec.expanded_raw_release
-    )
+    assert spec.rpm_spec.sourceHeader[rpm.RPMTAG_RELEASE] == spec.expanded_raw_release
 
 
 @pytest.mark.parametrize(
@@ -418,3 +415,17 @@ def test_context_management(spec_autosetup, spec_traditional):
     with spec1.tags() as tags1, spec2.tags() as tags2:
         assert tags1 is not tags2
         assert tags1 == tags2
+
+
+def test_copy(spec_autosetup):
+    spec = Specfile(spec_autosetup)
+    shallow_copy = copy.copy(spec)
+    assert shallow_copy == spec
+    assert shallow_copy is not spec
+    assert shallow_copy._lines is spec._lines
+    assert shallow_copy._parser is spec._parser
+    deep_copy = copy.deepcopy(spec)
+    assert deep_copy == spec
+    assert deep_copy is not spec
+    assert deep_copy._lines is not spec._lines
+    assert deep_copy._parser is not spec._parser

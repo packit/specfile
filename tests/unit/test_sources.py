@@ -1,6 +1,8 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
+import copy
+
 import pytest
 from flexmock import flexmock
 
@@ -444,3 +446,22 @@ def test_patches_get_initial_tag_setup(tags, number, index):
         f"Patch{number}", ": "
     )
     assert patches._get_initial_tag_setup(number) == (index, f"Patch{number}", ": ")
+
+
+def test_copy_sources():
+    sources = Sources(
+        Tags([Tag("Name", "test", "test", ": ", Comments())]),
+        [
+            Sourcelist([SourcelistEntry("%{name}-%{version}.tar.gz", Comments())]),
+        ],
+    )
+    shallow_copy = copy.copy(sources)
+    assert shallow_copy == sources
+    assert shallow_copy is not sources
+    assert shallow_copy._tags is sources._tags
+    assert shallow_copy._sourcelists is sources._sourcelists
+    deep_copy = copy.deepcopy(sources)
+    assert deep_copy == sources
+    assert deep_copy is not sources
+    assert deep_copy._tags is not sources._tags
+    assert deep_copy._sourcelists is not sources._sourcelists

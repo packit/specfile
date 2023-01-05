@@ -1,6 +1,8 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
+import copy
+
 from specfile.sections import Section
 from specfile.sourcelist import Sourcelist, SourcelistEntry
 from specfile.tags import Comment, Comments
@@ -43,3 +45,19 @@ def test_get_raw_section_data():
         "",
         "",
     ]
+
+
+def test_copy_sourcelist():
+    sourcelist = Sourcelist(
+        [
+            SourcelistEntry("tests.tar.xz", Comments([Comment("test suite")], [""])),
+        ],
+    )
+    shallow_copy = copy.copy(sourcelist)
+    assert shallow_copy == sourcelist
+    assert shallow_copy is not sourcelist
+    assert shallow_copy[0] is sourcelist[0]
+    deep_copy = copy.deepcopy(sourcelist)
+    assert deep_copy == sourcelist
+    assert deep_copy is not sourcelist
+    assert deep_copy[0] is not sourcelist[0]

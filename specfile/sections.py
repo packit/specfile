@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import collections
+import copy
 import re
 from typing import List, Optional, SupportsIndex, Union, cast, overload
 
@@ -42,9 +43,6 @@ class Section(collections.UserList):
     def __repr__(self) -> str:
         return f"Section({self.id!r}, {self.data!r})"
 
-    def __copy__(self) -> "Section":
-        return Section(self.id, self.data)
-
     @overload
     def __getitem__(self, i: SupportsIndex) -> str:
         pass
@@ -75,7 +73,7 @@ class Section(collections.UserList):
         return normalized_name in SCRIPT_SECTIONS | SIMPLE_SCRIPT_SECTIONS
 
     def copy(self) -> "Section":
-        return Section(self.id, self.data)
+        return copy.copy(self)
 
     def get_raw_data(self) -> List[str]:
         if self.id == PREAMBLE:
@@ -113,9 +111,6 @@ class Sections(collections.UserList):
     def __repr__(self) -> str:
         return f"Sections({self.data!r})"
 
-    def __copy__(self) -> "Sections":
-        return Sections(self.data)
-
     def __contains__(self, id: object) -> bool:
         try:
             # use parent's __getattribute__() so this method can be called from __getattr__()
@@ -150,6 +145,9 @@ class Sections(collections.UserList):
             del self.data[self.find(id)]
         except ValueError:
             raise AttributeError(id)
+
+    def copy(self) -> "Sections":
+        return copy.copy(self)
 
     def get(self, id: str) -> Section:
         return self.data[self.find(id)]

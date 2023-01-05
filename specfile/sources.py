@@ -2,10 +2,22 @@
 # SPDX-License-Identifier: MIT
 
 import collections
+import copy
 import re
 import urllib.parse
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple, Union, cast, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+    overload,
+)
 
 from specfile.exceptions import DuplicateSourceException
 from specfile.formatter import formatted
@@ -84,6 +96,11 @@ class TagSource(Source):
         """
         self._tag = tag
         self._number = number
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, TagSource):
+            return NotImplemented
+        return self._tag == other._tag and self._number == other._number
 
     @formatted
     def __repr__(self) -> str:
@@ -175,6 +192,11 @@ class ListSource(Source):
         self._source = source
         self._number = number
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ListSource):
+            return NotImplemented
+        return self._source == other._source and self._number == other._number
+
     @formatted
     def __repr__(self) -> str:
         # determine class name dynamically so that inherited classes
@@ -253,6 +275,19 @@ class Sources(collections.abc.MutableSequence):
         self._default_source_number_digits = default_source_number_digits
         self._context = context
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Sources):
+            return NotImplemented
+        return (
+            self._tags == other._tags
+            and self._sourcelists == other._sourcelists
+            and self._allow_duplicates == other._allow_duplicates
+            and self._default_to_implicit_numbering
+            == other._default_to_implicit_numbering
+            and self._default_source_number_digits
+            == other._default_source_number_digits
+        )
+
     @formatted
     def __repr__(self) -> str:
         # determine class name dynamically so that inherited classes
@@ -260,8 +295,18 @@ class Sources(collections.abc.MutableSequence):
         return (
             f"{self.__class__.__name__}({self._tags!r}, {self._sourcelists!r}, "
             f"{self._allow_duplicates!r}, {self._default_to_implicit_numbering!r}, "
-            f"{self._default_source_number_digits!r})"
+            f"{self._default_source_number_digits!r}, {self._context!r})"
         )
+
+    def __deepcopy__(self, memo: Dict[int, Any]) -> "Sources":
+        result = self.__class__.__new__(self.__class__)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            if k == "_context":
+                continue
+            setattr(result, k, copy.deepcopy(v, memo))
+        result._context = self._context
+        return result
 
     def __contains__(self, location: object) -> bool:
         items = self._get_items()

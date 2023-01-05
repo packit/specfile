@@ -158,5 +158,11 @@ def test_copy_tags():
             Tag("Name", "test", "test", ": ", Comments()),
         ]
     )
-    tags_copy = copy.deepcopy(tags)
-    assert tags == tags_copy
+    shallow_copy = copy.copy(tags)
+    assert shallow_copy == tags
+    assert shallow_copy is not tags
+    assert shallow_copy[0] is tags[0]
+    deep_copy = copy.deepcopy(tags)
+    assert deep_copy == tags
+    assert deep_copy is not tags
+    assert deep_copy[0] is not tags[0]

@@ -1,6 +1,7 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
+import copy
 import datetime
 
 import pytest
@@ -263,3 +264,25 @@ def test_get_raw_section_data():
         "- first version",
         "  resolves: #999999999",
     ]
+
+
+def test_copy_changelog():
+    changelog = Changelog(
+        [
+            ChangelogEntry.assemble(
+                datetime.date(2021, 5, 4),
+                "Nikola Forró <nforro@redhat.com>",
+                ["- first version", "  resolves: #999999999"],
+                "0.1-1",
+                append_newline=False,
+            ),
+        ]
+    )
+    shallow_copy = copy.copy(changelog)
+    assert shallow_copy == changelog
+    assert shallow_copy is not changelog
+    assert shallow_copy[0] is changelog[0]
+    deep_copy = copy.deepcopy(changelog)
+    assert deep_copy == changelog
+    assert deep_copy is not changelog
+    assert deep_copy[0] is not changelog[0]

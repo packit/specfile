@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import collections
+import copy
 import re
 from typing import List, Optional, SupportsIndex, Tuple, Union, overload
 
@@ -23,6 +24,17 @@ class MacroDefinition:
         self._whitespace = whitespace
         self._preceding_lines = (
             preceding_lines.copy() if preceding_lines is not None else []
+        )
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, MacroDefinition):
+            return NotImplemented
+        return (
+            self.name == other.name
+            and self.body == other.body
+            and self.is_global == other.is_global
+            and self._whitespace == other._whitespace
+            and self._preceding_lines == other._preceding_lines
         )
 
     @formatted
@@ -164,7 +176,7 @@ class MacroDefinitions(collections.UserList):
             delete(i)
 
     def copy(self) -> "MacroDefinitions":
-        return MacroDefinitions(self.data, self._remainder)
+        return copy.copy(self)
 
     def get(self, name: str) -> MacroDefinition:
         return self.data[self.find(name)]

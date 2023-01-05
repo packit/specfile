@@ -1,10 +1,12 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
+import copy
+
 import pytest
 
-from specfile.macro_options import MacroOptions
-from specfile.prep import PatchMacro, Prep, PrepMacros, SetupMacro
+from specfile.macro_options import MacroOptions, Token, TokenType
+from specfile.prep import AutosetupMacro, PatchMacro, Prep, PrepMacros, SetupMacro
 from specfile.sections import Section
 
 
@@ -122,3 +124,74 @@ def test_prep_parse():
     assert prep.macros[1].name == "%patch0"
     assert prep.macros[1].options.p == 1
     assert prep.patch2.options.p == 2
+
+
+def test_prep_get_raw_section_data():
+    prep = Prep(
+        PrepMacros(
+            [
+                SetupMacro(
+                    SetupMacro.CANONICAL_NAME,
+                    MacroOptions(
+                        [Token(TokenType.DEFAULT, "-q")],
+                        SetupMacro.OPTSTRING,
+                        SetupMacro.DEFAULTS,
+                    ),
+                    " ",
+                ),
+                PatchMacro(
+                    PatchMacro.CANONICAL_NAME + "0",
+                    MacroOptions(
+                        [Token(TokenType.DEFAULT, "-p1")],
+                        PatchMacro.OPTSTRING,
+                        PatchMacro.DEFAULTS,
+                    ),
+                    " ",
+                    preceding_lines=["# a comment"],
+                ),
+                PatchMacro(
+                    PatchMacro.CANONICAL_NAME + "2",
+                    MacroOptions(
+                        [Token(TokenType.DEFAULT, "-p2")],
+                        PatchMacro.OPTSTRING,
+                        PatchMacro.DEFAULTS,
+                    ),
+                    " ",
+                    "%{!?skip_patch2:",
+                    "}",
+                ),
+            ],
+            [""],
+        )
+    )
+    assert prep.get_raw_section_data() == [
+        "%setup -q",
+        "# a comment",
+        "%patch0 -p1",
+        "%{!?skip_patch2:%patch2 -p2}",
+        "",
+    ]
+
+
+def test_copy_prep():
+    prep = Prep(
+        PrepMacros(
+            [
+                AutosetupMacro(
+                    AutosetupMacro.CANONICAL_NAME,
+                    MacroOptions([]),
+                    "",
+                ),
+            ],
+        )
+    )
+    shallow_copy = copy.copy(prep)
+    assert shallow_copy == prep
+    assert shallow_copy is not prep
+    assert shallow_copy.macros is prep.macros
+    assert shallow_copy.macros[0] is prep.macros[0]
+    deep_copy = copy.deepcopy(prep)
+    assert deep_copy == prep
+    assert deep_copy is not prep
+    assert deep_copy.macros is not prep.macros
+    assert deep_copy.macros[0] is not prep.macros[0]

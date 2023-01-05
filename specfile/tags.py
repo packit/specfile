@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import collections
+import copy
 import itertools
 import re
 from typing import Any, Iterable, List, Optional, SupportsIndex, Union, cast, overload
@@ -34,6 +35,11 @@ class Comment:
     def __init__(self, text: str, prefix: str = "# ") -> None:
         self.text = text
         self.prefix = prefix
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Comment):
+            return NotImplemented
+        return self.text == other.text and self.prefix == other.prefix
 
     def __str__(self) -> str:
         return f"{self.prefix}{self.text}"
@@ -126,7 +132,7 @@ class Comments(collections.UserList):
                 self.data[i] = item
 
     def copy(self) -> "Comments":
-        return Comments(self.data, self._preceding_lines)
+        return copy.copy(self)
 
     def append(self, item: Union[Comment, str]) -> None:
         if isinstance(item, str):
@@ -403,7 +409,7 @@ class Tags(collections.UserList):
             raise AttributeError(name)
 
     def copy(self) -> "Tags":
-        return Tags(self.data, self._remainder)
+        return copy.copy(self)
 
     def find(self, name: str) -> int:
         for i, tag in enumerate(self.data):

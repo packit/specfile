@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import collections
+import copy
 import datetime
 import re
 from typing import List, Optional, SupportsIndex, Union, overload
@@ -60,6 +61,15 @@ class ChangelogEntry:
         self.content = content.copy()
         self._following_lines = (
             following_lines.copy() if following_lines is not None else []
+        )
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ChangelogEntry):
+            return NotImplemented
+        return (
+            self.header == other.header
+            and self.content == other.content
+            and self._following_lines == other._following_lines
         )
 
     def __str__(self) -> str:
@@ -246,6 +256,9 @@ class Changelog(collections.UserList):
                 delete(index)
         else:
             delete(i)
+
+    def copy(self) -> "Changelog":
+        return copy.copy(self)
 
     def filter(
         self, since: Optional[str] = None, until: Optional[str] = None
