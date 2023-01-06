@@ -1,3 +1,9 @@
+# 0.12.0
+
+- All classes including `Specfile` itself can now be copied using the standard `copy()` and `deepcopy()` functions from `copy` module. (#176)
+- `Section.name` attribute has been renamed to a more fitting `Section.id`. (#167)
+- `setup.cfg` now uses `license_files` instead of deprecated `license_file`. (#162)
+
 # 0.11.1
 
 - Tags enclosed in conditional macro expansions are not ignored anymore. (#156)
