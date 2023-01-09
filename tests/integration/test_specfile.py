@@ -111,15 +111,16 @@ def test_patches(spec_patchlist):
 
 
 @pytest.mark.parametrize(
-    "rpmdev_packager_available, entry, author, email, timestamp, result",
+    "rpmdev_packager_available, entry, author, email, timestamp, evr, result",
     [
-        (False, None, None, None, None, None),
+        (False, None, None, None, None, None, None),
         (
             True,
             "test",
             None,
             None,
             datetime.date(2022, 2, 1),
+            None,
             Section(
                 "changelog",
                 ["* Tue Feb 01 2022 John Doe <john@doe.net> - 0.1-1", "test"],
@@ -128,9 +129,46 @@ def test_patches(spec_patchlist):
         (
             True,
             "test",
+            None,
+            None,
+            datetime.date(2022, 2, 1),
+            "%{version}-%{release}",
+            Section(
+                "changelog",
+                ["* Tue Feb 01 2022 John Doe <john@doe.net> - 0.1-1", "test"],
+            ),
+        ),
+        (
+            True,
+            "test",
+            None,
+            None,
+            datetime.date(2022, 2, 1),
+            "0.1-1",
+            Section(
+                "changelog",
+                ["* Tue Feb 01 2022 John Doe <john@doe.net> - 0.1-1", "test"],
+            ),
+        ),
+        (
+            True,
+            "test",
+            None,
+            None,
+            datetime.date(2022, 2, 1),
+            "0.2-1.1",
+            Section(
+                "changelog",
+                ["* Tue Feb 01 2022 John Doe <john@doe.net> - 0.2-1.1", "test"],
+            ),
+        ),
+        (
+            True,
+            "test",
             "Bill Packager",
             None,
             datetime.date(2022, 2, 1),
+            None,
             Section("changelog", ["* Tue Feb 01 2022 Bill Packager - 0.1-1", "test"]),
         ),
         (
@@ -139,6 +177,7 @@ def test_patches(spec_patchlist):
             "Bill Packager",
             "bill@packager.net",
             datetime.date(2022, 2, 1),
+            None,
             Section(
                 "changelog",
                 ["* Tue Feb 01 2022 Bill Packager <bill@packager.net> - 0.1-1", "test"],
@@ -150,6 +189,7 @@ def test_patches(spec_patchlist):
             "Bill Packager",
             "bill@packager.net",
             datetime.datetime(2022, 2, 1, 9, 28, 13),
+            None,
             Section(
                 "changelog",
                 [
@@ -164,6 +204,7 @@ def test_patches(spec_patchlist):
             "Bill Packager",
             "bill@packager.net",
             datetime.datetime(2022, 2, 1, 9, 28, 13),
+            None,
             Section(
                 "changelog",
                 [
@@ -176,7 +217,14 @@ def test_patches(spec_patchlist):
     ],
 )
 def test_add_changelog_entry(
-    spec_minimal, rpmdev_packager_available, entry, author, email, timestamp, result
+    spec_minimal,
+    rpmdev_packager_available,
+    entry,
+    author,
+    email,
+    timestamp,
+    evr,
+    result,
 ):
     if not rpmdev_packager_available:
         flexmock(subprocess).should_receive("check_output").with_args(
@@ -189,9 +237,9 @@ def test_add_changelog_entry(
     spec = Specfile(spec_minimal)
     if not rpmdev_packager_available:
         with pytest.raises(SpecfileException):
-            spec.add_changelog_entry(entry, author, email, timestamp)
+            spec.add_changelog_entry(entry, author, email, timestamp, evr)
     else:
-        spec.add_changelog_entry(entry, author, email, timestamp)
+        spec.add_changelog_entry(entry, author, email, timestamp, evr)
         with spec.sections() as sections:
             assert sections.changelog[: len(result)] == result
 

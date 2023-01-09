@@ -393,6 +393,7 @@ class Specfile:
         author: Optional[str] = None,
         email: Optional[str] = None,
         timestamp: Optional[Union[datetime.date, datetime.datetime]] = None,
+        evr: Optional[str] = None,
     ) -> None:
         """
         Adds a new %changelog entry. Does nothing if there is no %changelog section
@@ -407,15 +408,19 @@ class Specfile:
             email: E-mail of the author.
             timestamp: Timestamp of the entry.
               Supply `datetime` rather than `date` for extended format.
+            evr: Override the EVR part of the changelog entry.
+              Macros will be expanded automatically. By default, the function
+              determines the appropriate value based on the specfile's current
+              %{epoch}, %{version}, and %{release} values.
         """
         if self.has_autochangelog:
             return
+        if evr is None:
+            evr = "%{?epoch:%{epoch}:}%{version}-%{release}"
         with self.changelog() as changelog:
             if changelog is None:
                 return
-            evr = self.expand(
-                "%{?epoch:%{epoch}:}%{version}-%{release}", extra_macros=[("dist", "")]
-            )
+            evr = self.expand(evr, extra_macros=[("dist", "")])
             if isinstance(entry, str):
                 entry = [entry]
             if timestamp is None:
