@@ -224,7 +224,7 @@ class Specfile:
             Spec file sections as `Sections` object.
         """
         with self.lines() as lines:
-            sections = Sections.parse(lines)
+            sections = Sections.parse(lines, context=self)
             try:
                 yield sections
             finally:
