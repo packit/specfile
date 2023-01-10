@@ -4,6 +4,7 @@
 import copy
 
 import pytest
+from flexmock import flexmock
 
 from specfile.sections import Section, Sections
 
@@ -37,22 +38,35 @@ def test_parse():
             "0",
             "",
             "",
+            "%description  %{desc}",
+            "",
             "%prep",
             "0",
             "1",
             "2",
             "",
+            "%description x %{desc}",
+            "",
+            "%package %{subpkg}",
+            "",
             "%package x",
             "%files y",
             "0",
             "%changelog",
-        ]
+        ],
+        context=flexmock(expand=lambda s: "\n" if s == "%{desc}" else ""),
     )
     assert sections[0][0] == "0"
-    assert sections[1].id == "prep"
+    assert sections[1].id == "description"
+    assert sections.description == ["%{desc}", ""]
+    assert sections[2].id == "prep"
     assert sections.prep == ["0", "1", "2", ""]
-    assert sections[2].id == "package x"
-    assert not sections[2]
+    assert sections[3].id == "description x"
+    assert sections[3] == ["%{desc}", ""]
+    assert sections[4].id == "package %{subpkg}"
+    assert sections[4] == [""]
+    assert sections[5].id == "package x"
+    assert not sections[5]
     assert sections[-1].id == "changelog"
 
 
@@ -81,6 +95,41 @@ def test_parse_invalid_name():
     assert len(sections) == 2  # including empty preamble
     assert sections[1].id == "description"
     assert sections.description[2] == "%description(fr)"
+
+
+def test_get_raw_data():
+    sections = Sections(
+        [
+            Section("package", ["0", "", ""]),
+            Section("description", ["%{desc}", ""], "  "),
+            Section("prep", ["0", "1", "2", ""]),
+            Section("description x", ["%{desc}", ""], " "),
+            Section("package %{subpkg}", [""]),
+            Section("package x"),
+            Section("files y", ["0"]),
+            Section("changelog"),
+        ],
+    )
+    assert sections.get_raw_data() == [
+        "0",
+        "",
+        "",
+        "%description  %{desc}",
+        "",
+        "%prep",
+        "0",
+        "1",
+        "2",
+        "",
+        "%description x %{desc}",
+        "",
+        "%package %{subpkg}",
+        "",
+        "%package x",
+        "%files y",
+        "0",
+        "%changelog",
+    ]
 
 
 def test_copy_sections():

@@ -4,10 +4,14 @@
 import collections
 import copy
 import re
-from typing import List, Optional, SupportsIndex, Union, cast, overload
+from typing import TYPE_CHECKING, List, Optional, SupportsIndex, Union, cast, overload
 
 from specfile.constants import SCRIPT_SECTIONS, SECTION_NAMES, SIMPLE_SCRIPT_SECTIONS
 from specfile.formatter import formatted
+from specfile.macros import Macros
+
+if TYPE_CHECKING:
+    from specfile.specfile import Specfile
 
 # name for the implicit "preamble" section
 PREAMBLE = "package"
@@ -22,7 +26,21 @@ class Section(collections.UserList):
         data: List of lines forming the content of the section, not including newline characters.
     """
 
-    def __init__(self, id: str, data: Optional[List[str]] = None) -> None:
+    def __init__(
+        self, id: str, data: Optional[List[str]] = None, separator: str = "\n"
+    ) -> None:
+        """
+        Constructs a `Section` object.
+
+        Args:
+            id: ID of the section (name and optional arguments, without the leading '%').
+            data: List of lines forming the content of the section,
+              not including newline characters.
+            separator: String separating section ID from its content, defaults to newline.
+
+        Returns:
+            Constructed instance of `Section` class.
+        """
         super().__init__()
         if not id:
             raise ValueError("Section ID can't be empty")
@@ -32,16 +50,17 @@ class Section(collections.UserList):
         self.id = id
         if data is not None:
             self.data = data.copy()
+        self._separator = separator
 
     def __str__(self) -> str:
         data = "".join(f"{i}\n" for i in self.data)
         if self.id == PREAMBLE:
             return data
-        return f"%{self.id}\n{data}"
+        return f"%{self.id}{self._separator}{data}"
 
     @formatted
     def __repr__(self) -> str:
-        return f"Section({self.id!r}, {self.data!r})"
+        return f"Section({self.id!r}, {self.data!r}, {self._separator!r})"
 
     @overload
     def __getitem__(self, i: SupportsIndex) -> str:
@@ -53,7 +72,7 @@ class Section(collections.UserList):
 
     def __getitem__(self, i):
         if isinstance(i, slice):
-            return Section(self.id, self.data[i])
+            return Section(self.id, self.data[i], self._separator)
         else:
             return self.data[i]
 
@@ -78,7 +97,7 @@ class Section(collections.UserList):
     def get_raw_data(self) -> List[str]:
         if self.id == PREAMBLE:
             return self.data
-        return [f"%{self.id}"] + self.data
+        return str(self).splitlines()
 
 
 class Sections(collections.UserList):
@@ -159,16 +178,34 @@ class Sections(collections.UserList):
         raise ValueError
 
     @classmethod
-    def parse(cls, lines: List[str]) -> "Sections":
+    def parse(
+        cls, lines: List[str], context: Optional["Specfile"] = None
+    ) -> "Sections":
         """
         Parses given lines into sections.
 
         Args:
             lines: Lines to parse.
+            context: `Specfile` instance that defines the context for macro expansions.
 
         Returns:
             Constructed instance of `Sections` class.
         """
+
+        def expand(s):
+            if context:
+                return context.expand(s)
+            return Macros.expand(s)
+
+        def split_content(line):
+            # if the last token after macro expansion starts with a newline,
+            # consider it part of section content
+            tokens = re.split(r"(\s+)", line)
+            if len(tokens) > 2:
+                if expand(tokens[-1]).startswith("\n"):
+                    return "".join(tokens[:-2]), [tokens[-1]], tokens[-2]
+            return line, [], "\n"
+
         section_id_regexes = [
             re.compile(rf"^%{re.escape(n)}(\s+.*$|$)", re.IGNORECASE)
             for n in SECTION_NAMES
@@ -183,7 +220,8 @@ class Sections(collections.UserList):
         section_starts.append(len(lines))
         data = [Section(PREAMBLE, lines[: section_starts[0]])]
         for start, end in zip(section_starts, section_starts[1:]):
-            data.append(Section(lines[start][1:], lines[start + 1 : end]))
+            id, content, separator = split_content(lines[start][1:])
+            data.append(Section(id, content + lines[start + 1 : end], separator))
         return cls(data)
 
     def get_raw_data(self) -> List[str]:
