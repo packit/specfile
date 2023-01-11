@@ -140,7 +140,7 @@ def test_parse():
     changelog = Changelog.parse(
         Section(
             "changelog",
-            [
+            data=[
                 "* Mon Nov 21 2022 Nikola Forró <nforro@redhat.com> - 0.3-1",
                 "- this is a formatted",
                 "  changelog entry",

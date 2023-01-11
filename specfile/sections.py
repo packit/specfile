@@ -6,9 +6,15 @@ import copy
 import re
 from typing import TYPE_CHECKING, List, Optional, SupportsIndex, Union, cast, overload
 
-from specfile.constants import SCRIPT_SECTIONS, SECTION_NAMES, SIMPLE_SCRIPT_SECTIONS
+from specfile.constants import (
+    SCRIPT_SECTIONS,
+    SECTION_NAMES,
+    SECTION_OPTIONS,
+    SIMPLE_SCRIPT_SECTIONS,
+)
 from specfile.formatter import formatted
 from specfile.macros import Macros
+from specfile.options import Options
 
 if TYPE_CHECKING:
     from specfile.specfile import Specfile
@@ -22,45 +28,61 @@ class Section(collections.UserList):
     Class that represents a spec file section.
 
     Attributes:
-        id: ID of the section (name and optional arguments, without the leading '%').
-        data: List of lines forming the content of the section, not including newline characters.
+        name: Name of the section (without the leading '%').
+        options: Options of the section.
+        data: List of lines forming the content of the section,
+          not including newline characters.
     """
 
     def __init__(
-        self, id: str, data: Optional[List[str]] = None, separator: str = "\n"
+        self,
+        name: str,
+        options: Optional[Options] = None,
+        delimiter: str = "",
+        separator: str = "\n",
+        data: Optional[List[str]] = None,
     ) -> None:
         """
         Constructs a `Section` object.
 
         Args:
-            id: ID of the section (name and optional arguments, without the leading '%').
+            name: Name of the section (without the leading '%').
+            options: Options of the section.
+            delimiter: Delimiter separating name and option string.
+            separator: String separating name and options from section content,
+              defaults to newline.
             data: List of lines forming the content of the section,
               not including newline characters.
-            separator: String separating section ID from its content, defaults to newline.
 
         Returns:
             Constructed instance of `Section` class.
         """
         super().__init__()
-        if not id:
-            raise ValueError("Section ID can't be empty")
-        name = id.split()[0]
         if name.lower() not in SECTION_NAMES:
             raise ValueError(f"Invalid section name: '{name}'")
-        self.id = id
+        self.name = name
+        self.options = (
+            copy.deepcopy(options)
+            if options is not None
+            else Options([], SECTION_OPTIONS.get(name.lower()))
+        )
+        self._delimiter = delimiter
+        self._separator = separator
         if data is not None:
             self.data = data.copy()
-        self._separator = separator
 
     def __str__(self) -> str:
         data = "".join(f"{i}\n" for i in self.data)
-        if self.id == PREAMBLE:
+        if self.normalized_id == PREAMBLE:
             return data
         return f"%{self.id}{self._separator}{data}"
 
     @formatted
     def __repr__(self) -> str:
-        return f"Section({self.id!r}, {self.data!r}, {self._separator!r})"
+        return (
+            f"Section({self.name!r}, {self.options!r}, {self._delimiter!r}, "
+            f"{self._separator!r}, {self.data!r})"
+        )
 
     @overload
     def __getitem__(self, i: SupportsIndex) -> str:
@@ -72,18 +94,32 @@ class Section(collections.UserList):
 
     def __getitem__(self, i):
         if isinstance(i, slice):
-            return Section(self.id, self.data[i], self._separator)
+            return Section(
+                self.name, self.options, self._delimiter, self._separator, self.data[i]
+            )
         else:
             return self.data[i]
 
     @property
+    def normalized_name(self) -> str:
+        """Normalized name of the section. All characters are lowercased."""
+        return self.name.lower()
+
+    @property
+    def id(self) -> str:
+        """ID of the section (name and options, without the leading '%')."""
+        # ensure delimiter is not empty when there are any options
+        if self.options and not self._delimiter:
+            self._delimiter = " "
+        return self.name + self._delimiter + str(self.options)
+
+    @property
     def normalized_id(self) -> str:
         """Normalized ID of the section. All characters of name are lowercased."""
-        tokens = re.split(r"(\s+)", self.id)
-        if len(tokens) == 1:
-            return tokens[0].lower()
-        name, *rest = tokens
-        return name.lower() + "".join(rest)
+        # ensure delimiter is not empty when there are any options
+        if self.options and not self._delimiter:
+            self._delimiter = " "
+        return self.normalized_name + self._delimiter + str(self.options)
 
     @property
     def is_script(self) -> bool:
@@ -95,7 +131,7 @@ class Section(collections.UserList):
         return copy.copy(self)
 
     def get_raw_data(self) -> List[str]:
-        if self.id == PREAMBLE:
+        if self.normalized_id == PREAMBLE:
             return self.data
         return str(self).splitlines()
 
@@ -197,14 +233,25 @@ class Sections(collections.UserList):
                 return context.expand(s)
             return Macros.expand(s)
 
-        def split_content(line):
-            # if the last token after macro expansion starts with a newline,
-            # consider it part of section content
+        def split_id(line):
+            content = []
+            separator = "\n"
             tokens = re.split(r"(\s+)", line)
             if len(tokens) > 2:
+                # if the last token after macro expansion starts with a newline,
+                # consider it part of section content
                 if expand(tokens[-1]).startswith("\n"):
-                    return "".join(tokens[:-2]), [tokens[-1]], tokens[-2]
-            return line, [], "\n"
+                    content = [tokens.pop()]
+                    separator = tokens.pop()
+            if len(tokens) > 2:
+                name = tokens[0]
+                delimiter = tokens[1]
+                options = Options(
+                    Options.tokenize("".join(tokens[2:])),
+                    SECTION_OPTIONS.get(name.lower()),
+                )
+                return name, options, delimiter, separator, content
+            return tokens[0], None, "", separator, content
 
         section_id_regexes = [
             re.compile(rf"^%{re.escape(n)}(\s+.*$|$)", re.IGNORECASE)
@@ -218,10 +265,18 @@ class Sections(collections.UserList):
                         section_starts.append(i)
                         break
         section_starts.append(len(lines))
-        data = [Section(PREAMBLE, lines[: section_starts[0]])]
+        data = [Section(PREAMBLE, data=lines[: section_starts[0]])]
         for start, end in zip(section_starts, section_starts[1:]):
-            id, content, separator = split_content(lines[start][1:])
-            data.append(Section(id, content + lines[start + 1 : end], separator))
+            name, options, delimiter, separator, content = split_id(lines[start][1:])
+            data.append(
+                Section(
+                    name,
+                    options,
+                    delimiter,
+                    separator,
+                    content + lines[start + 1 : end],
+                )
+            )
         return cls(data)
 
     def get_raw_data(self) -> List[str]:

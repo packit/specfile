@@ -202,7 +202,7 @@ class SpecParser:
             sources = set()
             # source references: %SOURCEN, %{SOURCEN}, %{S:N}
             source_ref_regex = re.compile(r"%((?P<b>{)?[?!]*SOURCE\d+(?(b)})|{S:\d+})")
-            for tag in Tags.parse(Section("package", content.splitlines())):
+            for tag in Tags.parse(Section("package", data=content.splitlines())):
                 # we can expand macros here because the first non-build parse,
                 # even though it failed, populated the macro context
                 if Macros.expand(tag.value):

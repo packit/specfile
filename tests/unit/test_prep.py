@@ -80,7 +80,7 @@ def test_prep_macros_find():
     ],
 )
 def test_prep_add_patch_macro(lines_before, number, options, lines_after):
-    prep = Prep.parse(Section("prep", lines_before))
+    prep = Prep.parse(Section("prep", data=lines_before))
     prep.add_patch_macro(number, **options)
     assert prep.get_raw_section_data() == lines_after
 
@@ -101,7 +101,7 @@ def test_prep_add_patch_macro(lines_before, number, options, lines_after):
     ],
 )
 def test_prep_remove_patch_macro(lines_before, number, lines_after):
-    prep = Prep.parse(Section("prep", lines_before))
+    prep = Prep.parse(Section("prep", data=lines_before))
     prep.remove_patch_macro(number)
     assert prep.get_raw_section_data() == lines_after
 
@@ -110,7 +110,7 @@ def test_prep_parse():
     prep = Prep.parse(
         Section(
             "prep",
-            [
+            data=[
                 "%setup -q",
                 "# a comment",
                 "%patch0 -p1",

@@ -12,7 +12,7 @@ def test_parse():
     sourcelist = Sourcelist.parse(
         Section(
             "sourcelist",
-            [
+            data=[
                 "https://example.com/example-0.1.0.tar.xz",
                 "",
                 "# test suite",

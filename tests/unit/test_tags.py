@@ -26,7 +26,7 @@ def test_parse():
     tags = Tags.parse(
         Section(
             "package",
-            [
+            data=[
                 "%global ver_major 1",
                 "%global ver_minor 0",
                 "",
@@ -49,7 +49,7 @@ def test_parse():
         ),
         Section(
             "package",
-            [
+            data=[
                 "",
                 "",
                 "",
