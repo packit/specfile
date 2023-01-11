@@ -328,4 +328,9 @@ class SpecParser:
         if self.spec:
             # workaround RPM lua tables feature/bug, see above for details
             del self.spec
-        self.spec, self.tainted = self._do_parse(content, extra_macros)
+        try:
+            self.spec, self.tainted = self._do_parse(content, extra_macros)
+        except RPMException:
+            self.spec = None
+            self.tainted = False
+            raise
