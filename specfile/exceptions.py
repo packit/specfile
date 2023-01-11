@@ -27,8 +27,8 @@ class MacroRemovalException(SpecfileException):
     """Exception related to failed removal of RPM macros."""
 
 
-class MacroOptionsException(SpecfileException):
-    """Exception related to processing macro options."""
+class OptionsException(SpecfileException):
+    """Exception related to processing options."""
 
 
 class UnterminatedMacroException(SpecfileException):

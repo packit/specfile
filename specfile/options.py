@@ -7,7 +7,7 @@ import string
 from enum import Enum, auto
 from typing import Dict, Iterable, Iterator, List, Optional, Tuple, Union, overload
 
-from specfile.exceptions import MacroOptionsException
+from specfile.exceptions import OptionsException
 from specfile.formatter import formatted
 
 
@@ -64,12 +64,12 @@ class Token(collections.abc.Hashable):
 class Positionals(collections.abc.MutableSequence):
     """Class that represents a sequence of positional arguments."""
 
-    def __init__(self, options: "MacroOptions") -> None:
+    def __init__(self, options: "Options") -> None:
         """
         Constructs a `Positionals` object.
 
         Args:
-            options: MacroOptions instance this object is tied with.
+            options: Options instance this object is tied with.
 
         Returns:
             Constructed instance of `Positionals` class.
@@ -207,7 +207,7 @@ class Positionals(collections.abc.MutableSequence):
             self._options._tokens.insert(index, Token(TokenType.WHITESPACE, " "))
 
 
-class MacroOptions(collections.abc.MutableMapping):
+class Options(collections.abc.MutableMapping):
     """
     Class that represents macro options.
 
@@ -226,7 +226,7 @@ class MacroOptions(collections.abc.MutableMapping):
         defaults: Optional[Dict[str, Union[bool, int, str]]] = None,
     ) -> None:
         """
-        Constructs a `MacroOptions` object.
+        Constructs a `Options` object.
 
         Args:
             tokens: List of tokens in an option string.
@@ -237,7 +237,7 @@ class MacroOptions(collections.abc.MutableMapping):
             defaults: Dict specifying default arguments to options.
 
         Returns:
-            Constructed instance of `MacroOptions` class.
+            Constructed instance of `Options` class.
         """
         self._tokens = tokens.copy()
         self.optstring = optstring or ""
@@ -245,7 +245,7 @@ class MacroOptions(collections.abc.MutableMapping):
 
     @formatted
     def __repr__(self) -> str:
-        return f"MacroOptions({self._tokens!r}, {self.optstring!r}, {self.defaults!r})"
+        return f"Options({self._tokens!r}, {self.optstring!r}, {self.defaults!r})"
 
     def __str__(self) -> str:
         return "".join(str(t) for t in self._tokens)
@@ -343,13 +343,13 @@ class MacroOptions(collections.abc.MutableMapping):
         if not self._valid_option(name):
             return super().__setattr__(name, value)
         if self._requires_argument(name) and isinstance(value, bool):
-            raise MacroOptionsException(f"Option -{name} requires an argument.")
+            raise OptionsException(f"Option -{name} requires an argument.")
         if (
             not self._requires_argument(name)
             and not isinstance(value, bool)
             and value is not None
         ):
-            raise MacroOptionsException(f"Option -{name} is a flag.")
+            raise OptionsException(f"Option -{name} is a flag.")
         i, j = self._find_option(name)
         if i is None:
             if value is not None and value is not False:
@@ -472,7 +472,7 @@ class MacroOptions(collections.abc.MutableMapping):
             List of tokens.
 
         Raises:
-            MacroOptionsException if the option string is untokenizable.
+            OptionsException if the option string is untokenizable.
         """
         result = []
         token = ""
@@ -496,7 +496,7 @@ class MacroOptions(collections.abc.MutableMapping):
             if quote:
                 if c == "\\":
                     if not inp:
-                        raise MacroOptionsException("No escaped character")
+                        raise OptionsException("No escaped character")
                     c = inp.pop(0)
                     if c != quote:
                         token += "\\"
@@ -523,11 +523,11 @@ class MacroOptions(collections.abc.MutableMapping):
                 continue
             if c == "\\":
                 if not inp:
-                    raise MacroOptionsException("No escaped character")
+                    raise OptionsException("No escaped character")
                 c = inp.pop(0)
             token += c
         if quote:
-            raise MacroOptionsException("No closing quotation")
+            raise OptionsException("No closing quotation")
         if token:
             result.append(Token(TokenType.DEFAULT, token))
         return result
