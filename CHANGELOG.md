@@ -1,3 +1,8 @@
+# 0.13.0
+
+- specfile now supports single-line sections where section content is represented by a macro starting with a newline. (#182)
+- Add evr argument to Specfile.add_changelog_entry. This allows adding a changelog entry with an evr value that's different than the current specfile's value. This makes it easier to reconstruct a specfile's %changelog based on another source using the higher level interface. (#181)
+
 # 0.12.0
 
 - All classes including `Specfile` itself can now be copied using the standard `copy()` and `deepcopy()` functions from `copy` module. (#176)
