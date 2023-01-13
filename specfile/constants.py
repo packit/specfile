@@ -74,6 +74,17 @@ SCRIPT_SECTIONS = {
     "transfiletriggerpostun",
 }
 
+# valid section option strings taken from build/parseSpec.c, build/parsePreamble.c,
+# build/parseDescription.c, build/parseFiles.c, build/parsePolicies.c and build/parseScript.c
+# in RPM source
+SECTION_OPTIONS = {
+    "package": "n:",
+    "description": "n:l:",
+    "files": "n:f:",
+    "sepolicy": "n:",
+}
+SECTION_OPTIONS.update({s: "n:f:p:P:eq" for s in SCRIPT_SECTIONS})
+
 # valid tag names as defined in build/parsePreamble.c in RPM source
 TAG_NAMES = {
     "name",

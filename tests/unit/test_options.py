@@ -3,7 +3,7 @@
 
 import pytest
 
-from specfile.macro_options import MacroOptions, Positionals, Token, TokenType
+from specfile.options import Options, Positionals, Token, TokenType
 
 
 @pytest.mark.parametrize(
@@ -49,7 +49,7 @@ from specfile.macro_options import MacroOptions, Positionals, Token, TokenType
     ],
 )
 def test_positionals_get_items(optstring, tokens, result):
-    options = MacroOptions(tokens, optstring)
+    options = Options(tokens, optstring)
     assert Positionals(options)._get_items() == result
 
 
@@ -95,7 +95,7 @@ def test_positionals_get_items(optstring, tokens, result):
     ],
 )
 def test_positionals_insert(optstring, tokens, index, value, tokens_index, token_type):
-    options = MacroOptions(tokens, optstring)
+    options = Options(tokens, optstring)
     positionals = Positionals(options)
     positionals.insert(index, value)
     assert options._tokens[tokens_index].type == token_type
@@ -110,8 +110,8 @@ def test_positionals_insert(optstring, tokens, index, value, tokens_index, token
         ("a:b:cDn:Tq", "v", False),
     ],
 )
-def test_macro_options_valid_option(optstring, option, valid):
-    options = MacroOptions([], optstring)
+def test_options_valid_option(optstring, option, valid):
+    options = Options([], optstring)
     assert options._valid_option(option) == valid
 
 
@@ -123,8 +123,8 @@ def test_macro_options_valid_option(optstring, option, valid):
         ("a:b:cDn:Tq", "v", None),
     ],
 )
-def test_macro_options_requires_argument(optstring, option, requires_argument):
-    options = MacroOptions([], optstring)
+def test_options_requires_argument(optstring, option, requires_argument):
+    options = Options([], optstring)
     if option in optstring:
         assert options._requires_argument(option) == requires_argument
     else:
@@ -193,8 +193,8 @@ def test_macro_options_requires_argument(optstring, option, requires_argument):
         ),
     ],
 )
-def test_macro_options_find_option(optstring, tokens, option, result):
-    options = MacroOptions(tokens, optstring)
+def test_options_find_option(optstring, tokens, option, result):
+    options = Options(tokens, optstring)
     assert options._find_option(option) == result
 
 
@@ -235,5 +235,5 @@ def test_macro_options_find_option(optstring, tokens, option, result):
         ),
     ],
 )
-def test_macro_options_tokenize(option_string, result):
-    assert MacroOptions.tokenize(option_string) == result
+def test_options_tokenize(option_string, result):
+    assert Options.tokenize(option_string) == result

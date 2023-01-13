@@ -8,7 +8,7 @@ from abc import ABC
 from typing import Any, Dict, List, Optional, SupportsIndex, Union, cast, overload
 
 from specfile.formatter import formatted
-from specfile.macro_options import MacroOptions
+from specfile.options import Options
 from specfile.sections import Section
 from specfile.utils import split_conditional_macro_expansion
 
@@ -33,7 +33,7 @@ class PrepMacro(ABC):
     def __init__(
         self,
         name: str,
-        options: MacroOptions,
+        options: Options,
         delimiter: str,
         prefix: Optional[str] = None,
         suffix: Optional[str] = None,
@@ -54,7 +54,7 @@ class PrepMacro(ABC):
             Constructed instance of `PrepMacro` class.
         """
         self.name = name
-        self.options = options
+        self.options = copy.deepcopy(options)
         self._delimiter = delimiter
         self._prefix = prefix or ""
         self._suffix = suffix or ""
@@ -302,7 +302,7 @@ class Prep(collections.abc.Container):
             o: The -o option (output file).
             Z: The -Z option (set UTC times).
         """
-        options = MacroOptions([], PatchMacro.OPTSTRING, PatchMacro.DEFAULTS)
+        options = Options([], PatchMacro.OPTSTRING, PatchMacro.DEFAULTS)
         for k, v in kwargs.items():
             setattr(options, k, v)
         macro = PatchMacro(PatchMacro.CANONICAL_NAME, options, " ")
@@ -375,8 +375,8 @@ class Prep(collections.abc.Container):
                 if not klass:
                     buffer.append(line)
                     continue
-                options = MacroOptions(
-                    MacroOptions.tokenize(option_string),
+                options = Options(
+                    Options.tokenize(option_string),
                     klass.OPTSTRING,
                     klass.DEFAULTS,
                 )

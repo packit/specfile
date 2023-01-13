@@ -6,6 +6,7 @@ import copy
 import pytest
 from flexmock import flexmock
 
+from specfile.options import Options, Token, TokenType
 from specfile.sections import Section, Sections
 
 
@@ -15,7 +16,7 @@ def test_find():
             Section("package"),
             Section("prep"),
             Section("changelog"),
-            Section("pAckage foo"),
+            Section("pAckage", Options([Token(TokenType.DEFAULT, "foo")]), " "),
         ]
     )
     assert sections.find("prep") == 1
@@ -25,7 +26,12 @@ def test_find():
 
 
 def test_get():
-    sections = Sections([Section("package"), Section("package bar")])
+    sections = Sections(
+        [
+            Section("package"),
+            Section("package", Options([Token(TokenType.DEFAULT, "bar")]), " "),
+        ]
+    )
     assert sections.get("package") == []
     assert sections.get("package bar") == []
     with pytest.raises(ValueError):
@@ -100,13 +106,24 @@ def test_parse_invalid_name():
 def test_get_raw_data():
     sections = Sections(
         [
-            Section("package", ["0", "", ""]),
-            Section("description", ["%{desc}", ""], "  "),
-            Section("prep", ["0", "1", "2", ""]),
-            Section("description x", ["%{desc}", ""], " "),
-            Section("package %{subpkg}", [""]),
-            Section("package x"),
-            Section("files y", ["0"]),
+            Section("package", data=["0", "", ""]),
+            Section("description", separator="  ", data=["%{desc}", ""]),
+            Section("prep", data=["0", "1", "2", ""]),
+            Section(
+                "description",
+                Options([Token(TokenType.DEFAULT, "x")]),
+                " ",
+                " ",
+                ["%{desc}", ""],
+            ),
+            Section(
+                "package",
+                Options([Token(TokenType.DEFAULT, "%{subpkg}")]),
+                " ",
+                data=[""],
+            ),
+            Section("package", Options([Token(TokenType.DEFAULT, "x")]), " "),
+            Section("files", Options([Token(TokenType.DEFAULT, "y")]), " ", data=["0"]),
             Section("changelog"),
         ],
     )
@@ -133,7 +150,7 @@ def test_get_raw_data():
 
 
 def test_copy_sections():
-    sections = Sections([Section("package", ["Name: test", "Version: 0.1"])])
+    sections = Sections([Section("package", data=["Name: test", "Version: 0.1"])])
     shallow_copy = copy.copy(sections)
     assert shallow_copy == sections
     assert shallow_copy is not sections

@@ -123,7 +123,7 @@ def test_patches(spec_patchlist):
             None,
             Section(
                 "changelog",
-                ["* Tue Feb 01 2022 John Doe <john@doe.net> - 0.1-1", "test"],
+                data=["* Tue Feb 01 2022 John Doe <john@doe.net> - 0.1-1", "test"],
             ),
         ),
         (
@@ -135,7 +135,7 @@ def test_patches(spec_patchlist):
             "%{version}-%{release}",
             Section(
                 "changelog",
-                ["* Tue Feb 01 2022 John Doe <john@doe.net> - 0.1-1", "test"],
+                data=["* Tue Feb 01 2022 John Doe <john@doe.net> - 0.1-1", "test"],
             ),
         ),
         (
@@ -147,7 +147,7 @@ def test_patches(spec_patchlist):
             "0.1-1",
             Section(
                 "changelog",
-                ["* Tue Feb 01 2022 John Doe <john@doe.net> - 0.1-1", "test"],
+                data=["* Tue Feb 01 2022 John Doe <john@doe.net> - 0.1-1", "test"],
             ),
         ),
         (
@@ -159,7 +159,7 @@ def test_patches(spec_patchlist):
             "0.2-1.1",
             Section(
                 "changelog",
-                ["* Tue Feb 01 2022 John Doe <john@doe.net> - 0.2-1.1", "test"],
+                data=["* Tue Feb 01 2022 John Doe <john@doe.net> - 0.2-1.1", "test"],
             ),
         ),
         (
@@ -169,7 +169,9 @@ def test_patches(spec_patchlist):
             None,
             datetime.date(2022, 2, 1),
             None,
-            Section("changelog", ["* Tue Feb 01 2022 Bill Packager - 0.1-1", "test"]),
+            Section(
+                "changelog", data=["* Tue Feb 01 2022 Bill Packager - 0.1-1", "test"]
+            ),
         ),
         (
             True,
@@ -180,7 +182,10 @@ def test_patches(spec_patchlist):
             None,
             Section(
                 "changelog",
-                ["* Tue Feb 01 2022 Bill Packager <bill@packager.net> - 0.1-1", "test"],
+                data=[
+                    "* Tue Feb 01 2022 Bill Packager <bill@packager.net> - 0.1-1",
+                    "test",
+                ],
             ),
         ),
         (
@@ -192,7 +197,7 @@ def test_patches(spec_patchlist):
             None,
             Section(
                 "changelog",
-                [
+                data=[
                     "* Tue Feb 01 09:28:13 UTC 2022 Bill Packager <bill@packager.net> - 0.1-1",
                     "test",
                 ],
@@ -207,7 +212,7 @@ def test_patches(spec_patchlist):
             None,
             Section(
                 "changelog",
-                [
+                data=[
                     "* Tue Feb 01 09:28:13 UTC 2022 Bill Packager <bill@packager.net> - 0.1-1",
                     "line 1",
                     "line 2",
