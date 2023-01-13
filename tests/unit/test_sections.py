@@ -60,7 +60,7 @@ def test_parse():
             "0",
             "%changelog",
         ],
-        context=flexmock(expand=lambda s: "\n" if s == "%{desc}" else ""),
+        context=flexmock(expand=lambda s, **_: "\n" if s == "%{desc}" else ""),
     )
     assert sections[0][0] == "0"
     assert sections[1].id == "description"
