@@ -103,6 +103,34 @@ def test_parse_invalid_name():
     assert sections.description[2] == "%description(fr)"
 
 
+def test_parse_macro_definitions():
+    sections = Sections.parse(
+        [
+            "%package -n test",
+            "Summary: Subpackage test",
+            "",
+            "%description -n test",
+            "Subpackage test.",
+            "",
+            "%define template1()\\",
+            "%package -n %{1}\\",
+            "Summary: Subpackage %{1}\\",
+            "\\",
+            "%description -n %{1}\\",
+            "Subpackage %{1}.",
+            "",
+            "%define template2() %{expand:",
+            "%package -n %{1}",
+            "Summary: Subpackage %{1}",
+            "",
+            "%description -n %{1}",
+            "Subpackage %{1}.}",
+        ]
+    )
+    assert len(sections) == 3
+    assert sections[1].id == "package -n test"
+
+
 def test_get_raw_data():
     sections = Sections(
         [

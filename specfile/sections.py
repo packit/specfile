@@ -13,6 +13,7 @@ from specfile.constants import (
     SIMPLE_SCRIPT_SECTIONS,
 )
 from specfile.formatter import formatted
+from specfile.macro_definitions import MacroDefinitions
 from specfile.macros import Macros
 from specfile.options import Options
 
@@ -258,12 +259,20 @@ class Sections(collections.UserList):
                 return name, options, delimiter, separator, content
             return tokens[0], None, "", separator, content
 
+        excluded_lines = []
+        macro_definitions = MacroDefinitions.parse(lines)
+        for md in macro_definitions:
+            position = md.get_position(macro_definitions)
+            excluded_lines.append(range(position, position + len(md.get_raw_data())))
         section_id_regexes = [
-            re.compile(rf"^%{re.escape(n)}(\s+.*$|$)", re.IGNORECASE)
+            re.compile(rf"^%{re.escape(n)}(\s+.*(?<!\\)$|$)", re.IGNORECASE)
             for n in SECTION_NAMES
         ]
         section_starts = []
         for i, line in enumerate(lines):
+            # section can not start inside macro definition body
+            if any(i in r for r in excluded_lines):
+                continue
             if line.startswith("%"):
                 for r in section_id_regexes:
                     if r.match(line):
