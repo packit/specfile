@@ -67,7 +67,7 @@ class MacroDefinition:
         result = self._preceding_lines.copy()
         ws = self._whitespace
         macro = "%global" if self.is_global else "%define"
-        body = self.body.replace("\n", "\\\n").splitlines()
+        body = self.body.splitlines()
         if body:
             body[-1] += ws[3]
         else:
@@ -198,6 +198,36 @@ class MacroDefinitions(collections.UserList):
         Returns:
             Constructed instance of `MacroDefinitions` class.
         """
+
+        def count_brackets(s):
+            bc = pc = 0
+            chars = list(s)
+            while chars:
+                c = chars.pop(0)
+                if c == "\\" and chars:
+                    chars.pop(0)
+                    continue
+                if c == "%" and chars:
+                    c = chars.pop(0)
+                    if c == "{":
+                        bc += 1
+                    elif c == "(":
+                        pc += 1
+                    continue
+                if c == "{" and bc > 0:
+                    bc += 1
+                    continue
+                if c == "}" and bc > 0:
+                    bc -= 1
+                    continue
+                if c == "(" and pc > 0:
+                    pc += 1
+                    continue
+                if c == ")" and pc > 0:
+                    pc -= 1
+                    continue
+            return bc, pc
+
         md_regex = re.compile(
             r"""
             ^
@@ -215,21 +245,26 @@ class MacroDefinitions(collections.UserList):
         )
         data = []
         buffer: List[str] = []
+        lines = lines.copy()
         while lines:
             line = lines.pop(0)
             m = md_regex.match(line)
             if m:
                 ws0, macro, ws1, name, ws2, body, ws3 = m.groups()
                 if ws3 == "\\":
-                    while line.endswith("\\") and lines:
-                        line = lines.pop(0)
-                        body += "\n" + line.rstrip("\\")
-                    tokens = re.split(r"(\s+)$", body, maxsplit=1)
-                    if len(tokens) == 1:
-                        body = tokens[0]
-                        ws3 = ""
-                    else:
-                        body, ws3, _ = tokens
+                    body += ws3
+                    ws3 = ""
+                bc, pc = count_brackets(body)
+                while (bc > 0 or pc > 0 or body.endswith("\\")) and lines:
+                    line = lines.pop(0)
+                    body += "\n" + line
+                    bc, pc = count_brackets(body)
+                tokens = re.split(r"(\s+)$", body, maxsplit=1)
+                if len(tokens) == 1:
+                    body = tokens[0]
+                else:
+                    body, ws, _ = tokens
+                    ws3 = ws + ws3
                 data.append(
                     MacroDefinition(
                         name, body, macro == "%global", (ws0, ws1, ws2, ws3), buffer

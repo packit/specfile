@@ -64,16 +64,26 @@ def test_parse():
             "",
             "%define desc(x) Test spec file containing several \\",
             "macro definitions in various formats (%?1)",
+            "",
+            "%define example() %{expand:",
+            "This an example of a macro definition with body ",
+            "spawning across mutiple lines}",
         ]
     )
     assert macro_definitions[0].name == "gitdate"
     assert macro_definitions[1].name == "commit"
     assert macro_definitions.commit.body == "9ab9717cf7d1be1a85b165a8eacb71b9e5831113"
     assert macro_definitions[2].name == "shortcommit"
-    assert macro_definitions[-1].name == "desc(x)"
-    assert macro_definitions[-1].body == (
-        "Test spec file containing several \n"
+    assert macro_definitions[3].name == "desc(x)"
+    assert macro_definitions[3].body == (
+        "Test spec file containing several \\\n"
         "macro definitions in various formats (%?1)"
+    )
+    assert macro_definitions[-1].name == "example()"
+    assert macro_definitions[-1].body == (
+        "%{expand:\n"
+        "This an example of a macro definition with body \n"
+        "spawning across mutiple lines}"
     )
 
 
@@ -92,7 +102,7 @@ def test_get_raw_data():
             ),
             MacroDefinition(
                 "desc(x)",
-                "Test spec file containing several \nmacro definitions in various formats (%?1)",
+                "Test spec file containing several \\\nmacro definitions in various formats (%?1)",
                 False,
                 ("", " ", " ", ""),
                 [
@@ -101,6 +111,15 @@ def test_get_raw_data():
                     "Version:        0.1.0",
                     "",
                 ],
+            ),
+            MacroDefinition(
+                "example()",
+                "%{expand:\n"
+                "This an example of a macro definition with body \n"
+                "spawning across mutiple lines}",
+                False,
+                ("", " ", " ", ""),
+                [""],
             ),
         ]
     )
@@ -114,6 +133,10 @@ def test_get_raw_data():
         "",
         "%define desc(x) Test spec file containing several \\",
         "macro definitions in various formats (%?1)",
+        "",
+        "%define example() %{expand:",
+        "This an example of a macro definition with body ",
+        "spawning across mutiple lines}",
     ]
 
 
