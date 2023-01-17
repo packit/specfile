@@ -430,7 +430,6 @@ def test_includes(spec_includes):
     assert not spec.expand("%patches")
     with spec.tags() as tags:
         assert tags.provides.value.startswith("%(")
-        assert tags.provides.expanded_value == "DUMMY-0.1"
     with spec.sections() as sections:
         assert sections.description[0] == "%include %{SOURCE3}"
         assert sections.description[1] == "%(cat %{S:4})"

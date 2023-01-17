@@ -7,7 +7,7 @@ import subprocess
 import types
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Generator, List, Optional, Tuple, Type, Union
+from typing import Generator, List, Optional, Tuple, Type, Union, cast
 
 import rpm
 
@@ -257,17 +257,13 @@ class Specfile:
             Tags in the section as `Tags` object.
         """
         with self.sections() as sections:
-            if isinstance(section, Section):
-                raw_section = section
-                parsed_section = getattr(self.parsed_sections, section.id, None)
-            else:
-                raw_section = getattr(sections, section)
-                parsed_section = getattr(self.parsed_sections, section, None)
-            tags = Tags.parse(raw_section, parsed_section)
+            if isinstance(section, str):
+                section = cast(Section, getattr(sections, section))
+            tags = Tags.parse(section, context=self)
             try:
                 yield tags
             finally:
-                raw_section.data = tags.get_raw_section_data()
+                section.data = tags.get_raw_section_data()
 
     @ContextManager
     def changelog(self) -> Generator[Optional[Changelog], None, None]:
@@ -340,7 +336,6 @@ class Specfile:
                     allow_duplicates,
                     default_to_implicit_numbering,
                     default_source_number_digits,
-                    context=self,
                 )
             finally:
                 for section, sourcelist in sourcelists:
@@ -377,7 +372,6 @@ class Specfile:
                     allow_duplicates,
                     default_to_implicit_numbering,
                     default_source_number_digits,
-                    context=self,
                 )
             finally:
                 for section, patchlist in patchlists:
