@@ -263,7 +263,7 @@ class Sections(collections.UserList):
         macro_definitions = MacroDefinitions.parse(lines)
         for md in macro_definitions:
             position = md.get_position(macro_definitions)
-            excluded_lines.append(range(position, position + len(md.get_raw_data())))
+            excluded_lines.append(range(position, position + len(md.body.splitlines())))
         section_id_regexes = [
             re.compile(rf"^%{re.escape(n)}(\s+.*(?<!\\)$|$)", re.IGNORECASE)
             for n in SECTION_NAMES

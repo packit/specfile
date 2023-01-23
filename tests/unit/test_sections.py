@@ -125,10 +125,14 @@ def test_parse_macro_definitions():
             "",
             "%description -n %{1}",
             "Subpackage %{1}.}",
+            "",
+            "%prep",
+            "%autosetup",
         ]
     )
-    assert len(sections) == 3
+    assert len(sections) == 4
     assert sections[1].id == "package -n test"
+    assert sections[-1].id == "prep"
 
 
 def test_get_raw_data():
