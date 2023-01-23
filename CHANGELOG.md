@@ -1,3 +1,7 @@
+# 0.13.1
+
+- Fixed a bug in section parsing that caused sections to be ignored when there were macro definitions spread across the spec file and not cumulated at the top. (#191)
+
 # 0.13.0
 
 - Added `Section.options` attribute for convenient manipulation of section options. (#183)
