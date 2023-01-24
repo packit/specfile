@@ -5,12 +5,27 @@ import collections
 import copy
 import itertools
 import re
-from typing import Any, Iterable, List, Optional, SupportsIndex, Union, cast, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    SupportsIndex,
+    Union,
+    cast,
+    overload,
+)
 
 from specfile.constants import TAG_NAMES, TAGS_WITH_ARG
 from specfile.formatter import formatted
+from specfile.macros import Macros
 from specfile.sections import Section
 from specfile.utils import split_conditional_macro_expansion
+
+if TYPE_CHECKING:
+    from specfile.specfile import Specfile
 
 
 def get_tag_name_regex(name: str) -> str:
@@ -195,11 +210,11 @@ class Tag:
         self,
         name: str,
         value: str,
-        expanded_value: Optional[str],
         separator: str,
         comments: Comments,
         prefix: Optional[str] = None,
         suffix: Optional[str] = None,
+        context: Optional["Specfile"] = None,
     ) -> None:
         """
         Constructs a `Tag` object.
@@ -214,6 +229,7 @@ class Tag:
             comments: List of comments associated with the tag.
             prefix: Characters preceding the tag on a line.
             suffix: Characters following the tag on a line.
+            context: `Specfile` instance that defines the context for macro expansions.
 
         Returns:
             Constructed instance of `Tag` class.
@@ -225,11 +241,11 @@ class Tag:
             raise ValueError(f"Invalid tag name: '{name}'")
         self.name = name
         self.value = value
-        self._expanded_value = expanded_value
         self._separator = separator
         self.comments = comments.copy()
         self._prefix = prefix or ""
         self._suffix = suffix or ""
+        self._context = context
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Tag):
@@ -237,7 +253,6 @@ class Tag:
         return (
             self.name == other.name
             and self.value == other.value
-            and self._expanded_value == other._expanded_value
             and self._separator == other._separator
             and self.comments == other.comments
             and self._prefix == other._prefix
@@ -247,9 +262,19 @@ class Tag:
     @formatted
     def __repr__(self) -> str:
         return (
-            f"Tag({self.name!r}, {self.value!r}, {self._expanded_value!r}, "
-            f"{self._separator!r}, {self.comments!r}, {self._prefix!r}, {self._suffix!r})"
+            f"Tag({self.name!r}, {self.value!r}, {self._separator!r}, {self.comments!r}, "
+            f"{self._prefix!r}, {self._suffix!r}, {self._context!r})"
         )
+
+    def __deepcopy__(self, memo: Dict[int, Any]) -> "Tag":
+        result = self.__class__.__new__(self.__class__)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            if k == "_context":
+                continue
+            setattr(result, k, copy.deepcopy(v, memo))
+        result._context = self._context
+        return result
 
     @property
     def normalized_name(self) -> str:
@@ -260,14 +285,11 @@ class Tag:
         return self.name.capitalize()
 
     @property
-    def valid(self) -> bool:
-        """Validity of the tag. A tag is valid if it 'survives' the expansion of the spec file."""
-        return self._expanded_value is not None
-
-    @property
     def expanded_value(self) -> Optional[str]:
-        """Value of the tag after expanding macros and evaluating all conditions."""
-        return self._expanded_value
+        """Value of the tag after expanding macros."""
+        if self._context:
+            return self._context.expand(self.value)
+        return Macros.expand(self.value)
 
     def get_position(self, container: "Tags") -> int:
         """
@@ -434,15 +456,13 @@ class Tags(collections.UserList):
             del lines[: index + 1]
 
     @classmethod
-    def parse(
-        cls, raw_section: Section, parsed_section: Optional[Section] = None
-    ) -> "Tags":
+    def parse(cls, section: Section, context: Optional["Specfile"] = None) -> "Tags":
         """
         Parses a section into tags.
 
         Args:
-            raw_section: Raw (unprocessed) section.
-            parsed_section: The same section after parsing.
+            section: Section to parse.
+            context: `Specfile` instance that defines the context for macro expansions.
 
         Returns:
             Constructed instance of `Tags` class.
@@ -455,31 +475,20 @@ class Tags(collections.UserList):
         tag_regexes = [re.compile(regex_pattern(t), re.IGNORECASE) for t in TAG_NAMES]
         data = []
         buffer: List[str] = []
-        for line in raw_section:
+        for line in section:
             line, prefix, suffix = split_conditional_macro_expansion(line)
             # find out if there is a match for one of the tag regexes
             m = next((m for m in (r.match(line) for r in tag_regexes) if m), None)
             if m:
-                # find out if any line in the parsed section matches the same regex
-                tag_regex = re.compile(regex_pattern(m.group("n")))
-                e = next(
-                    (
-                        e
-                        for e in (tag_regex.match(pl) for pl in parsed_section or [])
-                        if e
-                    ),
-                    None,
-                )
-                expanded_value = e.group("v") if e else None
                 data.append(
                     Tag(
                         m.group("n"),
                         m.group("v"),
-                        expanded_value,
                         m.group("s"),
                         Comments.parse(buffer),
                         prefix,
                         suffix,
+                        context,
                     )
                 )
                 buffer = []

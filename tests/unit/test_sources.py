@@ -23,7 +23,7 @@ from specfile.tags import Comments, Tag, Tags
     ],
 )
 def test_tag_source_extract_number(tag_name, number):
-    ts = TagSource(Tag(tag_name, "", "", "", Comments()))
+    ts = TagSource(Tag(tag_name, "", "", Comments()))
     assert ts._extract_number() == number
 
 
@@ -74,7 +74,7 @@ def test_tag_source_extract_number(tag_name, number):
 )
 def test_sources_detect_implicit_numbering(tags, default, result):
     sources = Sources(
-        Tags([Tag(t, v, v, ": ", Comments()) for t, v in tags]),
+        Tags([Tag(t, v, ": ", Comments()) for t, v in tags]),
         [],
         default_to_implicit_numbering=default,
     )
@@ -91,7 +91,7 @@ def test_sources_detect_implicit_numbering(tags, default, result):
 )
 def test_sources_get_tag_format(ref_name, ref_separator, number, name, separator):
     sources = Sources(Tags(), [])
-    reference = TagSource(Tag(ref_name, "", "", ref_separator, Comments()))
+    reference = TagSource(Tag(ref_name, "", ref_separator, Comments()))
     assert sources._get_tag_format(reference, number) == (name, separator)
 
 
@@ -103,9 +103,7 @@ def test_sources_get_tag_format(ref_name, ref_separator, number, name, separator
     ],
 )
 def test_sources_get_initial_tag_setup(tags, number, index):
-    sources = Sources(
-        Tags([Tag(t, "test", "test", ": ", Comments()) for t in tags]), []
-    )
+    sources = Sources(Tags([Tag(t, "test", ": ", Comments()) for t in tags]), [])
     assert sources._get_initial_tag_setup(number) == (index, f"Source{number}", ": ")
 
 
@@ -153,9 +151,7 @@ def test_sources_get_initial_tag_setup(tags, number, index):
     ],
 )
 def test_sources_deduplicate_tag_names(tags, deduplicated_tags):
-    sources = Sources(
-        Tags([Tag(t, "test", "test", ": ", Comments()) for t in tags]), []
-    )
+    sources = Sources(Tags([Tag(t, "test", ": ", Comments()) for t in tags]), [])
     sources._deduplicate_tag_names()
     assert [t.name for t in sources._tags] == deduplicated_tags
 
@@ -242,7 +238,7 @@ def test_sources_deduplicate_tag_names(tags, deduplicated_tags):
 )
 def test_sources_insert(tags, sourcelists, index, location, number, cls):
     sources = Sources(
-        Tags([Tag(t, v, v, ": ", Comments()) for t, v in tags]),
+        Tags([Tag(t, v, ": ", Comments()) for t, v in tags]),
         [
             Sourcelist([SourcelistEntry(s, Comments()) for s in sl])
             for sl in sourcelists
@@ -334,7 +330,7 @@ def test_sources_insert(tags, sourcelists, index, location, number, cls):
     ],
 )
 def test_sources_insert_numbered(tags, number, location, index):
-    sources = Sources(Tags([Tag(t, v, v, ": ", Comments()) for t, v in tags]), [])
+    sources = Sources(Tags([Tag(t, v, ": ", Comments()) for t, v in tags]), [])
     if location in [v for t, v in tags if t.startswith(Sources.prefix)]:
         with pytest.raises(SpecfileException):
             sources.insert_numbered(number, location)
@@ -401,13 +397,13 @@ def test_sources_insert_numbered(tags, number, location, index):
     ],
 )
 def test_sources_remove_numbered(tags, sourcelists, number, new_tags, new_sourcelists):
-    tags = Tags([Tag(t, v, v, ": ", Comments()) for t, v in tags])
+    tags = Tags([Tag(t, v, ": ", Comments()) for t, v in tags])
     sourcelists = [
         Sourcelist([SourcelistEntry(s, Comments()) for s in sl]) for sl in sourcelists
     ]
     sources = Sources(tags, sourcelists)
     sources.remove_numbered(number)
-    assert tags == Tags([Tag(t, v, v, ": ", Comments()) for t, v in new_tags])
+    assert tags == Tags([Tag(t, v, ": ", Comments()) for t, v in new_tags])
     assert sourcelists == [
         Sourcelist([SourcelistEntry(s, Comments()) for s in sl])
         for sl in new_sourcelists
@@ -425,7 +421,7 @@ def test_sources_remove_numbered(tags, sourcelists, number, new_tags, new_source
 )
 def test_patches_get_tag_format(ref_name, ref_separator, number, name, separator):
     patches = Patches(Tags(), [])
-    reference = TagSource(Tag(ref_name, "", "", ref_separator, Comments()))
+    reference = TagSource(Tag(ref_name, "", ref_separator, Comments()))
     assert patches._get_tag_format(reference, number) == (name, separator)
 
 
@@ -439,9 +435,7 @@ def test_patches_get_tag_format(ref_name, ref_separator, number, name, separator
     ],
 )
 def test_patches_get_initial_tag_setup(tags, number, index):
-    patches = Patches(
-        Tags([Tag(t, "test", "test", ": ", Comments()) for t in tags]), []
-    )
+    patches = Patches(Tags([Tag(t, "test", ": ", Comments()) for t in tags]), [])
     flexmock(patches).should_receive("_get_tag_format").and_return(
         f"Patch{number}", ": "
     )
@@ -450,7 +444,7 @@ def test_patches_get_initial_tag_setup(tags, number, index):
 
 def test_copy_sources():
     sources = Sources(
-        Tags([Tag("Name", "test", "test", ": ", Comments())]),
+        Tags([Tag("Name", "test", ": ", Comments())]),
         [
             Sourcelist([SourcelistEntry("%{name}-%{version}.tar.gz", Comments())]),
         ],
