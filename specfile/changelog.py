@@ -331,11 +331,14 @@ class Changelog(collections.UserList):
         content: List[str] = []
         for line in section:
             if line.startswith("*"):
-                if header:
-                    following_lines = extract_following_lines(content)
-                    data.insert(0, ChangelogEntry(header, content, following_lines))
-                header = line
-                content = []
+                if header is None or "".join(content).strip():
+                    if header:
+                        following_lines = extract_following_lines(content)
+                        data.insert(0, ChangelogEntry(header, content, following_lines))
+                    header = line
+                    content = []
+                else:
+                    content.append(line)
             elif header:
                 content.append(line)
             else:

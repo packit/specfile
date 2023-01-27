@@ -141,6 +141,13 @@ def test_parse():
         Section(
             "changelog",
             data=[
+                "* Fri Jan 27 2023 Nikola Forró <nforro@redhat.com> - 0.4-1",
+                "",
+                "* this is also a valid entry",
+                "",
+                "* Fri Jan 27 2023 Nikola Forró <nforro@redhat.com> - 0.3-2",
+                "* this is a valid entry",
+                "",
                 "* Mon Nov 21 2022 Nikola Forró <nforro@redhat.com> - 0.3-1",
                 "- this is a formatted",
                 "  changelog entry",
@@ -162,7 +169,7 @@ def test_parse():
             ],
         )
     )
-    assert len(changelog) == 5
+    assert len(changelog) == 7
     assert (
         changelog[0].header
         == "* Tue May 04 2021 Nikola Forró <nforro@redhat.com> - 0.1-1"
@@ -200,6 +207,23 @@ def test_parse():
         "- here is another item",
     ]
     assert not changelog[4].extended_timestamp
+    assert (
+        changelog[5].header
+        == "* Fri Jan 27 2023 Nikola Forró <nforro@redhat.com> - 0.3-2"
+    )
+    assert changelog[5].content == [
+        "* this is a valid entry",
+    ]
+    assert not changelog[5].extended_timestamp
+    assert (
+        changelog[6].header
+        == "* Fri Jan 27 2023 Nikola Forró <nforro@redhat.com> - 0.4-1"
+    )
+    assert changelog[6].content == [
+        "",
+        "* this is also a valid entry",
+    ]
+    assert not changelog[6].extended_timestamp
 
 
 def test_get_raw_section_data():
@@ -242,9 +266,33 @@ def test_get_raw_section_data():
                 ],
                 "0.3-1",
             ),
+            ChangelogEntry.assemble(
+                datetime.date(2023, 1, 27),
+                "Nikola Forró <nforro@redhat.com>",
+                [
+                    "* this is a valid entry",
+                ],
+                "0.3-2",
+            ),
+            ChangelogEntry.assemble(
+                datetime.date(2023, 1, 27),
+                "Nikola Forró <nforro@redhat.com>",
+                [
+                    "",
+                    "* this is also a valid entry",
+                ],
+                "0.4-1",
+            ),
         ]
     )
     assert changelog.get_raw_section_data() == [
+        "* Fri Jan 27 2023 Nikola Forró <nforro@redhat.com> - 0.4-1",
+        "",
+        "* this is also a valid entry",
+        "",
+        "* Fri Jan 27 2023 Nikola Forró <nforro@redhat.com> - 0.3-2",
+        "* this is a valid entry",
+        "",
         "* Mon Nov 21 2022 Nikola Forró <nforro@redhat.com> - 0.3-1",
         "- this is a formatted",
         "  changelog entry",
