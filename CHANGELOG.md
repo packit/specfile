@@ -1,3 +1,7 @@
+# 0.13.2
+
+- Fixed infinite loop that occured when section options were followed by whitespace. (#197)
+
 # 0.13.1
 
 - Fixed a bug in section parsing that caused sections to be ignored when there were macro definitions spread across the spec file and not cumulated at the top. (#191)
