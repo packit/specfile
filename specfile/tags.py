@@ -380,13 +380,13 @@ class Tags(collections.UserList):
                     reversed(
                         list(
                             itertools.dropwhile(
-                                lambda l: not l, reversed(preceding_lines)
+                                lambda line: not line, reversed(preceding_lines)
                             )
                         )
                     )
                 )
                 + delimiter
-                + list(itertools.dropwhile(lambda l: not l, lines))
+                + list(itertools.dropwhile(lambda line: not line, lines))
             )
 
         if isinstance(i, slice):

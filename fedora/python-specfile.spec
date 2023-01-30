@@ -13,7 +13,7 @@ in a minimal diff.}
 
 
 Name:           python-specfile
-Version:        0.13.1
+Version:        0.13.2
 Release:        1%{?dist}
 
 Summary:        A library for parsing and manipulating RPM spec files
@@ -69,6 +69,9 @@ sed -i 's/rpm-py-installer/rpm/' setup.cfg
 
 
 %changelog
+* Mon Jan 30 2023 Packit Team <hello@packit.dev> - 0.13.2-1
+- New upstream release 0.13.2
+
 * Mon Jan 23 2023 Packit Team <hello@packit.dev> - 0.13.1-1
 - New upstream release 0.13.1
 
