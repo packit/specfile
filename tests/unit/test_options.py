@@ -233,6 +233,21 @@ def test_options_find_option(optstring, tokens, option, result):
                 Token(TokenType.DOUBLE_QUOTED, '.test "double quotes"'),
             ],
         ),
+        (
+            "-p1 -b .test_whitespace_at_the_end -M 2  ",
+            [
+                Token(TokenType.DEFAULT, "-p1"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, "-b"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, ".test_whitespace_at_the_end"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, "-M"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, "2"),
+                Token(TokenType.WHITESPACE, "  "),
+            ],
+        ),
     ],
 )
 def test_options_tokenize(option_string, result):
