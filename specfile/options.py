@@ -512,6 +512,9 @@ class Options(collections.abc.MutableMapping):
                     if not c.isspace():
                         break
                     whitespace += c
+                else:
+                    result.append(Token(TokenType.WHITESPACE, whitespace))
+                    break
                 inp.insert(0, c)
                 result.append(Token(TokenType.WHITESPACE, whitespace))
                 continue
