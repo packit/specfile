@@ -1,0 +1,42 @@
+name: Update constants from RPM sources
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 1 * *"
+
+jobs:
+  update-constants:
+    # To not run in forks
+    if: github.repository_owner == 'packit'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install Python dependencies
+        run: pip install --upgrade click pyparsing
+      - name: Checkout RPM source tree
+        uses: actions/checkout@v3
+        with:
+          repository: "rpm-software-management/rpm"
+          path: "rpm-source-tree"
+      - name: Update constants
+        id: update_constants
+        run: |
+          python scripts/update_constants.py specfile/constants.py rpm-source-tree/
+          case $? in
+            0) echo "pr=true" >> $GITHUB_OUTPUT;;
+            100) echo "pr=false" >> $GITHUB_OUTPUT;;
+            *) exit $?;;
+          esac
+      - name: Create Pull Request
+        if: steps.update_constants.outputs.pr == 'true'
+        uses: peter-evans/create-pull-request@v4
+        with:
+          add-paths: specfile/constants.py
+          commit-message: Update constants
+          title: Update constants
+          body: Update `specfile/constants.py` from RPM sources
+          delete-branch: true
