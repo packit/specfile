@@ -27,6 +27,8 @@ def test_parse():
         Section(
             "package",
             data=[
+                "%{?scl:%scl_package scltest}",
+                "",
                 "%global ver_major 1",
                 "%global ver_minor 0",
                 "",
@@ -51,6 +53,7 @@ def test_parse():
             ],
         )
     )
+    assert tags[0].comments._preceding_lines[0] == "%{?scl:%scl_package scltest}"
     assert tags[0].name == "Name"
     assert tags[0].comments[0].text == "this is a test package"
     assert tags[0].comments[1].text == "not to be used in production"
@@ -82,7 +85,13 @@ def test_get_raw_section_data():
                         Comment("this is a test package"),
                         Comment("not to be used in production"),
                     ],
-                    ["%global ver_major 1", "%global ver_minor 0", ""],
+                    [
+                        "%{?scl:%scl_package scltest}",
+                        "",
+                        "%global ver_major 1",
+                        "%global ver_minor 0",
+                        "",
+                    ],
                 ),
             ),
             Tag("Version", "%{ver_major}.%{ver_minor}", ": ", Comments()),
@@ -107,6 +116,8 @@ def test_get_raw_section_data():
         [],
     )
     assert tags.get_raw_section_data() == [
+        "%{?scl:%scl_package scltest}",
+        "",
         "%global ver_major 1",
         "%global ver_minor 0",
         "",
