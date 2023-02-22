@@ -201,7 +201,7 @@ with specfile.patches() as patches:
     del patches[2]
     # inserting a patch with a specific number
     patches.insert_numbered(999, 'final.patch')
-    
+
 # adding a single patch
 specfile.add_patch('necessary.patch', comment='a human-friendly comment to the patch')
 ```
