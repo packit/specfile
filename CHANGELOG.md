@@ -1,3 +1,8 @@
+# 0.14.0
+
+- Fixed a bug that broke parsing in case spec file contained conditionalized macro definitions or similar constructs. (#209)
+- Specfile no longer depends on rpm-py-installer, it now depends directly on rpm. (#207)
+
 # 0.13.2
 
 - Fixed infinite loop that occured when section options were followed by whitespace. (#197)
