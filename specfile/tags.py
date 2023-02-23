@@ -493,7 +493,7 @@ class Tags(collections.UserList):
                 )
                 buffer = []
             else:
-                buffer.append(line)
+                buffer.append(prefix + line + suffix)
         return cls(data, buffer)
 
     def get_raw_section_data(self) -> List[str]:
