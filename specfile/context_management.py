@@ -39,7 +39,7 @@ def capture_stderr() -> Generator[List[bytes], None, None]:
 
 class GeneratorContextManager(contextlib._GeneratorContextManager):
     """
-    Extended contextlib._GeneratorContextManager that provides get() method.
+    Extended contextlib._GeneratorContextManager that provides content property.
     """
 
     def __init__(self, function: Callable) -> None:
