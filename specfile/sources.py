@@ -5,13 +5,16 @@ import collections
 import re
 import urllib.parse
 from abc import ABC, abstractmethod
-from typing import Iterable, List, Optional, Tuple, Union, cast, overload
+from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple, Union, cast, overload
 
 from specfile.exceptions import DuplicateSourceException
 from specfile.formatter import formatted
 from specfile.sourcelist import Sourcelist, SourcelistEntry
 from specfile.tags import Comments, Tag, Tags
 from specfile.utils import get_filename_from_location
+
+if TYPE_CHECKING:
+    from specfile.specfile import Specfile
 
 
 class Source(ABC):
@@ -236,6 +239,7 @@ class Sources(collections.abc.MutableSequence):
         allow_duplicates: bool = False,
         default_to_implicit_numbering: bool = False,
         default_source_number_digits: int = 1,
+        context: Optional["Specfile"] = None,
     ) -> None:
         """
         Constructs a `Sources` object.
@@ -256,6 +260,7 @@ class Sources(collections.abc.MutableSequence):
         self._allow_duplicates = allow_duplicates
         self._default_to_implicit_numbering = default_to_implicit_numbering
         self._default_source_number_digits = default_source_number_digits
+        self._context = context
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Sources):
@@ -277,7 +282,7 @@ class Sources(collections.abc.MutableSequence):
         return (
             f"{self.__class__.__name__}({self._tags!r}, {self._sourcelists!r}, "
             f"{self._allow_duplicates!r}, {self._default_to_implicit_numbering!r}, "
-            f"{self._default_source_number_digits!r})"
+            f"{self._default_source_number_digits!r}, {self._context!r})"
         )
 
     def __contains__(self, location: object) -> bool:
@@ -502,21 +507,25 @@ class Sources(collections.abc.MutableSequence):
                 name, separator = self._get_tag_format(cast(TagSource, source), number)
                 container.insert(
                     index,
-                    Tag(name, location, separator, Comments()),
+                    Tag(name, location, separator, Comments(), context=self._context),
                 )
                 self._deduplicate_tag_names(i)
             else:
                 container.insert(
                     index,
-                    SourcelistEntry(location, Comments()),  # type: ignore[arg-type]
+                    SourcelistEntry(  # type: ignore[arg-type]
+                        location, Comments(), context=self._context
+                    ),
                 )
         elif self._sourcelists:
-            self._sourcelists[-1].append(SourcelistEntry(location, Comments()))
+            self._sourcelists[-1].append(
+                SourcelistEntry(location, Comments(), context=self._context)
+            )
         else:
             index, name, separator = self._get_initial_tag_setup()
             self._tags.insert(
                 index,
-                Tag(name, location, separator, Comments()),
+                Tag(name, location, separator, Comments(), context=self._context),
             )
 
     def insert_numbered(self, number: int, location: str) -> int:
@@ -549,7 +558,9 @@ class Sources(collections.abc.MutableSequence):
         else:
             i = 0
             index, name, separator = self._get_initial_tag_setup(number)
-        self._tags.insert(index, Tag(name, location, separator, Comments()))
+        self._tags.insert(
+            index, Tag(name, location, separator, Comments(), context=self._context)
+        )
         self._deduplicate_tag_names(i)
         return i
 

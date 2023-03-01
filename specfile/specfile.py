@@ -336,6 +336,7 @@ class Specfile:
                     allow_duplicates,
                     default_to_implicit_numbering,
                     default_source_number_digits,
+                    context=self,
                 )
             finally:
                 for section, sourcelist in sourcelists:
@@ -372,6 +373,7 @@ class Specfile:
                     allow_duplicates,
                     default_to_implicit_numbering,
                     default_source_number_digits,
+                    context=self,
                 )
             finally:
                 for section, patchlist in patchlists:
