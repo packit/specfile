@@ -312,12 +312,7 @@ class ValueParser:
 
         def expand(s):
             if context:
-                result = context.expand(
-                    s, skip_parsing=getattr(expand, "skip_parsing", False)
-                )
-                # parse only once
-                expand.skip_parsing = True
-                return result
+                return context.expand(s)
             return Macros.expand(s)
 
         def flatten(nodes):

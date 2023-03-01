@@ -3,8 +3,10 @@
 
 import contextlib
 import copy
+import hashlib
 import logging
 import os
+import pickle
 import re
 import tempfile
 from pathlib import Path
@@ -40,6 +42,9 @@ class SpecParser:
           sources required to be present at parsing time were not available
           and were replaced with dummy files.
     """
+
+    # hash of input parameters to the last parse performed
+    _last_parse_hash = None
 
     def __init__(
         self,
@@ -325,11 +330,32 @@ class SpecParser:
         Raises:
             RPMException, if parsing error occurs.
         """
+        # calculate hash of all input parameters
+        payload = (
+            id(self),
+            self.sourcedir,
+            self.macros,
+            self.force_parse,
+            content,
+            extra_macros,
+        )
+        parse_hash = hashlib.sha256(
+            pickle.dumps(payload, protocol=pickle.HIGHEST_PROTOCOL)
+        ).digest()
+        if parse_hash == SpecParser._last_parse_hash:
+            # none of the input parameters has changed, no need to parse again
+            return
         if self.spec:
             # workaround RPM lua tables feature/bug, see above for details
             del self.spec
         try:
-            self.spec, self.tainted = self._do_parse(content, extra_macros)
+            try:
+                self.spec, self.tainted = self._do_parse(content, extra_macros)
+            except Exception:
+                SpecParser._last_parse_hash = None
+                raise
+            else:
+                SpecParser._last_parse_hash = parse_hash
         except RPMException:
             self.spec = None
             self.tainted = False
