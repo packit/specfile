@@ -3,6 +3,13 @@ discover:
     url: https://github.com/packit/packit
     filter: tier:0 | tier:1
 
+prepare:
+  - how: install
+    copr: packit/packit-dev
+  # make sure the Copr repo has higher priority than TF Tag Repository
+  - how: shell
+    script: dnf -y config-manager --save --setopt="*:packit:packit-dev.priority=5"
+
 adjust:
   - when: "how == integration"
     because: "provide latest python-specfile rpm when running locally"
