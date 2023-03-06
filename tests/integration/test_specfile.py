@@ -12,7 +12,7 @@ from flexmock import flexmock
 from specfile.exceptions import RPMException, SpecfileException
 from specfile.prep import AutopatchMacro, AutosetupMacro, PatchMacro, SetupMacro
 from specfile.sections import Section
-from specfile.specfile import Specfile
+from specfile.specfile import Specfile, SpecParser
 
 
 def test_parse(spec_multiple_sources):
@@ -481,3 +481,21 @@ def test_copy(spec_autosetup):
     assert deep_copy is not spec
     assert deep_copy._lines is not spec._lines
     assert deep_copy._parser is not spec._parser
+
+
+def test_parse_if_necessary(spec_macros):
+    flexmock(SpecParser).should_call("_do_parse").once()
+    spec1 = Specfile(spec_macros)
+    spec2 = copy.deepcopy(spec1)
+    flexmock(SpecParser).should_call("_do_parse").never()
+    assert spec1.expanded_name == "test"
+    flexmock(SpecParser).should_call("_do_parse").once()
+    assert spec2.expanded_name == "test"
+    assert spec2.expanded_version == "0.1.2~rc2"
+    flexmock(SpecParser).should_call("_do_parse").once()
+    assert spec1.expanded_version == "0.1.2~rc2"
+    with spec1.macro_definitions() as md:
+        md[0].body = "28"
+    flexmock(SpecParser).should_call("_do_parse").once()
+    assert spec1.expanded_name == "test"
+    assert spec1.expanded_version == "28.1.2~rc2"

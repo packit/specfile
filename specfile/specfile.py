@@ -64,7 +64,6 @@ class Specfile:
         self._parser = SpecParser(
             Path(sourcedir or self.path.parent), macros, force_parse
         )
-        # parse here to fail early on parsing errors
         self._parser.parse(str(self))
 
     def __eq__(self, other: object) -> bool:
@@ -161,7 +160,6 @@ class Specfile:
         self,
         expression: str,
         extra_macros: Optional[List[Tuple[str, str]]] = None,
-        skip_parsing: bool = False,
     ) -> str:
         """
         Expands an expression in the context of the spec file.
@@ -169,15 +167,11 @@ class Specfile:
         Args:
             expression: Expression to expand.
             extra_macros: Extra macros to be defined before expansion is performed.
-            skip_parsing: Do not parse the spec file before expansion is performed.
-              Defaults to False. Mutually exclusive with extra_macros. Set this to True
-              only if you are certain that the global macro context is up-to-date.
 
         Returns:
             Expanded expression.
         """
-        if not skip_parsing:
-            self._parser.parse(str(self), extra_macros)
+        self._parser.parse(str(self), extra_macros)
         return Macros.expand(expression)
 
     def get_active_macros(self) -> List[Macro]:
@@ -336,6 +330,7 @@ class Specfile:
                     allow_duplicates,
                     default_to_implicit_numbering,
                     default_source_number_digits,
+                    context=self,
                 )
             finally:
                 for section, sourcelist in sourcelists:
@@ -372,6 +367,7 @@ class Specfile:
                     allow_duplicates,
                     default_to_implicit_numbering,
                     default_source_number_digits,
+                    context=self,
                 )
             finally:
                 for section, patchlist in patchlists:
