@@ -1,3 +1,8 @@
+# 0.15.0
+
+- Parsing the spec file by RPM is now performed only if really necessary, greatly improving performance in certain scenarios. (#212)
+- Checked that license is a valid SPDX license.
+
 # 0.14.0
 
 - Fixed a bug that broke parsing in case spec file contained conditionalized macro definitions or similar constructs. (#209)
