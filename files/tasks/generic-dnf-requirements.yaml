@@ -6,5 +6,4 @@
       - git
       - dnf-utils
       - python3-pip
-      - rpmdevtools
   become: true

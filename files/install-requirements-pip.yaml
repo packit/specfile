@@ -3,10 +3,3 @@
   hosts: all
   tasks:
     - include_tasks: tasks/generic-dnf-requirements.yaml
-    - name: Install deps from PyPI
-      pip:
-        name: "{{ item }}"
-      with_items:
-        - rpm-py-installer
-        - typing-extensions
-      become: true
