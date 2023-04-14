@@ -28,7 +28,7 @@ jobs:
           python scripts/update_constants.py specfile/constants.py rpm-source-tree/
           case $? in
             0) echo "pr=true" >> $GITHUB_OUTPUT;;
-            100) echo "pr=false" >> $GITHUB_OUTPUT;;
+            100) echo "pr=false" >> $GITHUB_OUTPUT; exit 0;;
             *) exit $?;;
           esac
       - name: Create Pull Request
