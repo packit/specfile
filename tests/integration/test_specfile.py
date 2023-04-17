@@ -3,13 +3,12 @@
 
 import copy
 import datetime
-from contextlib import nullcontext
-from unittest.mock import patch
 
 import pytest
 import rpm
 from flexmock import flexmock
 
+import specfile.specfile
 from specfile.exceptions import RPMException, SpecfileException
 from specfile.prep import AutopatchMacro, AutosetupMacro, PatchMacro, SetupMacro
 from specfile.sections import Section
@@ -222,16 +221,14 @@ def test_add_changelog_entry(
     evr,
     result,
 ):
-    mocker = nullcontext()
     if author is None:
-        mocker = patch(
-            "specfile.specfile.guess_packager", return_value="John Doe <john@doe.net>"
-        )
-    with mocker:
-        spec = Specfile(spec_minimal)
-        spec.add_changelog_entry(entry, author, email, timestamp, evr)
-        with spec.sections() as sections:
-            assert sections.changelog[: len(result)] == result
+        flexmock(specfile.specfile).should_receive("guess_packager").and_return(
+            "John Doe <john@doe.net>"
+        ).once()
+    spec = Specfile(spec_minimal)
+    spec.add_changelog_entry(entry, author, email, timestamp, evr)
+    with spec.sections() as sections:
+        assert sections.changelog[: len(result)] == result
 
 
 @pytest.mark.parametrize(

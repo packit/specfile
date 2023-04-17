@@ -2,20 +2,18 @@
 # SPDX-License-Identifier: MIT
 
 import subprocess
-from collections.abc import Iterable
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
-import rpm
+from flexmock import flexmock
 
+import specfile.changelog
 from specfile.changelog import guess_packager
+from specfile.macros import Macros
 
 
 @pytest.fixture
-def clean_guess_packager(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> Iterable[None]:
+def clean_guess_packager(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Ensure a clean environment
     """
@@ -26,14 +24,9 @@ def clean_guess_packager(
     monkeypatch.delenv("XDG_CONFIG_HOME", False)
     monkeypatch.chdir(tmp_path)
     # For %packager
-    old = rpm.expandMacro("%packager")
-    with patch("specfile.changelog._getent_name", return_value=""):
-        try:
-            rpm.delMacro("packager")
-            yield
-        finally:
-            if old != "%packager":
-                rpm.addMacro("packager", old)
+    Macros.remove("packager")
+    # For Unix passwd guessing
+    flexmock(specfile.changelog).should_receive("_getent_name").and_return("")
 
 
 @pytest.fixture
@@ -44,7 +37,7 @@ def set_packager_env(monkeypatch: pytest.MonkeyPatch) -> str:
 
 
 @pytest.fixture
-def set_packager_git(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterable[str]:
+def set_packager_git(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> str:
     packager = "Packager, Patty <packager@patty.dev>"
 
     monkeypatch.chdir(tmp_path)
@@ -63,20 +56,17 @@ def set_packager_git(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterabl
 
 
 @pytest.fixture
-def set_packager_macro() -> Iterable[str]:
-    try:
-        packager = "Patricia Packager"
-        rpm.addMacro("packager", packager)
-        yield packager
-    finally:
-        rpm.delMacro("packager")
+def set_packager_macro() -> str:
+    packager = "Patricia Packager"
+    Macros.define("packager", packager)
+    return packager
 
 
 @pytest.fixture
-def set_packager_passwd() -> Iterable[str]:
+def set_packager_passwd() -> str:
     packager = "Ms. Packager"
-    with patch("specfile.changelog._getent_name", return_value=packager):
-        yield packager
+    flexmock(specfile.changelog).should_receive("_getent_name").and_return(packager)
+    return packager
 
 
 def test_guess_packager_env(clean_guess_packager, set_packager_env):
@@ -122,6 +112,7 @@ def test_guess_packager_pref4(
 ):
     subprocess.run(["git", "config", "--unset", "user.email"])
     assert guess_packager() == "Packager, Patty"
+
 
 def test_guess_packager_empty(clean_guess_packager):
     """
