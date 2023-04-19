@@ -320,6 +320,26 @@ def test_remove_patches(spec_commented_patches):
         ]
 
 
+@pytest.mark.parametrize(
+    "raw_release, has_autorelease",
+    [
+        ("1%{?dist}", False),
+        ("%{release_number}%{?dist}", False),
+        ("0.27.%{commitdate}git%{shortcommit}%{?dist}", False),
+        ("%autorelease", True),
+        ("%{autorelease}", True),
+        ("%autorelease -b 4 -s %{date}git%{shortcommit}", True),
+        ("%{?autorelease}%{!?autorelease:1%{?dist}}", True),
+        ("0.10.%{date}git%{shortcommit}.%autorelease", True),
+        ("%{obsrel}.%{autorelease}", True),
+    ],
+)
+def test_autorelease(spec_rpmautospec, raw_release, has_autorelease):
+    spec = Specfile(spec_rpmautospec)
+    spec.raw_release = raw_release
+    assert spec.has_autorelease == has_autorelease
+
+
 @pytest.mark.skipif(
     rpm.__version__ < "4.16", reason="%autochangelog requires rpm 4.16 or higher"
 )

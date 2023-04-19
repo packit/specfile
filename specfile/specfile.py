@@ -23,7 +23,12 @@ from specfile.sourcelist import Sourcelist
 from specfile.sources import Patches, Sources
 from specfile.spec_parser import SpecParser
 from specfile.tags import Tag, Tags
-from specfile.value_parser import SUBSTITUTION_GROUP_PREFIX, ValueParser
+from specfile.value_parser import (
+    SUBSTITUTION_GROUP_PREFIX,
+    EnclosedMacroSubstitution,
+    MacroSubstitution,
+    ValueParser,
+)
 
 
 class Specfile:
@@ -374,15 +379,35 @@ class Specfile:
                     section.data = patchlist.get_raw_section_data()
 
     @property
+    def has_autorelease(self) -> bool:
+        """Whether the spec file uses %autorelease."""
+        for node in ValueParser.flatten(ValueParser.parse(self.raw_release)):
+            if (
+                isinstance(node, (MacroSubstitution, EnclosedMacroSubstitution))
+                and node.name == "autorelease"
+            ):
+                return True
+        return False
+
+    @property
     def has_autochangelog(self) -> bool:
         """Whether the spec file uses %autochangelog."""
         with self.sections() as sections:
             try:
-                section = sections.changelog
+                changelog = sections.changelog
             except AttributeError:
                 return False
-            changelog = [ln.strip() for ln in section if ln.strip()]
-            return changelog == ["%autochangelog"]
+            for line in changelog:
+                if line.lstrip().startswith("#"):
+                    # skip comments
+                    continue
+                for node in ValueParser.flatten(ValueParser.parse(line)):
+                    if (
+                        isinstance(node, (MacroSubstitution, EnclosedMacroSubstitution))
+                        and node.name == "autochangelog"
+                    ):
+                        return True
+            return False
 
     def add_changelog_entry(
         self,
