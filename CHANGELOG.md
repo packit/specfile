@@ -1,3 +1,7 @@
+# 0.16.0
+
+- Added `Specfile.has_autorelease` property to detect if a spec file uses the `%autorelease` macro. (#221)
+
 # 0.15.0
 
 - Parsing the spec file by RPM is now performed only if really necessary, greatly improving performance in certain scenarios. (#212)
