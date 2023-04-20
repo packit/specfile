@@ -228,7 +228,7 @@ class ValueParser:
                 i += 2
             elif i < len(value) and value[i] in "*#":
                 i += 1
-            return i + 1
+            return i
 
         result: List[Node] = []
         start = 0
