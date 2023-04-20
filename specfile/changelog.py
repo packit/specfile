@@ -4,13 +4,19 @@
 import collections
 import copy
 import datetime
+import getpass
+import os
+import pwd
 import re
+import shutil
+import subprocess
 from typing import List, Optional, SupportsIndex, Union, overload
 
 import rpm
 
 from specfile.exceptions import SpecfileException
 from specfile.formatter import formatted
+from specfile.macros import Macros
 from specfile.sections import Section
 from specfile.utils import EVR
 
@@ -361,3 +367,49 @@ class Changelog(collections.UserList):
             result.extend(entry.content)
             result.extend(entry._following_lines)
         return result
+
+
+def _getent_name() -> str:
+    username = getpass.getuser()
+    pwd_struct = pwd.getpwnam(username)
+    # Use the plain username if the name field is empty
+    return pwd_struct.pw_gecos or username
+
+
+def guess_packager() -> str:
+    """
+    Guess the name and email of a packager to use for changelog entries.
+    This uses similar logic to rpmdev-packager.
+    The following places are searched for this value (in this order):
+        - $RPM_PACKAGER envvar
+        - %packager macro
+        - git config
+        - Unix username
+
+    Returns:
+        A string to use for the changelog entry author.
+        If nothing was detected, an empty string is returned.
+    """
+    if "RPM_PACKAGER" in os.environ:
+        return os.environ["RPM_PACKAGER"]
+
+    packager = Macros.expand("%packager")
+    if packager != "%packager":
+        return packager
+
+    email: str = ""
+    fullname: str = ""
+
+    if shutil.which("git"):
+        email = subprocess.run(
+            ["git", "config", "user.email"], capture_output=True, text=True
+        ).stdout.strip()
+        fullname = subprocess.run(
+            ["git", "config", "user.name"], capture_output=True, text=True
+        ).stdout.strip()
+    if not fullname:
+        fullname = _getent_name()
+
+    if fullname and email:
+        return f"{fullname} <{email}>"
+    return email or fullname

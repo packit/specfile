@@ -1,6 +1,6 @@
 ---
+# Placeholder
 - name: Install runtime RPM dependencies
   dnf:
-    name:
-      - python3-typing-extensions
+    name: []
   become: true

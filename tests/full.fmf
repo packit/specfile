@@ -1,6 +1,7 @@
 summary:
   Unit & integration tests
 require:
+  - git-core
   - python3-flexmock
   - python3-pytest
   - python3-specfile

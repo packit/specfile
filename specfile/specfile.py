@@ -3,7 +3,6 @@
 
 import datetime
 import re
-import subprocess
 import types
 from dataclasses import dataclass
 from pathlib import Path
@@ -11,7 +10,7 @@ from typing import Generator, List, Optional, Tuple, Type, Union, cast
 
 import rpm
 
-from specfile.changelog import Changelog, ChangelogEntry
+from specfile.changelog import Changelog, ChangelogEntry, guess_packager
 from specfile.context_management import ContextManager
 from specfile.exceptions import SourceNumberException, SpecfileException
 from specfile.formatter import formatted
@@ -421,7 +420,7 @@ class Specfile:
         Adds a new %changelog entry. Does nothing if there is no %changelog section
         or if %autochangelog is being used.
 
-        If not specified, author and e-mail will be determined using rpmdev-packager, if available.
+        If not specified, author and e-mail will be automatically determined, if possible.
         Timestamp, if not set, will be set to current time (in local timezone).
 
         Args:
@@ -452,10 +451,9 @@ class Specfile:
                 else:
                     timestamp = datetime.date.today()
             if author is None:
-                try:
-                    author = subprocess.check_output("rpmdev-packager").decode().strip()
-                except (FileNotFoundError, subprocess.CalledProcessError) as e:
-                    raise SpecfileException("Failed to auto-detect author") from e
+                author = guess_packager()
+                if not author:
+                    raise SpecfileException("Failed to auto-detect author")
             elif email is not None:
                 author += f" <{email}>"
             if changelog:

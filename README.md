@@ -170,7 +170,8 @@ specfile.set_version_and_release('2.1', preserve_macros=True)
 #### Changelog
 
 ```python
-# adding a new entry, author is determined using rpmdev-packager (if available)
+# adding a new entry, author is automatically determined
+# (using the same heuristics that rpmdev-packager uses) if possible
 specfile.add_changelog_entry('New upstream release 2.1')
 
 # adding a new entry, specifying author and timestamp explicitly

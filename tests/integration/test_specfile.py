@@ -3,12 +3,12 @@
 
 import copy
 import datetime
-import subprocess
 
 import pytest
 import rpm
 from flexmock import flexmock
 
+import specfile.specfile
 from specfile.exceptions import RPMException, SpecfileException
 from specfile.prep import AutopatchMacro, AutosetupMacro, PatchMacro, SetupMacro
 from specfile.sections import Section
@@ -111,11 +111,9 @@ def test_patches(spec_patchlist):
 
 
 @pytest.mark.parametrize(
-    "rpmdev_packager_available, entry, author, email, timestamp, evr, result",
+    "entry, author, email, timestamp, evr, result",
     [
-        (False, None, None, None, None, None, None),
         (
-            True,
             "test",
             None,
             None,
@@ -127,7 +125,6 @@ def test_patches(spec_patchlist):
             ),
         ),
         (
-            True,
             "test",
             None,
             None,
@@ -139,7 +136,6 @@ def test_patches(spec_patchlist):
             ),
         ),
         (
-            True,
             "test",
             None,
             None,
@@ -151,7 +147,6 @@ def test_patches(spec_patchlist):
             ),
         ),
         (
-            True,
             "test",
             None,
             None,
@@ -163,7 +158,6 @@ def test_patches(spec_patchlist):
             ),
         ),
         (
-            True,
             "test",
             "Bill Packager",
             None,
@@ -174,7 +168,6 @@ def test_patches(spec_patchlist):
             ),
         ),
         (
-            True,
             "test",
             "Bill Packager",
             "bill@packager.net",
@@ -189,7 +182,6 @@ def test_patches(spec_patchlist):
             ),
         ),
         (
-            True,
             "test",
             "Bill Packager",
             "bill@packager.net",
@@ -204,7 +196,6 @@ def test_patches(spec_patchlist):
             ),
         ),
         (
-            True,
             ["line 1", "line 2"],
             "Bill Packager",
             "bill@packager.net",
@@ -223,7 +214,6 @@ def test_patches(spec_patchlist):
 )
 def test_add_changelog_entry(
     spec_minimal,
-    rpmdev_packager_available,
     entry,
     author,
     email,
@@ -231,22 +221,14 @@ def test_add_changelog_entry(
     evr,
     result,
 ):
-    if not rpmdev_packager_available:
-        flexmock(subprocess).should_receive("check_output").with_args(
-            "rpmdev-packager"
-        ).and_raise(FileNotFoundError)
-    elif author is None:
-        flexmock(subprocess).should_receive("check_output").with_args(
-            "rpmdev-packager"
-        ).and_return(b"John Doe <john@doe.net>")
+    if author is None:
+        flexmock(specfile.specfile).should_receive("guess_packager").and_return(
+            "John Doe <john@doe.net>"
+        ).once()
     spec = Specfile(spec_minimal)
-    if not rpmdev_packager_available:
-        with pytest.raises(SpecfileException):
-            spec.add_changelog_entry(entry, author, email, timestamp, evr)
-    else:
-        spec.add_changelog_entry(entry, author, email, timestamp, evr)
-        with spec.sections() as sections:
-            assert sections.changelog[: len(result)] == result
+    spec.add_changelog_entry(entry, author, email, timestamp, evr)
+    with spec.sections() as sections:
+        assert sections.changelog[: len(result)] == result
 
 
 @pytest.mark.parametrize(
