@@ -449,7 +449,7 @@ class Specfile:
                 if changelog and changelog[-1].extended_timestamp:
                     timestamp = datetime.datetime.now().astimezone()
                 else:
-                    timestamp = datetime.date.today()
+                    timestamp = datetime.datetime.now(datetime.timezone.utc).date()
             if author is None:
                 author = guess_packager()
                 if not author:
