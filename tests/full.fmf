@@ -4,6 +4,7 @@ require:
   - git-core
   - python3-flexmock
   - python3-pytest
+  - python3-pytest-cov
   - python3-specfile
 adjust:
   - when: "distro == rhel-9 or distro == centos-9 or distro == centos-stream-9"
@@ -13,4 +14,4 @@ adjust:
 tag:
   - basic
 tier: 1
-test: python3 -m pytest --verbose
+test: python3 -m pytest --verbose --cov=specfile --cov-report=term-missing
