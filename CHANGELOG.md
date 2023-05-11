@@ -1,3 +1,8 @@
+# 0.17.0
+
+- Added a new `guess_packager()` function that uses similar heuristics as `rpmdev-packager`, meaning that the `Specfile.add_changelog_entry()` method no longer requires `rpmdev-packager` to guess the changelog entry author. (#220)
+- The `Specfile.add_changelog_entry()` method now uses dates based on UTC instead of the local timezone. (#223)
+
 # 0.16.0
 
 - Added `Specfile.has_autorelease` property to detect if a spec file uses the `%autorelease` macro. (#221)
