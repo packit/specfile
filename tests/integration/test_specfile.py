@@ -325,7 +325,7 @@ def test_autorelease(spec_rpmautospec, raw_release, has_autorelease):
 @pytest.mark.skipif(
     rpm.__version__ < "4.16", reason="%autochangelog requires rpm 4.16 or higher"
 )
-def test_autochangelog(spec_rpmautospec):
+def test_autochangelog(spec_rpmautospec, spec_conditionalized_changelog):
     spec = Specfile(spec_rpmautospec)
     assert spec.has_autochangelog
     with spec.changelog() as changelog:
@@ -335,6 +335,17 @@ def test_autochangelog(spec_rpmautospec):
     spec.add_changelog_entry("test")
     with spec.sections() as sections:
         assert sections.changelog == changelog
+    spec = Specfile(spec_conditionalized_changelog)
+    assert spec.has_autochangelog
+    with spec.sections() as sections:
+        changelog = sections.changelog.copy()
+    spec.add_changelog_entry("test")
+    with spec.sections() as sections:
+        changelogs = [s for s in sections if s.normalized_name == "changelog"]
+    assert len(changelogs) == 2
+    assert changelogs[0] == changelog
+    with spec.changelog(changelogs[1]) as changelog:
+        assert changelog[-1].content == ["test"]
 
 
 def test_update_tag(spec_macros):
