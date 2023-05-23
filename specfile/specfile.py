@@ -264,17 +264,26 @@ class Specfile:
                 section.data = tags.get_raw_section_data()
 
     @ContextManager
-    def changelog(self) -> Generator[Optional[Changelog], None, None]:
+    def changelog(
+        self, section: Optional[Section] = None
+    ) -> Generator[Optional[Changelog], None, None]:
         """
         Context manager for accessing changelog.
+
+        Args:
+            section: Optional `Section` instance to be processed. If not set, the first
+              %changelog section (if any) will be processed.
 
         Yields:
             Spec file changelog as `Changelog` object or None if there is no %changelog section.
         """
         with self.sections() as sections:
-            try:
-                section = sections.changelog
-            except AttributeError:
+            if section is None:
+                try:
+                    section = sections.changelog
+                except AttributeError:
+                    section = None
+            if section is None:
                 yield None
             else:
                 changelog = Changelog.parse(section)
@@ -388,24 +397,39 @@ class Specfile:
                 return True
         return False
 
+    @staticmethod
+    def contains_autochangelog(section: Section) -> bool:
+        """
+        Determines if the specified section contains the %autochangelog macro.
+
+        Args:
+            section: Section to examine.
+
+        Returns:
+            True if the section contains %autochangelog, False otherwise.
+        """
+        for line in section:
+            if line.lstrip().startswith("#"):
+                # skip comments
+                continue
+            for node in ValueParser.flatten(ValueParser.parse(line)):
+                if (
+                    isinstance(node, (MacroSubstitution, EnclosedMacroSubstitution))
+                    and node.name == "autochangelog"
+                ):
+                    return True
+        return False
+
     @property
     def has_autochangelog(self) -> bool:
         """Whether the spec file uses %autochangelog."""
         with self.sections() as sections:
-            try:
-                changelog = sections.changelog
-            except AttributeError:
-                return False
-            for line in changelog:
-                if line.lstrip().startswith("#"):
-                    # skip comments
+            # there could be multiple changelog sections, consider all of them
+            for section in sections:
+                if not section.normalized_id == "changelog":
                     continue
-                for node in ValueParser.flatten(ValueParser.parse(line)):
-                    if (
-                        isinstance(node, (MacroSubstitution, EnclosedMacroSubstitution))
-                        and node.name == "autochangelog"
-                    ):
-                        return True
+                if self.contains_autochangelog(section):
+                    return True
             return False
 
     def add_changelog_entry(
@@ -434,45 +458,53 @@ class Specfile:
               determines the appropriate value based on the specfile's current
               %{epoch}, %{version}, and %{release} values.
         """
-        if self.has_autochangelog:
-            return
-        if evr is None:
-            evr = "%{?epoch:%{epoch}:}%{version}-%{release}"
-        with self.changelog() as changelog:
-            if changelog is None:
-                return
-            evr = self.expand(evr, extra_macros=[("dist", "")])
-            if isinstance(entry, str):
-                entry = [entry]
-            if timestamp is None:
-                # honor the timestamp format, but default to date-only
-                if changelog and changelog[-1].extended_timestamp:
-                    timestamp = datetime.datetime.now().astimezone()
-                else:
-                    timestamp = datetime.datetime.now(datetime.timezone.utc).date()
-            if author is None:
-                author = guess_packager()
-                if not author:
-                    raise SpecfileException("Failed to auto-detect author")
-            elif email is not None:
-                author += f" <{email}>"
-            if changelog:
-                # try to preserve padding of day of month
-                padding = max(
-                    (e.day_of_month_padding for e in reversed(changelog)), key=len
-                )
-            else:
-                padding = "0"
-            changelog.append(
-                ChangelogEntry.assemble(
-                    timestamp,
-                    author,
-                    entry,
-                    evr,
-                    day_of_month_padding=padding,
-                    append_newline=bool(changelog),
-                )
-            )
+        with self.sections() as sections:
+            # there could be multiple changelog sections, update all of them
+            for section in sections:
+                if not section.normalized_id == "changelog":
+                    continue
+                if self.contains_autochangelog(section):
+                    continue
+                if evr is None:
+                    evr = "%{?epoch:%{epoch}:}%{version}-%{release}"
+                with self.changelog(section) as changelog:
+                    if changelog is None:
+                        return
+                    evr = self.expand(evr, extra_macros=[("dist", "")])
+                    if isinstance(entry, str):
+                        entry = [entry]
+                    if timestamp is None:
+                        # honor the timestamp format, but default to date-only
+                        if changelog and changelog[-1].extended_timestamp:
+                            timestamp = datetime.datetime.now().astimezone()
+                        else:
+                            timestamp = datetime.datetime.now(
+                                datetime.timezone.utc
+                            ).date()
+                    if author is None:
+                        author = guess_packager()
+                        if not author:
+                            raise SpecfileException("Failed to auto-detect author")
+                    elif email is not None:
+                        author += f" <{email}>"
+                    if changelog:
+                        # try to preserve padding of day of month
+                        padding = max(
+                            (e.day_of_month_padding for e in reversed(changelog)),
+                            key=len,
+                        )
+                    else:
+                        padding = "0"
+                    changelog.append(
+                        ChangelogEntry.assemble(
+                            timestamp,
+                            author,
+                            entry,
+                            evr,
+                            day_of_month_padding=padding,
+                            append_newline=bool(changelog),
+                        )
+                    )
 
     def _tag(name: str, doc: str) -> property:  # type: ignore[misc]
         """
