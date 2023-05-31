@@ -221,3 +221,9 @@ specfile.url = 'https://example.com'
 ### RPM macros
 
 specfile uses RPM for parsing spec files and macro expansion. Unfortunately, macros are always stored in a global context, which poses a problem for multiple instances of Specfile.
+
+## Videos
+
+Here is a demo showcasing the `Specfile.update_tag()` method and its use cases:
+
+[![Demo of Specfile.update_tag() functionality](https://img.youtube.com/vi/yzMfBPdFXZY/0.jpg)](https://www.youtube.com/watch?v=yzMfBPdFXZY)
