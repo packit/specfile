@@ -1,6 +1,7 @@
 #!/usr/bin/python3
-from specfile import Specfile
 import sys
+
+from specfile import Specfile
 
 # this is dump, but do the work
 filename = sys.argv[1]
