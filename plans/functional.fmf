@@ -1,0 +1,11 @@
+summary:
+  Functional tests
+discover+:
+  filter: tier:2
+prepare:
+  - how: install
+    package: xz
+  - how: shell
+    script: |
+      curl -O https://src.fedoraproject.org/lookaside/rpm-specs-latest.tar.xz
+      tar -xf rpm-specs-latest.tar.xz -C /tmp

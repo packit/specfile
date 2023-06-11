@@ -1,0 +1,15 @@
+summary:
+  Functional tests
+require:
+  - python3-pytest
+  - python3-specfile
+  - redhat-rpm-config
+  - rpmautospec-rpm-macros
+  - "*-srpm-macros"
+tag:
+  - functional
+tier: 2
+duration: 1h
+# running from the "tests" directory prevents pytest from processing "tests/functional/conftest.py"
+path: /
+test: python3 -m pytest --verbose --specdir=/tmp/rpm-specs tests/functional
