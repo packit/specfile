@@ -12,6 +12,7 @@ from specfile.constants import (
     SECTION_OPTIONS,
     SIMPLE_SCRIPT_SECTIONS,
 )
+from specfile.exceptions import RPMException
 from specfile.formatter import formatted
 from specfile.macro_definitions import MacroDefinitions
 from specfile.macros import Macros
@@ -241,9 +242,14 @@ class Sections(collections.UserList):
             if len(tokens) > 2:
                 # if the last token after macro expansion starts with a newline,
                 # consider it part of section content
-                if expand(tokens[-1]).startswith("\n"):
-                    content = [tokens.pop()]
-                    separator = tokens.pop()
+                try:
+                    expanded = expand(tokens[-1])
+                except RPMException:
+                    pass
+                else:
+                    if expanded.startswith("\n"):
+                        content = [tokens.pop()]
+                        separator = tokens.pop()
             if len(tokens) > 2:
                 name = tokens[0]
                 delimiter = tokens[1]
