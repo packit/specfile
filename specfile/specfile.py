@@ -168,6 +168,7 @@ class Specfile:
         self,
         expression: str,
         extra_macros: Optional[List[Tuple[str, str]]] = None,
+        skip_parsing: bool = False,
     ) -> str:
         """
         Expands an expression in the context of the spec file.
@@ -175,11 +176,15 @@ class Specfile:
         Args:
             expression: Expression to expand.
             extra_macros: Extra macros to be defined before expansion is performed.
+            skip_parsing: Do not parse the spec file before expansion is performed.
+              Defaults to False. Mutually exclusive with extra_macros. Set this to True
+              only if you are certain that the global macro context is up-to-date.
 
         Returns:
             Expanded expression.
         """
-        self._parser.parse(str(self), extra_macros)
+        if not skip_parsing or extra_macros is not None:
+            self._parser.parse(str(self), extra_macros)
         return Macros.expand(expression)
 
     def get_active_macros(self) -> List[Macro]:
