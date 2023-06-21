@@ -64,7 +64,7 @@ class Specfile:
         """
         self.autosave = autosave
         self._path = Path(path)
-        self._lines = self.path.read_text().splitlines()
+        self._lines = self._read_lines(self._path)
         self._parser = SpecParser(
             Path(sourcedir or self.path.parent), macros, force_parse
         )
@@ -100,6 +100,10 @@ class Specfile:
         traceback: Optional[types.TracebackType],
     ) -> None:
         self.save()
+
+    @staticmethod
+    def _read_lines(path: Path) -> List[str]:
+        return path.read_text(encoding="utf8", errors="surrogateescape").splitlines()
 
     @property
     def path(self) -> Path:
@@ -154,16 +158,17 @@ class Specfile:
 
     def reload(self) -> None:
         """Reload the spec file content."""
-        self._lines = self.path.read_text().splitlines()
+        self._lines = self._read_lines(self.path)
 
     def save(self) -> None:
         """Save the spec file content."""
-        self.path.write_text(str(self))
+        self.path.write_text(str(self), encoding="utf8", errors="surrogateescape")
 
     def expand(
         self,
         expression: str,
         extra_macros: Optional[List[Tuple[str, str]]] = None,
+        skip_parsing: bool = False,
     ) -> str:
         """
         Expands an expression in the context of the spec file.
@@ -171,11 +176,15 @@ class Specfile:
         Args:
             expression: Expression to expand.
             extra_macros: Extra macros to be defined before expansion is performed.
+            skip_parsing: Do not parse the spec file before expansion is performed.
+              Defaults to False. Mutually exclusive with extra_macros. Set this to True
+              only if you are certain that the global macro context is up-to-date.
 
         Returns:
             Expanded expression.
         """
-        self._parser.parse(str(self), extra_macros)
+        if not skip_parsing or extra_macros is not None:
+            self._parser.parse(str(self), extra_macros)
         return Macros.expand(expression)
 
     def get_active_macros(self) -> List[Macro]:
