@@ -244,7 +244,7 @@ class Sections(collections.UserList):
             content = []
             separator = "\n"
             tokens = re.split(r"(\s+)", line)
-            if len(tokens) > 2:
+            if len(tokens) > 2 and tokens[-1].startswith("%"):
                 # if the last token after macro expansion starts with a newline,
                 # consider it part of section content
                 try:
