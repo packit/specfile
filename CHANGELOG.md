@@ -1,3 +1,7 @@
+# 0.19.0
+
+- Parsing has been optimized so that even spec files with hundreds of thousands of lines can be processed in reasonable time. (#240)
+
 # 0.18.0
 
 - Specfile library now handles multiple `%changelog` sections. (#230)
