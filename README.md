@@ -78,6 +78,16 @@ with Specfile('test.spec') as specfile:
     ...
 ```
 
+### Defining and undefining macros
+
+```python
+# override macros loaded from system macro files
+specfile = Specfile('test.spec', macros=[('fedora', '38'), ('dist', '.fc38')])
+
+# undefine a system macro (in case it's defined)
+specfile = Specfile('test.spec', macros=[('rhel', None)])
+```
+
 ### Low-level manipulation
 
 ```python
