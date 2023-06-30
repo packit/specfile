@@ -43,7 +43,7 @@ class Specfile:
         path: Union[Path, str],
         sourcedir: Optional[Union[Path, str]] = None,
         autosave: bool = False,
-        macros: Optional[List[Tuple[str, str]]] = None,
+        macros: Optional[List[Tuple[str, Optional[str]]]] = None,
         force_parse: bool = False,
     ) -> None:
         """
@@ -124,7 +124,7 @@ class Specfile:
         self._parser.sourcedir = Path(value)
 
     @property
-    def macros(self) -> List[Tuple[str, str]]:
+    def macros(self) -> List[Tuple[str, Optional[str]]]:
         """List of extra macro definitions."""
         return self._parser.macros
 
@@ -167,7 +167,7 @@ class Specfile:
     def expand(
         self,
         expression: str,
-        extra_macros: Optional[List[Tuple[str, str]]] = None,
+        extra_macros: Optional[List[Tuple[str, Optional[str]]]] = None,
         skip_parsing: bool = False,
     ) -> str:
         """
