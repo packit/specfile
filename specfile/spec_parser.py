@@ -49,7 +49,7 @@ class SpecParser:
     def __init__(
         self,
         sourcedir: Path,
-        macros: Optional[List[Tuple[str, str]]] = None,
+        macros: Optional[List[Tuple[str, Optional[str]]]] = None,
         force_parse: bool = False,
     ) -> None:
         self.sourcedir = sourcedir
@@ -170,7 +170,9 @@ class SpecParser:
                 restore(key)
 
     def _do_parse(
-        self, content: str, extra_macros: Optional[List[Tuple[str, str]]] = None
+        self,
+        content: str,
+        extra_macros: Optional[List[Tuple[str, Optional[str]]]] = None,
     ) -> Tuple[rpm.spec, bool]:
         """
         Parses the content of a spec file.
@@ -190,7 +192,10 @@ class SpecParser:
         def get_rpm_spec(content, flags):
             Macros.reinit()
             for name, value in self.macros + (extra_macros or []):
-                Macros.define(name, value)
+                if value is None:
+                    Macros.remove(name)
+                else:
+                    Macros.define(name, value)
             Macros.define("_sourcedir", str(self.sourcedir))
             with tempfile.NamedTemporaryFile() as tmp:
                 tmp.write(content.encode())
@@ -318,7 +323,9 @@ class SpecParser:
             return get_rpm_spec(content, rpm.RPMSPEC_ANYARCH), tainted
 
     def parse(
-        self, content: str, extra_macros: Optional[List[Tuple[str, str]]] = None
+        self,
+        content: str,
+        extra_macros: Optional[List[Tuple[str, Optional[str]]]] = None,
     ) -> None:
         """
         Parses the content of a spec file and updates the `spec` and `tainted` attributes.

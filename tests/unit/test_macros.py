@@ -81,6 +81,11 @@ def test_macros_remove():
     Macros.remove("test")
     Macros.remove("non_existent_macro")
     assert Macros.dump() == macros
+    rpm.addMacro("%test", "1")
+    rpm.addMacro("te%st%%", "2")
+    Macros.remove("%test")
+    Macros.remove("te%st%%")
+    assert Macros.dump() == macros
 
 
 def test_macros_remove_failure():
@@ -88,7 +93,7 @@ def test_macros_remove_failure():
     # ensure that we are not stuck in an infinite loop
     rpm.reloadConfig()
     rpm.addMacro("foo", "bar")
-    flexmock(rpm).should_receive("expandMacro").with_args("%foo").and_raise(rpm.error)
+    flexmock(rpm).should_receive("expandMacro").with_args("%{foo}").and_raise(rpm.error)
     with pytest.raises(MacroRemovalException):
         Macros.remove("foo")
 

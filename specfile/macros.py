@@ -169,7 +169,7 @@ class Macros:
         while retry < MAX_REMOVAL_RETRIES:
             rpm.delMacro(macro)
             try:
-                if cls.expand(f"%{macro}") == f"%{macro}":
+                if cls.expand(f"%{{{macro}}}") == f"%{{{macro.replace('%%', '%')}}}":
                     break
             except RPMException:
                 # the macro can't be expanded, but it still exists
