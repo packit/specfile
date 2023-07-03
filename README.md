@@ -234,8 +234,8 @@ If you don't need write access, you can use the `content` property of context ma
 # no changes done to the tags object will be saved
 tags = specfile.tags().content
 
-print(tags.expanded_version)
-print(tags.expanded_release)
+print(tags.version.expanded_value)
+print(tags.release.expanded_value)
 
 # number of sources
 print(len(specfile.sources().content))
