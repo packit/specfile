@@ -226,6 +226,17 @@ print(specfile.summary)
 specfile.url = 'https://example.com'
 ```
 
+Note that if you want to access multiple tag values, it may be noticeably faster to do it using the `tags` context manager:
+
+```python
+# same as above, but roughly 4x times faster (parsing/saving happens only once)
+with specfile.tags() as tags:
+    print(tags.name.value)
+    print(tags.license.value)
+    print(tags.summary.value)
+    tags.url.value = 'https://example.com'
+```
+
 ### Read-only access
 
 If you don't need write access, you can use the `content` property of context managers and avoid the `with` statement:
@@ -234,8 +245,8 @@ If you don't need write access, you can use the `content` property of context ma
 # no changes done to the tags object will be saved
 tags = specfile.tags().content
 
-print(tags.expanded_version)
-print(tags.expanded_release)
+print(tags.version.expanded_value)
+print(tags.release.expanded_value)
 
 # number of sources
 print(len(specfile.sources().content))
