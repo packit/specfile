@@ -1,3 +1,6 @@
+# 0.20.0
+
+
 # 0.19.0
 
 - Parsing has been optimized so that even spec files with hundreds of thousands of lines can be processed in reasonable time. (#240)
