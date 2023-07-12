@@ -24,7 +24,7 @@ Source0:        %{pypi_source specfile}
 
 BuildArch:      noarch
 
-BuildRequires:  python%{python3_pkgversion}-devel
+BuildRequires:  python3-devel
 %if %{with tests}
 # tests/unit/test_guess_packager.py
 BuildRequires:  git-core
