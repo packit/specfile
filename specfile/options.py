@@ -9,6 +9,7 @@ from typing import Dict, Iterable, Iterator, List, Optional, Tuple, Union, overl
 
 from specfile.exceptions import OptionsException
 from specfile.formatter import formatted
+from specfile.value_parser import Node, StringLiteral, ValueParser
 
 
 class TokenType(Enum):
@@ -474,63 +475,80 @@ class Options(collections.abc.MutableMapping):
         Raises:
             OptionsException if the option string is untokenizable.
         """
-        result = []
-        token = ""
-        quote = None
-        inp = list(option_string)
-        while inp:
-            c = inp.pop(0)
-            if c == quote:
-                if token:
-                    result.append(
-                        Token(
-                            TokenType.QUOTED
-                            if quote == "'"
-                            else TokenType.DOUBLE_QUOTED,
-                            token,
-                        )
-                    )
-                    token = ""
+        result: List[Token] = []
+
+        def append_default(s):
+            if result and result[-1].type == TokenType.DEFAULT:
+                result[-1].value += s
+            else:
+                result.append(Token(TokenType.DEFAULT, s))
+
+        token_nodes: List[Node] = []
+        for node in ValueParser.parse(option_string):
+            if isinstance(node, StringLiteral):
+                if token_nodes:
+                    append_default("".join(str(n) for n in token_nodes))
+                    token_nodes = []
+                token = ""
                 quote = None
-                continue
-            if quote:
-                if c == "\\":
-                    if not inp:
-                        raise OptionsException("No escaped character")
-                    c = inp.pop(0)
-                    if c != quote:
-                        token += "\\"
-                token += c
-                continue
-            if c.isspace():
-                if token:
-                    result.append(Token(TokenType.DEFAULT, token))
-                    token = ""
-                whitespace = c
+                inp = list(str(node))
                 while inp:
                     c = inp.pop(0)
-                    if not c.isspace():
-                        break
-                    whitespace += c
-                else:
-                    result.append(Token(TokenType.WHITESPACE, whitespace))
-                    break
-                inp.insert(0, c)
-                result.append(Token(TokenType.WHITESPACE, whitespace))
-                continue
-            if c in ('"', "'"):
+                    if c == quote:
+                        if token:
+                            result.append(
+                                Token(
+                                    TokenType.QUOTED
+                                    if quote == "'"
+                                    else TokenType.DOUBLE_QUOTED,
+                                    token,
+                                )
+                            )
+                            token = ""
+                        quote = None
+                        continue
+                    if quote:
+                        if c == "\\":
+                            if not inp:
+                                raise OptionsException("No escaped character")
+                            c = inp.pop(0)
+                            if c != quote:
+                                token += "\\"
+                        token += c
+                        continue
+                    if c.isspace():
+                        if token:
+                            append_default(token)
+                            token = ""
+                        whitespace = c
+                        while inp:
+                            c = inp.pop(0)
+                            if not c.isspace():
+                                break
+                            whitespace += c
+                        else:
+                            result.append(Token(TokenType.WHITESPACE, whitespace))
+                            break
+                        inp.insert(0, c)
+                        result.append(Token(TokenType.WHITESPACE, whitespace))
+                        continue
+                    if c in ('"', "'"):
+                        if token:
+                            append_default(token)
+                            token = ""
+                        quote = c
+                        continue
+                    if c == "\\":
+                        if not inp:
+                            raise OptionsException("No escaped character")
+                        c = inp.pop(0)
+                    token += c
+                if quote:
+                    raise OptionsException("No closing quotation")
                 if token:
-                    result.append(Token(TokenType.DEFAULT, token))
-                    token = ""
-                quote = c
-                continue
-            if c == "\\":
-                if not inp:
-                    raise OptionsException("No escaped character")
-                c = inp.pop(0)
-            token += c
-        if quote:
-            raise OptionsException("No closing quotation")
-        if token:
-            result.append(Token(TokenType.DEFAULT, token))
+                    append_default(token)
+            else:
+                token_nodes.append(node)
+        if token_nodes:
+            append_default("".join(str(n) for n in token_nodes))
         return result
