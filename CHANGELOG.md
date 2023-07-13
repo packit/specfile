@@ -1,3 +1,9 @@
+# 0.20.0
+
+- Fixed infinite loop when removing macros with `%` in the name. (#244)
+- Added a possibility to undefine system macros by setting a macro value to `None` in the `macros` argument of the `Specfile` constructor. (#244)
+- Fixed a bug in processing options of `%prep` macros. For instance, when a quoted string appeared inside an expression expansion, it could lead to improper parsing, rendering the spec file invalid after accessing the options. (#253)
+
 # 0.19.0
 
 - Parsing has been optimized so that even spec files with hundreds of thousands of lines can be processed in reasonable time. (#240)
