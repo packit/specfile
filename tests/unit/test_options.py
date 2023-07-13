@@ -248,6 +248,16 @@ def test_options_find_option(optstring, tokens, option, result):
                 Token(TokenType.WHITESPACE, "  "),
             ],
         ),
+        (
+            '-q -n %{name}-%{version}%[%{rc}?"-rc":""]',
+            [
+                Token(TokenType.DEFAULT, "-q"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, "-n"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, '%{name}-%{version}%[%{rc}?"-rc":""]'),
+            ],
+        ),
     ],
 )
 def test_options_tokenize(option_string, result):
