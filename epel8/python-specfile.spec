@@ -20,6 +20,7 @@ BuildRequires:  python%{python3_pkgversion}-devel
 BuildRequires:  %{py3_dist setuptools setuptools-scm setuptools-scm-git-archive}
 BuildRequires:  %{py3_dist importlib-metadata dataclasses rpm typing-extensions}
 BuildRequires:  %{py3_dist flexmock pytest}
+BuildRequires:  git-core
 
 
 %description
