@@ -302,6 +302,9 @@ def test_remove_patches(spec_commented_patches):
         ]
 
 
+@pytest.mark.skipif(
+    rpm.__version__ < "4.16", reason="%autochangelog requires rpm 4.16 or higher"
+)
 @pytest.mark.parametrize(
     "raw_release, has_autorelease",
     [
