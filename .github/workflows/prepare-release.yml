@@ -23,7 +23,7 @@ jobs:
         uses: packit/prepare-release@v1
         with:
           version: ${{ inputs.version }}
-          specfiles: fedora/python-specfile.spec
+          specfiles: fedora/python-specfile.spec,epel8/python-specfile.spec
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
         with:

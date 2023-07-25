@@ -12,7 +12,6 @@ from typing import (
     Iterable,
     List,
     Optional,
-    SupportsIndex,
     Union,
     cast,
     overload,
@@ -22,6 +21,7 @@ from specfile.constants import TAG_NAMES, TAGS_WITH_ARG
 from specfile.formatter import formatted
 from specfile.macros import Macros
 from specfile.sections import Section
+from specfile.types import SupportsIndex
 from specfile.utils import split_conditional_macro_expansion
 
 if TYPE_CHECKING:
