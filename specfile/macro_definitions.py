@@ -4,9 +4,10 @@
 import collections
 import copy
 import re
-from typing import List, Optional, SupportsIndex, Tuple, Union, overload
+from typing import List, Optional, Tuple, Union, overload
 
 from specfile.formatter import formatted
+from specfile.types import SupportsIndex
 
 
 class MacroDefinition:

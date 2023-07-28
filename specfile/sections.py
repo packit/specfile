@@ -4,7 +4,7 @@
 import collections
 import copy
 import re
-from typing import TYPE_CHECKING, List, Optional, SupportsIndex, Union, cast, overload
+from typing import TYPE_CHECKING, List, Optional, Union, cast, overload
 
 from specfile.constants import (
     SCRIPT_SECTIONS,
@@ -17,6 +17,7 @@ from specfile.formatter import formatted
 from specfile.macro_definitions import MacroDefinitions
 from specfile.macros import Macros
 from specfile.options import Options
+from specfile.types import SupportsIndex
 
 if TYPE_CHECKING:
     from specfile.specfile import Specfile

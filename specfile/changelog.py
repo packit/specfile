@@ -10,7 +10,7 @@ import pwd
 import re
 import shutil
 import subprocess
-from typing import List, Optional, SupportsIndex, Union, overload
+from typing import List, Optional, Union, overload
 
 import rpm
 
@@ -18,6 +18,7 @@ from specfile.exceptions import SpecfileException
 from specfile.formatter import formatted
 from specfile.macros import Macros
 from specfile.sections import Section
+from specfile.types import SupportsIndex
 from specfile.utils import EVR
 
 WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
@@ -402,10 +403,16 @@ def guess_packager() -> str:
 
     if shutil.which("git"):
         email = subprocess.run(
-            ["git", "config", "user.email"], capture_output=True, text=True
+            ["git", "config", "user.email"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
         ).stdout.strip()
         fullname = subprocess.run(
-            ["git", "config", "user.name"], capture_output=True, text=True
+            ["git", "config", "user.name"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
         ).stdout.strip()
     if not fullname:
         fullname = _getent_name()

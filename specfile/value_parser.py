@@ -74,7 +74,11 @@ class MacroSubstitution(Node):
     """Node representing macro substitution, e.g. %version."""
 
     def __init__(self, body: str) -> None:
-        _, self.prefix, self.name = re.split(r"([?!]*)", body, maxsplit=1)
+        tokens = re.split(r"([?!]*)", body, maxsplit=1)
+        if len(tokens) == 1:
+            self.prefix, self.name = "", tokens[0]
+        else:
+            _, self.prefix, self.name = tokens
 
     @formatted
     def __repr__(self) -> str:
@@ -93,7 +97,11 @@ class EnclosedMacroSubstitution(Node):
     """Node representing macro substitution enclosed in brackets, e.g. %{?dist}."""
 
     def __init__(self, body: str) -> None:
-        _, self.prefix, rest = re.split(r"([?!]*)", body, maxsplit=1)
+        tokens = re.split(r"([?!]*)", body, maxsplit=1)
+        if len(tokens) == 1:
+            self.prefix, rest = "", tokens[0]
+        else:
+            _, self.prefix, rest = tokens
         self.name: str
         self.args: List[str]
         self.name, *self.args = rest.split()
@@ -121,7 +129,11 @@ class ConditionalMacroExpansion(Node):
     """Node representing conditional macro expansion, e.g. %{?prerel:0.}."""
 
     def __init__(self, condition: str, body: List[Node]) -> None:
-        _, self.prefix, self.name = re.split(r"([?!]*)", condition, maxsplit=1)
+        tokens = re.split(r"([?!]*)", condition, maxsplit=1)
+        if len(tokens) == 1:
+            self.prefix, self.name = "", tokens[0]
+        else:
+            _, self.prefix, self.name = tokens
         self.body = body
 
     @formatted
@@ -259,7 +271,8 @@ class ValueParser:
             elif value[start + 1] == "{":
                 if ":" in value[start:end]:
                     condition, body = value[start + 2 : end - 1].split(":", maxsplit=1)
-                    _, prefix, _ = re.split(r"([?!]*)", condition, maxsplit=1)
+                    tokens = re.split(r"([?!]*)", condition, maxsplit=1)
+                    prefix = tokens[0 if len(tokens) == 1 else 1]
                     if "?" in prefix:
                         result.append(
                             ConditionalMacroExpansion(condition, cls.parse(body))

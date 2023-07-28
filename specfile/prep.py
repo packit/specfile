@@ -5,11 +5,12 @@ import collections
 import copy
 import re
 from abc import ABC
-from typing import Any, Dict, List, Optional, SupportsIndex, Union, cast, overload
+from typing import Any, Dict, List, Optional, Union, cast, overload
 
 from specfile.formatter import formatted
 from specfile.options import Options
 from specfile.sections import Section
+from specfile.types import SupportsIndex
 from specfile.utils import split_conditional_macro_expansion
 
 

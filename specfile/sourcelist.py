@@ -3,12 +3,13 @@
 
 import collections
 import copy
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, SupportsIndex, overload
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, overload
 
 from specfile.formatter import formatted
 from specfile.macros import Macros
 from specfile.sections import Section
 from specfile.tags import Comments
+from specfile.types import SupportsIndex
 
 if TYPE_CHECKING:
     from specfile.specfile import Specfile

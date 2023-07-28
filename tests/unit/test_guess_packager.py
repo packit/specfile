@@ -5,6 +5,9 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
+# old pytest versions don't expose MonkeyPatch
+from _pytest.monkeypatch import MonkeyPatch
 from flexmock import flexmock
 
 import specfile.changelog
@@ -13,7 +16,7 @@ from specfile.macros import Macros
 
 
 @pytest.fixture
-def clean_guess_packager(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def clean_guess_packager(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
     """
     Ensure a clean environment
     """
@@ -30,27 +33,31 @@ def clean_guess_packager(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
 
 
 @pytest.fixture
-def set_packager_env(monkeypatch: pytest.MonkeyPatch) -> str:
+def set_packager_env(monkeypatch: MonkeyPatch) -> str:
     packager = "Patty Packager <patty@packager.me>"
     monkeypatch.setenv("RPM_PACKAGER", packager)
     return packager
 
 
 @pytest.fixture
-def set_packager_git(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> str:
+def set_packager_git(monkeypatch: MonkeyPatch, tmp_path: Path) -> str:
     packager = "Packager, Patty <packager@patty.dev>"
 
     monkeypatch.chdir(tmp_path)
-    subprocess.run(["git", "init", "."], check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init", "."], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
     subprocess.run(
         ["git", "config", "user.name", "Packager, Patty"],
         check=True,
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     )
     subprocess.run(
         ["git", "config", "user.email", "packager@patty.dev"],
         check=True,
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     )
     return packager
 
