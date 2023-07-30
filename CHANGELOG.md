@@ -1,3 +1,7 @@
+# 0.20.1
+
+- specfile now once again supports EPEL 8 and Python 3.6. (#256)
+
 # 0.20.0
 
 - Fixed infinite loop when removing macros with `%` in the name. (#244)
