@@ -1,3 +1,7 @@
+# 0.20.2
+
+- Fixed Packit config to work properly with `propose-downstream` and `pull-from-upstream` jobs. (#261)
+
 # 0.20.1
 
 - specfile now once again supports EPEL 8 and Python 3.6. (#256)
