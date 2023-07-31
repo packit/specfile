@@ -159,6 +159,7 @@ jobs:
 
   - job: koji_build
     trigger: commit
+    packages: [specfile]
     packit_instances: ["stg"]
     allowed_pr_authors: ["packit-stg", "packit"]
     dist_git_branches:
@@ -168,6 +169,7 @@ jobs:
 
   - job: bodhi_update
     trigger: commit
+    packages: [specfile]
     packit_instances: ["stg"]
     dist_git_branches:
       - fedora-branched # rawhide updates are created automatically
