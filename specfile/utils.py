@@ -28,7 +28,7 @@ class EVR(collections.abc.Hashable):
         return hash(self._key())
 
     def __eq__(self, other: object) -> bool:
-        if type(other) != self.__class__:
+        if type(other) is not self.__class__:
             return NotImplemented
         return self._key() == other._key()
 
