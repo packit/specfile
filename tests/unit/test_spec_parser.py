@@ -64,3 +64,32 @@ def test_spec_parser_macros():
             "Test package\n"
         ),
     )
+
+
+def test_spec_parser_make_dummy_sources(tmp_path):
+    regular_source = "regular-source.zip"
+    non_empty_source = "non-empty-source.tar.xz"
+    existing_source = "existing-source.tar.gz"
+    sourcedir = tmp_path / "sources"
+    sourcedir.mkdir()
+    (sourcedir / existing_source).write_text("...")
+    parser = SpecParser(sourcedir)
+    with parser._make_dummy_sources(
+        {regular_source, existing_source}, {non_empty_source}
+    ) as dummy_sources:
+        assert all(s.exists() for s in dummy_sources)
+        assert sourcedir / regular_source in dummy_sources
+        assert sourcedir / non_empty_source in dummy_sources
+        assert sourcedir / existing_source not in dummy_sources
+    assert all(not s.exists() for s in dummy_sources)
+    assert (sourcedir / existing_source).exists()
+    read_only_sourcedir = tmp_path / "read-only-sources"
+    read_only_sourcedir.mkdir()
+    (read_only_sourcedir / existing_source).write_text("...")
+    read_only_sourcedir.chmod(0o555)
+    parser = SpecParser(read_only_sourcedir)
+    with parser._make_dummy_sources(
+        {regular_source, existing_source}, {non_empty_source}
+    ) as dummy_sources:
+        assert not dummy_sources
+    assert (read_only_sourcedir / existing_source).exists()
