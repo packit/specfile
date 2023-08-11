@@ -1,6 +1,6 @@
 # 0.21.0
 
-- `specfile` no longer tracebacks when some sources are missing and can't be *emulated*. In such case the spec file is parsed without them at the cost of `%setup` and `%patch` macros potentially expanding differently than with the sources present. (#271)
+- `specfile` no longer tracebacks when some sources are missing and can't be _emulated_. In such case the spec file is parsed without them at the cost of `%setup` and `%patch` macros potentially expanding differently than with the sources present. (#271)
 - Specfile's license in RPM spec file is now confirmed to be SPDX compatible. (#269)
 
 # 0.20.2
