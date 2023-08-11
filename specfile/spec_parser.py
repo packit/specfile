@@ -99,6 +99,23 @@ class SpecParser:
         Yields:
             List of paths to each created dummy source.
         """
+
+        def write_magic(path, magic):
+            # create a file with a signature matching what RPM expects for this particular
+            # file type; this affects how %setup and %patch macros are expanded
+
+            # number of bytes that RPM reads to determine the file type
+            MAGIC_LENGTH = 13
+            try:
+                if magic:
+                    path.write_bytes(magic.ljust(MAGIC_LENGTH, b"\x00"))
+                else:
+                    path.write_bytes(MAGIC_LENGTH * b"\x00")
+            except (FileNotFoundError, OSError, PermissionError):
+                logger.warning(f"Failed to create a dummy source: {path}")
+                return False
+            return True
+
         # based on rpmFileIsCompressed() in rpmio/rpmfileutil.c in RPM source
         SIGNATURES = [
             (".bz2", b"BZh"),
@@ -110,32 +127,35 @@ class SpecParser:
             (".gz", b"\x1f\x8b"),
             (".7z", b"7z\xbc\xaf\x27\x1c"),
         ]
-        # number of bytes that RPM reads to determine the file type
-        MAGIC_LENGTH = 13
         dummy_sources = []
         for source in sources:
             filename = get_filename_from_location(source)
             if not filename:
                 continue
             path = self.sourcedir / filename
-            if path.is_file():
+            if path.exists():
                 continue
-            dummy_sources.append(path)
             for ext, magic in SIGNATURES:
                 if filename.endswith(ext):
-                    path.write_bytes(magic.ljust(MAGIC_LENGTH, b"\x00"))
+                    if write_magic(path, magic):
+                        dummy_sources.append(path)
                     break
             else:
-                path.write_bytes(MAGIC_LENGTH * b"\x00")
+                if write_magic(path, None):
+                    dummy_sources.append(path)
         for source in non_empty_sources:
             filename = get_filename_from_location(source)
             if not filename:
                 continue
             path = self.sourcedir / filename
-            if path.is_file():
+            if path.exists():
                 continue
-            dummy_sources.append(path)
-            path.write_text("DUMMY")
+            try:
+                path.write_text("DUMMY")
+            except (FileNotFoundError, OSError, PermissionError):
+                logger.warning(f"Failed to create a dummy source: {path}")
+            else:
+                dummy_sources.append(path)
         try:
             yield dummy_sources
         finally:
