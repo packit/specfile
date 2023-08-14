@@ -83,13 +83,10 @@ def test_spec_parser_make_dummy_sources(tmp_path):
         assert sourcedir / existing_source not in dummy_sources
     assert all(not s.exists() for s in dummy_sources)
     assert (sourcedir / existing_source).exists()
-    read_only_sourcedir = tmp_path / "read-only-sources"
-    read_only_sourcedir.mkdir()
-    (read_only_sourcedir / existing_source).write_text("...")
-    read_only_sourcedir.chmod(0o555)
-    parser = SpecParser(read_only_sourcedir)
+    flexmock(Path).should_receive("write_bytes").and_raise(FileNotFoundError)
+    flexmock(Path).should_receive("write_text").and_raise(PermissionError)
     with parser._make_dummy_sources(
         {regular_source, existing_source}, {non_empty_source}
     ) as dummy_sources:
         assert not dummy_sources
-    assert (read_only_sourcedir / existing_source).exists()
+    assert (sourcedir / existing_source).exists()
