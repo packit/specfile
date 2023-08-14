@@ -425,7 +425,7 @@ class ValueParser:
                     # this group name already exists, make a backreference
                     regex += f"(?P={group})"
                 else:
-                    regex += f"(?P<{group}>.+?)"
+                    regex += f"(?P<{group}>.+)"
                     named_groups.append(group)
                 template += escape(token[2])
             elif token[0] == "v":

@@ -76,14 +76,14 @@ def test_parse(value, nodes):
             "%version",
             {"%version": "1.0"},
             ["version"],
-            "^(?P<version>.+?)$",
+            "^(?P<version>.+)$",
             "%version",
         ),
         (
             "%?version",
             {"%?version": "1.0"},
             ["version"],
-            "^(?P<version>.+?)$",
+            "^(?P<version>.+)$",
             "%?version",
         ),
         (
@@ -115,7 +115,7 @@ def test_parse(value, nodes):
                 "%{mainrel}": "2",
             },
             ["prever", "prerpmver", "mainrel"],
-            "^(?P<sub_0>.+?)\\.(?P<mainrel>.+?)\\.(?P<prerpmver>.+?)$",
+            "^(?P<sub_0>.+?)\\.(?P<mainrel>.+)\\.(?P<prerpmver>.+)$",
             "%{?prever:${sub_0}.}%{mainrel}%{?prever:.%{prerpmver}}",
         ),
         (
