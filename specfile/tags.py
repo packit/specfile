@@ -17,8 +17,10 @@ from typing import (
     overload,
 )
 
+from specfile.conditions import process_conditions
 from specfile.constants import TAG_NAMES, TAGS_WITH_ARG
 from specfile.formatter import formatted
+from specfile.macro_definitions import MacroDefinitions
 from specfile.macros import Macros
 from specfile.sections import Section
 from specfile.types import SupportsIndex
@@ -212,6 +214,7 @@ class Tag:
         value: str,
         separator: str,
         comments: Comments,
+        valid: bool = True,
         prefix: Optional[str] = None,
         suffix: Optional[str] = None,
         context: Optional["Specfile"] = None,
@@ -227,6 +230,7 @@ class Tag:
               Separator between name and literal value (colon usually surrounded by some
               amount of whitespace).
             comments: List of comments associated with the tag.
+            valid: Whether the tag is not located in a false branch of a condition.
             prefix: Characters preceding the tag on a line.
             suffix: Characters following the tag on a line.
             context: `Specfile` instance that defines the context for macro expansions.
@@ -243,6 +247,7 @@ class Tag:
         self.value = value
         self._separator = separator
         self.comments = comments.copy()
+        self.valid = valid
         self._prefix = prefix or ""
         self._suffix = suffix or ""
         self._context = context
@@ -263,7 +268,7 @@ class Tag:
     def __repr__(self) -> str:
         return (
             f"Tag({self.name!r}, {self.value!r}, {self._separator!r}, {self.comments!r}, "
-            f"{self._prefix!r}, {self._suffix!r}, {self._context!r})"
+            f"{self.valid!r}, {self._prefix!r}, {self._suffix!r}, {self._context!r})"
         )
 
     def __deepcopy__(self, memo: Dict[int, Any]) -> "Tag":
@@ -433,10 +438,14 @@ class Tags(collections.UserList):
     def copy(self) -> "Tags":
         return copy.copy(self)
 
-    def find(self, name: str) -> int:
+    def get(self, name: str, position: Optional[int] = None) -> Tag:
+        return self.data[self.find(name, position)]
+
+    def find(self, name: str, position: Optional[int] = None) -> int:
         for i, tag in enumerate(self.data):
             if tag.name.capitalize() == name.capitalize():
-                return i
+                if position is None or tag.get_position(self) == position:
+                    return i
         raise ValueError
 
     def insert(self, i: int, item: Tag) -> None:
@@ -472,10 +481,12 @@ class Tags(collections.UserList):
             name_regex = get_tag_name_regex(tag)
             return rf"^(?P<n>{name_regex})(?P<s>\s*:\s*)(?P<v>.+)"
 
+        macro_definitions = MacroDefinitions.parse(list(section))
+        lines = process_conditions(list(section), macro_definitions, context)
         tag_regexes = [re.compile(regex_pattern(t), re.IGNORECASE) for t in TAG_NAMES]
         data = []
         buffer: List[str] = []
-        for line in section:
+        for line, valid in lines:
             line, prefix, suffix = split_conditional_macro_expansion(line)
             # find out if there is a match for one of the tag regexes
             m = next((m for m in (r.match(line) for r in tag_regexes) if m), None)
@@ -486,6 +497,7 @@ class Tags(collections.UserList):
                         m.group("v"),
                         m.group("s"),
                         Comments.parse(buffer),
+                        valid,
                         prefix,
                         suffix,
                         context,

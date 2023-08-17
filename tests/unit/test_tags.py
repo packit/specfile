@@ -109,6 +109,7 @@ def test_get_raw_section_data():
                 "diffutils",
                 ":          ",
                 Comments([], [""]),
+                True,
                 "%{?fedora:",
                 "}",
             ),
