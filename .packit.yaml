@@ -124,14 +124,24 @@ jobs:
   - job: tests
     trigger: pull_request
     packages: [specfile]
+    tmt_plan: "smoke|full|packit-integration"
     targets:
       - fedora-all
       - epel-9
   - job: tests
     trigger: pull_request
     packages: [specfile-epel8]
+    tmt_plan: "smoke|full"
     targets:
       - epel-8
+
+  - job: tests
+    trigger: pull_request
+    packages: [specfile]
+    identifier: performance
+    tmt_plan: performance
+    targets:
+      - fedora-rawhide
 
   - job: propose_downstream
     trigger: release
