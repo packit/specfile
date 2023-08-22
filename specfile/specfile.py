@@ -223,7 +223,9 @@ class Specfile:
             Macro definitions in the spec file as `MacroDefinitions` object.
         """
         with self.lines() as lines:
-            macro_definitions = MacroDefinitions.parse(lines)
+            macro_definitions = MacroDefinitions.parse(
+                lines, with_conditions=True, context=self
+            )
             try:
                 yield macro_definitions
             finally:

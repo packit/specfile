@@ -105,6 +105,7 @@ def test_get_raw_data():
                 "Test spec file containing several \\\nmacro definitions in various formats (%?1)",
                 False,
                 ("", " ", " ", ""),
+                True,
                 [
                     "",
                     "Name:           test",
@@ -119,6 +120,7 @@ def test_get_raw_data():
                 "spawning across mutiple lines}",
                 False,
                 ("", " ", " ", ""),
+                True,
                 [""],
             ),
         ]

@@ -458,6 +458,21 @@ class Sources(collections.abc.MutableSequence):
             suffix = f"{number:0{self._default_source_number_digits}}"
         return len(self._tags) if self._tags else 0, f"{self.prefix}{suffix}", ": "
 
+    def _get_tag_validity(self, reference: Optional[TagSource] = None) -> bool:
+        """
+        Determines validity of a new source tag based on a reference tag, if specified,
+        or the last tag in the spec file. Defaults to True.
+
+        Args:
+            reference: Optional reference tag source.
+
+        Returns:
+            Whether the new source tag is valid or not.
+        """
+        if reference is not None:
+            return reference._tag.valid
+        return self._tags[-1].valid if self._tags else True
+
     def _deduplicate_tag_names(self, start: int = 0) -> None:
         """
         Eliminates duplicate numbers in source tag names.
@@ -505,9 +520,17 @@ class Sources(collections.abc.MutableSequence):
                 number = source.number
             if isinstance(source, self.tag_class):
                 name, separator = self._get_tag_format(cast(TagSource, source), number)
+                valid = self._get_tag_validity(cast(TagSource, source))
                 container.insert(
                     index,
-                    Tag(name, location, separator, Comments(), context=self._context),
+                    Tag(
+                        name,
+                        location,
+                        separator,
+                        Comments(),
+                        valid,
+                        context=self._context,
+                    ),
                 )
                 self._deduplicate_tag_names(i)
             else:
@@ -523,9 +546,12 @@ class Sources(collections.abc.MutableSequence):
             )
         else:
             index, name, separator = self._get_initial_tag_setup()
+            valid = self._get_tag_validity()
             self._tags.insert(
                 index,
-                Tag(name, location, separator, Comments(), context=self._context),
+                Tag(
+                    name, location, separator, Comments(), valid, context=self._context
+                ),
             )
 
     def insert_numbered(self, number: int, location: str) -> int:
@@ -555,11 +581,14 @@ class Sources(collections.abc.MutableSequence):
                 i += 1
                 index += 1
             name, separator = self._get_tag_format(source, number)
+            valid = self._get_tag_validity(source)
         else:
             i = 0
             index, name, separator = self._get_initial_tag_setup(number)
+            valid = self._get_tag_validity()
         self._tags.insert(
-            index, Tag(name, location, separator, Comments(), context=self._context)
+            index,
+            Tag(name, location, separator, Comments(), valid, context=self._context),
         )
         self._deduplicate_tag_names(i)
         return i

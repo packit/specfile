@@ -4,10 +4,14 @@
 import collections
 import copy
 import re
-from typing import List, Optional, Tuple, Union, overload
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union, overload
 
+from specfile.conditions import process_conditions
 from specfile.formatter import formatted
 from specfile.types import SupportsIndex
+
+if TYPE_CHECKING:
+    from specfile.specfile import Specfile
 
 
 class MacroDefinition:
@@ -17,12 +21,14 @@ class MacroDefinition:
         body: str,
         is_global: bool,
         whitespace: Tuple[str, str, str, str],
+        valid: bool = True,
         preceding_lines: Optional[List[str]] = None,
     ) -> None:
         self.name = name
         self.body = body
         self.is_global = is_global
         self._whitespace = whitespace
+        self.valid = valid
         self._preceding_lines = (
             preceding_lines.copy() if preceding_lines is not None else []
         )
@@ -42,7 +48,7 @@ class MacroDefinition:
     def __repr__(self) -> str:
         return (
             f"MacroDefinition({self.name!r}, {self.body!r}, {self.is_global!r}, "
-            f"{self._whitespace!r}, {self._preceding_lines!r})"
+            f"{self._whitespace!r}, {self.valid!r}, {self._preceding_lines!r})"
         )
 
     def __str__(self) -> str:
@@ -189,7 +195,9 @@ class MacroDefinitions(collections.UserList):
         raise ValueError
 
     @classmethod
-    def parse(cls, lines: List[str]) -> "MacroDefinitions":
+    def _parse(
+        cls, lines: Union[List[str], List[Tuple[str, bool]]]
+    ) -> "MacroDefinitions":
         """
         Parses given lines into macro defintions.
 
@@ -199,6 +207,13 @@ class MacroDefinitions(collections.UserList):
         Returns:
             Constructed instance of `MacroDefinitions` class.
         """
+
+        def pop(lines):
+            line = lines.pop(0)
+            if isinstance(line, str):
+                return line, True
+            else:
+                return line
 
         def count_brackets(s):
             bc = pc = 0
@@ -248,7 +263,7 @@ class MacroDefinitions(collections.UserList):
         buffer: List[str] = []
         lines = lines.copy()
         while lines:
-            line = lines.pop(0)
+            line, valid = pop(lines)
             m = md_regex.match(line)
             if m:
                 ws0, macro, ws1, name, ws2, body, ws3 = m.groups()
@@ -257,7 +272,7 @@ class MacroDefinitions(collections.UserList):
                     ws3 = ""
                 bc, pc = count_brackets(body)
                 while (bc > 0 or pc > 0 or body.endswith("\\")) and lines:
-                    line = lines.pop(0)
+                    line, _ = pop(lines)
                     body += "\n" + line
                     bc, pc = count_brackets(body)
                 tokens = re.split(r"(\s+)$", body, maxsplit=1)
@@ -268,13 +283,42 @@ class MacroDefinitions(collections.UserList):
                     ws3 = ws + ws3
                 data.append(
                     MacroDefinition(
-                        name, body, macro == "%global", (ws0, ws1, ws2, ws3), buffer
+                        name,
+                        body,
+                        macro == "%global",
+                        (ws0, ws1, ws2, ws3),
+                        valid,
+                        buffer,
                     )
                 )
                 buffer = []
             else:
                 buffer.append(line)
         return cls(data, buffer)
+
+    @classmethod
+    def parse(
+        cls,
+        lines: List[str],
+        with_conditions: bool = False,
+        context: Optional["Specfile"] = None,
+    ) -> "MacroDefinitions":
+        """
+        Parses given lines into macro defintions.
+
+        Args:
+            lines: Lines to parse.
+            with_conditions: Whether to process conditions before parsing and populate
+              the `valid` attribute.
+            context: `Specfile` instance that defines the context for macro expansions.
+
+        Returns:
+            Constructed instance of `MacroDefinitions` class.
+        """
+        result = cls._parse(lines)
+        if not with_conditions:
+            return result
+        return cls._parse(process_conditions(lines, result, context))
 
     def get_raw_data(self) -> List[str]:
         result = []
