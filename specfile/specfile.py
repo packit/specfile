@@ -729,7 +729,8 @@ class Specfile:
                         md.name, md.body, type(md), md.get_position(macro_definitions)
                     )
                     for md in macro_definitions
-                    if not protected_regex.match(md.name)
+                    if md.valid
+                    and not protected_regex.match(md.name)
                     and not md.name.endswith(")")  # skip macro definitions with options
                 ]
             )
@@ -738,7 +739,7 @@ class Specfile:
                 [
                     Entity(t.name.lower(), t.value, type(t), t.get_position(tags))
                     for t in tags
-                    if not protected_regex.match(t.name)
+                    if t.valid and not protected_regex.match(t.name)
                 ]
             )
         entities.sort(key=lambda e: e.position)
