@@ -792,10 +792,12 @@ class Specfile:
             for entity in [
                 e for e in entities if e.updated and e.type == MacroDefinition
             ]:
-                getattr(macro_definitions, entity.name).body = entity.value
+                macro_definition = macro_definitions.get(entity.name, entity.position)
+                macro_definition.body = entity.value
         with self.tags() as tags:
             for entity in [e for e in entities if e.updated and e.type == Tag]:
-                getattr(tags, entity.name).value = entity.value
+                tag = tags.get(entity.name, entity.position)
+                tag.value = entity.value
         return result
 
     def update_tag(
