@@ -185,13 +185,14 @@ class MacroDefinitions(collections.UserList):
     def copy(self) -> "MacroDefinitions":
         return copy.copy(self)
 
-    def get(self, name: str) -> MacroDefinition:
-        return self.data[self.find(name)]
+    def get(self, name: str, position: Optional[int] = None) -> MacroDefinition:
+        return self.data[self.find(name, position)]
 
-    def find(self, name: str) -> int:
+    def find(self, name: str, position: Optional[int] = None) -> int:
         for i, macro_definition in enumerate(self.data):
             if macro_definition.name == name:
-                return i
+                if position is None or macro_definition.get_position(self) == position:
+                    return i
         raise ValueError
 
     @classmethod

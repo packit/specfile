@@ -351,6 +351,10 @@ def test_autochangelog(spec_rpmautospec, spec_conditionalized_changelog):
         assert changelog[-1].content == ["test"]
 
 
+@pytest.mark.skipif(
+    rpm.__version__ < "4.16",
+    reason="condition expression evaluation requires rpm 4.16 or higher",
+)
 def test_update_tag(spec_macros):
     spec = Specfile(spec_macros)
     spec.update_tag("Version", "1.2.3~beta4")
@@ -358,25 +362,40 @@ def test_update_tag(spec_macros):
         assert md.majorver.body == "1"
         assert md.minorver.body == "2"
         assert md.patchver.body == "3"
+        assert md.mainver.body == "%{majorver}.%{minorver}.%{patchver}"
         assert md.prever.body == "beta4"
-        assert md.package_version.body == "%{majorver}.%{minorver}.%{patchver}"
-    assert spec.version == "%{package_version}%{?prever:~%{prever}}"
+        assert md.get("package_version", 13).body == "%{mainver}%{?prever:~%{prever}}"
+        assert (
+            md.get("package_version", 15).body
+            == "%{mainver}%{?gitversion:^%{gitversion}}"
+        )
+    assert spec.version == "%{package_version}"
     spec.update_tag("Version", "4.0~alpha1")
     with spec.macro_definitions() as md:
         assert md.majorver.body == "1"
         assert md.minorver.body == "2"
         assert md.patchver.body == "3"
+        assert md.mainver.body == "4.0"
         assert md.prever.body == "alpha1"
-        assert md.package_version.body == "4.0"
-    assert spec.version == "%{package_version}%{?prever:~%{prever}}"
+        assert md.get("package_version", 13).body == "%{mainver}%{?prever:~%{prever}}"
+        assert (
+            md.get("package_version", 15).body
+            == "%{mainver}%{?gitversion:^%{gitversion}}"
+        )
+    assert spec.version == "%{package_version}"
     spec.update_tag("Version", "5.3.3")
     with spec.macro_definitions() as md:
         assert md.majorver.body == "1"
         assert md.minorver.body == "2"
         assert md.patchver.body == "3"
+        assert md.mainver.body == "4.0"
         assert md.prever.body == "alpha1"
-        assert md.package_version.body == "4.0"
-    assert spec.version == "5.3.3"
+        assert md.get("package_version", 13).body == "5.3.3"
+        assert (
+            md.get("package_version", 15).body
+            == "%{mainver}%{?gitversion:^%{gitversion}}"
+        )
+    assert spec.version == "%{package_version}"
     spec.update_tag("Release", "2%{?dist}")
     assert spec.raw_release == "%{release}"
     with spec.macro_definitions() as md:
@@ -385,7 +404,8 @@ def test_update_tag(spec_macros):
         "Source0",
         "https://example.com/archived_releases/test/v6.0.0/test-v6.0.0.tar.xz",
     )
-    assert spec.version == "6.0.0"
+    with spec.macro_definitions() as md:
+        assert md.package_version.body == "6.0.0"
     with spec.sources() as sources:
         assert (
             sources[0].location
@@ -395,7 +415,8 @@ def test_update_tag(spec_macros):
     spec.update_tag(
         "Source0", "https://example.com/archived_releases/test-v7.2.1.tar.xz"
     )
-    assert spec.version == "6.0.0"
+    with spec.macro_definitions() as md:
+        assert md.package_version.body == "6.0.0"
     with spec.sources() as sources:
         assert (
             sources[0].location
@@ -407,6 +428,17 @@ def test_update_tag(spec_macros):
         assert md.minorver.body == "2"
     with spec.sources() as sources:
         assert sources[1].location == "tests-86.tar.xz"
+    spec = Specfile(spec_macros, macros=[("use_snapshot", "1")])
+    spec.update_tag("Version", "3.2.1")
+    with spec.macro_definitions() as md:
+        assert md.majorver.body == "0"
+        assert md.minorver.body == "1"
+        assert md.patchver.body == "2"
+        assert md.mainver.body == "%{majorver}.%{minorver}.%{patchver}"
+        assert md.prever.body == "rc2"
+        assert md.get("package_version", 13).body == "%{mainver}%{?prever:~%{prever}}"
+        assert md.get("package_version", 15).body == "3.2.1"
+    assert spec.version == "%{package_version}"
 
 
 def test_multiple_instances(spec_minimal, spec_autosetup):

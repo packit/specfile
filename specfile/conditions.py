@@ -41,6 +41,9 @@ def resolve_expression(
             result = expand(f"%{{expr:{expression}}}")
         except RPMException:
             return False
+        if result.startswith("%{expr:"):
+            # the expansion silently failed
+            return False
         try:
             return int(result) != 0
         except ValueError:
