@@ -351,6 +351,10 @@ def test_autochangelog(spec_rpmautospec, spec_conditionalized_changelog):
         assert changelog[-1].content == ["test"]
 
 
+@pytest.mark.skipif(
+    rpm.__version__ < "4.16",
+    reason="condition expression evaluation requires rpm 4.16 or higher",
+)
 def test_update_tag(spec_macros):
     spec = Specfile(spec_macros)
     spec.update_tag("Version", "1.2.3~beta4")
