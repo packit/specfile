@@ -62,7 +62,7 @@ Summary:        %{summary}
 
 %if %{with tests}
 %check
-%pytest
+%pytest --verbose tests/unit tests/integration
 %endif
 
 

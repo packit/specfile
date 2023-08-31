@@ -14,4 +14,4 @@ adjust:
 tag:
   - basic
 tier: 1
-test: python3 -m pytest --verbose --cov=specfile --cov-report=term-missing
+test: python3 -m pytest --verbose --cov=specfile --cov-report=term-missing unit integration
