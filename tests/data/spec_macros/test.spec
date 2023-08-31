@@ -1,13 +1,26 @@
 %global majorver 0
 %global minorver 1
 %global patchver 2
+%global mainver %{majorver}.%{minorver}.%{patchver}
+
 %global prever rc2
-%global package_version %{majorver}.%{minorver}.%{patchver}
+
+%global commit 7e1bb4465bf84a256411a8ebb3b46130939c8e88
+%global shortcommit %(c=%{commit}; echo ${c:0:7})
+%global gitdate 20230830
+%global gitversion %{gitdate}git%{shortcommit}
+
+%if !0%{?use_snapshot}
+%global package_version %{mainver}%{?prever:~%{prever}}
+%else
+%global package_version %{mainver}%{?gitversion:^%{gitversion}}
+%endif
+
 %global release 1%{?dist}
 
 
 Name:           test
-Version:        %{package_version}%{?prever:~%{prever}}
+Version:        %{package_version}
 Release:        %{release}
 Summary:        Test package
 
