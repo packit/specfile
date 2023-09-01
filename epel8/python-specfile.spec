@@ -52,7 +52,7 @@ rm -rf specfile.egg-info
 
 
 %check
-%pytest
+%pytest --verbose tests/unit tests/integration
 
 
 %files -n python%{python3_pkgversion}-specfile

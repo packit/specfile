@@ -1,0 +1,8 @@
+summary:
+  Performance tests
+require:
+  - python3-specfile
+tag:
+  - performance
+tier: 3
+test: python3 -m pytest --verbose performance
