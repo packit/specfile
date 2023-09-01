@@ -1,3 +1,7 @@
+# 0.22.0
+
+- Macro definitions and tags gained a new `valid` attribute. A macro definition/tag is considered valid if it doesn't appear in a false branch of any condition appearing in the spec file. (#276)
+
 # 0.21.0
 
 - `specfile` no longer tracebacks when some sources are missing and can't be _emulated_. In such case the spec file is parsed without them at the cost of `%setup` and `%patch` macros potentially expanding differently than with the sources present. (#271)

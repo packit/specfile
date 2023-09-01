@@ -13,7 +13,7 @@ in a minimal diff.}
 
 
 Name:           python-specfile
-Version:        0.21.0
+Version:        0.22.0
 Release:        1%{?dist}
 
 Summary:        A library for parsing and manipulating RPM spec files
@@ -71,6 +71,9 @@ Summary:        %{summary}
 
 
 %changelog
+* Fri Sep 01 2023 Packit Team <hello@packit.dev> - 0.22.0-1
+- New upstream release 0.22.0
+
 * Fri Aug 11 2023 Packit Team <hello@packit.dev> - 0.21.0-1
 - New upstream release 0.21.0
 
