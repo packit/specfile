@@ -41,6 +41,10 @@ Summary:        %{summary}
 %prep
 %autosetup -p1 -n specfile-%{version}
 
+# since we are building from PyPI source, we don't need git-archive
+# support in setuptools_scm
+sed -i 's/setuptools_scm\[toml\]>=7/setuptools_scm[toml]/' pyproject.toml
+
 
 %generate_buildrequires
 %pyproject_buildrequires %{?with_tests: -x testing}
