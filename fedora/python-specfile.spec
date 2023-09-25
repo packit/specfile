@@ -1,9 +1,4 @@
-%if 0%{?rhel} == 9
-# RHEL 9 is missing python-flexmock
-%bcond_with tests
-%else
 %bcond_without tests
-%endif
 
 
 %global desc %{expand:

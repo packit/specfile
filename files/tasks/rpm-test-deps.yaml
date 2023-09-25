@@ -4,8 +4,5 @@
     name:
       - python3-pytest
       - python3-pytest-cov
+      - python3-flexmock
   become: true
-- name: Pip install test dependencies
-  ansible.builtin.pip:
-    name:
-      - flexmock # RHBZ#2120251
