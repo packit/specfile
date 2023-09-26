@@ -1,9 +1,4 @@
-%if 0%{?rhel} == 9
-# RHEL 9 is missing python-flexmock
-%bcond_with tests
-%else
 %bcond_without tests
-%endif
 
 
 %global desc %{expand:
@@ -45,6 +40,10 @@ Summary:        %{summary}
 
 %prep
 %autosetup -p1 -n specfile-%{version}
+
+# since we are building from PyPI source, we don't need git-archive
+# support in setuptools_scm
+sed -i 's/setuptools_scm\[toml\]>=7/setuptools_scm[toml]/' pyproject.toml
 
 
 %generate_buildrequires
