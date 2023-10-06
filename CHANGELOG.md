@@ -1,3 +1,7 @@
+# 0.22.1
+
+- Removed dependency on setuptools-scm-git-archive. (#290)
+
 # 0.22.0
 
 - Macro definitions and tags gained a new `valid` attribute. A macro definition/tag is considered valid if it doesn't appear in a false branch of any condition appearing in the spec file. (#276)
