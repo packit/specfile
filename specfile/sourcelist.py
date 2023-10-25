@@ -5,7 +5,9 @@ import collections
 import copy
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, overload
 
+from specfile.conditions import process_conditions
 from specfile.formatter import formatted
+from specfile.macro_definitions import MacroDefinitions
 from specfile.macros import Macros
 from specfile.sections import Section
 from specfile.tags import Comments
@@ -22,10 +24,15 @@ class SourcelistEntry:
     Attributes:
         location: Literal location of the source/patch as stored in the spec file.
         comments: List of comments associated with the source/patch.
+        valid: Whether the entry is not located in a false branch of a condition.
     """
 
     def __init__(
-        self, location: str, comments: Comments, context: Optional["Specfile"] = None
+        self,
+        location: str,
+        comments: Comments,
+        valid: bool = True,
+        context: Optional["Specfile"] = None,
     ) -> None:
         """
         Constructs a `SourceListEntry` object.
@@ -33,6 +40,7 @@ class SourcelistEntry:
         Args:
             location: Literal location of the source/patch as stored in the spec file.
             comments: List of comments associated with the source/patch.
+            valid: Whether the entry is not located in a false branch of a condition.
             context: `Specfile` instance that defines the context for macro expansions.
 
         Returns:
@@ -40,6 +48,7 @@ class SourcelistEntry:
         """
         self.location = location
         self.comments = comments.copy()
+        self.valid = valid
         self._context = context
 
     def __eq__(self, other: object) -> bool:
@@ -50,7 +59,8 @@ class SourcelistEntry:
     @formatted
     def __repr__(self) -> str:
         return (
-            f"SourcelistEntry({self.location!r}, {self.comments!r}, {self._context!r})"
+            f"SourcelistEntry({self.location!r}, {self.comments!r}, "
+            f"{self.valid!r}, {self._context!r})"
         )
 
     def __deepcopy__(self, memo: Dict[int, Any]) -> "SourcelistEntry":
@@ -134,11 +144,15 @@ class Sourcelist(collections.UserList):
         Returns:
             Constructed instance of `Sourcelist` class.
         """
+        macro_definitions = MacroDefinitions.parse(list(section))
+        lines = process_conditions(list(section), macro_definitions, context)
         data = []
         buffer: List[str] = []
-        for line in section:
+        for line, valid in lines:
             if line and not line.lstrip().startswith("#"):
-                data.append(SourcelistEntry(line, Comments.parse(buffer), context))
+                data.append(
+                    SourcelistEntry(line, Comments.parse(buffer), valid, context)
+                )
                 buffer = []
             else:
                 buffer.append(line)

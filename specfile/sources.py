@@ -537,12 +537,15 @@ class Sources(collections.abc.MutableSequence):
                 container.insert(
                     index,
                     SourcelistEntry(  # type: ignore[arg-type]
-                        location, Comments(), context=self._context
+                        location,
+                        Comments(),
+                        container[index - 1].valid,
+                        context=self._context,
                     ),
                 )
         elif self._sourcelists:
             self._sourcelists[-1].append(
-                SourcelistEntry(location, Comments(), context=self._context)
+                SourcelistEntry(location, Comments(), True, context=self._context)
             )
         else:
             index, name, separator = self._get_initial_tag_setup()
