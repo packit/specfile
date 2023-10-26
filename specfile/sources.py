@@ -66,6 +66,12 @@ class Source(ABC):
         """List of comments associated with the source."""
         ...
 
+    @property
+    @abstractmethod
+    def valid(self) -> bool:
+        """Whether the source is not located in a false branch of a condition."""
+        ...
+
 
 class TagSource(Source):
     """Class that represents a source backed by a spec file tag."""
@@ -161,6 +167,11 @@ class TagSource(Source):
         """List of comments associated with the source."""
         return self._tag.comments
 
+    @property
+    def valid(self) -> bool:
+        """Whether the source is not located in a false branch of a condition."""
+        return self._tag.valid
+
 
 class ListSource(Source):
     """Class that represents a source backed by a line in a %sourcelist section."""
@@ -223,6 +234,11 @@ class ListSource(Source):
     def comments(self) -> Comments:
         """List of comments associated with the source."""
         return self._source.comments
+
+    @property
+    def valid(self) -> bool:
+        """Whether the source is not located in a false branch of a condition."""
+        return self._source.valid
 
 
 class Sources(collections.abc.MutableSequence):
@@ -537,12 +553,15 @@ class Sources(collections.abc.MutableSequence):
                 container.insert(
                     index,
                     SourcelistEntry(  # type: ignore[arg-type]
-                        location, Comments(), context=self._context
+                        location,
+                        Comments(),
+                        container[index - 1].valid,
+                        context=self._context,
                     ),
                 )
         elif self._sourcelists:
             self._sourcelists[-1].append(
-                SourcelistEntry(location, Comments(), context=self._context)
+                SourcelistEntry(location, Comments(), True, context=self._context)
             )
         else:
             index, name, separator = self._get_initial_tag_setup()
