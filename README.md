@@ -250,6 +250,44 @@ print(tags.release.expanded_value)
 print(len(specfile.sources().content))
 ```
 
+### Validity
+
+Macro definitions, tags, `%sourcelist`/`%patchlist` entries and sources/patches have a `valid` attribute. An entity is considered valid if it isn't present in a false branch of any condition.
+
+Consider the following in a spec file:
+
+```specfile
+%if 0%{?fedora} >= 36
+Recommends: %{name}-selinux
+%endif
+```
+
+Provided there are no other `Recommends` tags, the following would print `True` or `False` depending on the value of the `%fedora` macro:
+
+```python
+with specfile.tags() as tags:
+    print(tags.recommends.valid)
+```
+
+You can define macros or redefine/undefine system macros using the `macros` argument of the constructor or by modifying the `macros` attribute of a `Specfile` instance.
+
+The same applies to `%ifarch`/`%ifos` statements:
+
+```specfile
+%ifarch %{java_arches}
+BuildRequires: java-devel
+%endif
+```
+
+Provided there are no other `BuildRequires` tags, the following would print `True` in case the current platform was part of `%java_arches`:
+
+```python
+with specfile.tags() as tags:
+    print(tags.buildrequires.valid)
+```
+
+To override this, you would have to redefine the `%_target_cpu` system macro (or `%_target_os` in case of `%ifos`).
+
 ## Videos
 
 Here is a demo showcasing the `Specfile.update_tag()` method and its use cases:
