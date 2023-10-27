@@ -2,8 +2,6 @@
 
 Python library for parsing and manipulating RPM spec files. Main focus is on modifying existing spec files, any change should result in a minimal diff.
 
-This project is still a work in progress.
-
 ## Motivation
 
 Originally, [rebase-helper](https://github.com/rebase-helper/rebase-helper/) provided an API for spec file modifications that was also used by [packit](https://github.com/packit/packit). The goal of this project is to make the interface more general and convenient to use by not only packit but also by other Python projects that need to interact with RPM spec files.
@@ -252,11 +250,43 @@ print(tags.release.expanded_value)
 print(len(specfile.sources().content))
 ```
 
-## Caveats
+### Validity
 
-### RPM macros
+Macro definitions, tags, `%sourcelist`/`%patchlist` entries and sources/patches have a `valid` attribute. An entity is considered valid if it isn't present in a false branch of any condition.
 
-specfile uses RPM for parsing spec files and macro expansion. Unfortunately, macros are always stored in a global context, which poses a problem for multiple instances of Specfile.
+Consider the following in a spec file:
+
+```specfile
+%if 0%{?fedora} >= 36
+Recommends: %{name}-selinux
+%endif
+```
+
+Provided there are no other `Recommends` tags, the following would print `True` or `False` depending on the value of the `%fedora` macro:
+
+```python
+with specfile.tags() as tags:
+    print(tags.recommends.valid)
+```
+
+You can define macros or redefine/undefine system macros using the `macros` argument of the constructor or by modifying the `macros` attribute of a `Specfile` instance.
+
+The same applies to `%ifarch`/`%ifos` statements:
+
+```specfile
+%ifarch %{java_arches}
+BuildRequires: java-devel
+%endif
+```
+
+Provided there are no other `BuildRequires` tags, the following would print `True` in case the current platform was part of `%java_arches`:
+
+```python
+with specfile.tags() as tags:
+    print(tags.buildrequires.valid)
+```
+
+To override this, you would have to redefine the `%_target_cpu` system macro (or `%_target_os` in case of `%ifos`).
 
 ## Videos
 
