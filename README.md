@@ -2,8 +2,6 @@
 
 Python library for parsing and manipulating RPM spec files. Main focus is on modifying existing spec files, any change should result in a minimal diff.
 
-This project is still a work in progress.
-
 ## Motivation
 
 Originally, [rebase-helper](https://github.com/rebase-helper/rebase-helper/) provided an API for spec file modifications that was also used by [packit](https://github.com/packit/packit). The goal of this project is to make the interface more general and convenient to use by not only packit but also by other Python projects that need to interact with RPM spec files.
@@ -251,12 +249,6 @@ print(tags.release.expanded_value)
 # number of sources
 print(len(specfile.sources().content))
 ```
-
-## Caveats
-
-### RPM macros
-
-specfile uses RPM for parsing spec files and macro expansion. Unfortunately, macros are always stored in a global context, which poses a problem for multiple instances of Specfile.
 
 ## Videos
 
