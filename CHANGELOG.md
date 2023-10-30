@@ -1,3 +1,7 @@
+# 0.23.0
+
+- Sources now have a `valid` property that indicates whether a source is valid in the current context, meaning it is not present in a false branch of any condition. (#295)
+
 # 0.22.1
 
 - Removed dependency on setuptools-scm-git-archive. (#290)
