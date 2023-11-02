@@ -4,6 +4,7 @@
 import collections
 import copy
 import re
+from enum import Enum, auto
 from typing import TYPE_CHECKING, List, Optional, Tuple, Union, overload
 
 from specfile.conditions import process_conditions
@@ -14,20 +15,31 @@ if TYPE_CHECKING:
     from specfile.specfile import Specfile
 
 
+class CommentOutStyle(Enum):
+    DNL = auto()
+    HASH = auto()
+
+
 class MacroDefinition:
     def __init__(
         self,
         name: str,
         body: str,
         is_global: bool,
+        commented_out: bool,
+        comment_out_style: CommentOutStyle,
         whitespace: Tuple[str, str, str, str],
+        dnl_whitespace: str = "",
         valid: bool = True,
         preceding_lines: Optional[List[str]] = None,
     ) -> None:
         self.name = name
         self.body = body
         self.is_global = is_global
+        self.commented_out = commented_out
+        self.comment_out_style = comment_out_style
         self._whitespace = whitespace
+        self._dnl_whitespace = dnl_whitespace
         self.valid = valid
         self._preceding_lines = (
             preceding_lines.copy() if preceding_lines is not None else []
@@ -40,7 +52,10 @@ class MacroDefinition:
             self.name == other.name
             and self.body == other.body
             and self.is_global == other.is_global
+            and self.commented_out == other.commented_out
+            and self.comment_out_style == other.comment_out_style
             and self._whitespace == other._whitespace
+            and self._dnl_whitespace == other._dnl_whitespace
             and self._preceding_lines == other._preceding_lines
         )
 
@@ -48,13 +63,21 @@ class MacroDefinition:
     def __repr__(self) -> str:
         return (
             f"MacroDefinition({self.name!r}, {self.body!r}, {self.is_global!r}, "
-            f"{self._whitespace!r}, {self.valid!r}, {self._preceding_lines!r})"
+            f"{self.commented_out!r}, {self.comment_out_style!r}, {self._whitespace!r}, "
+            f"{self.valid!r}, {self._preceding_lines!r})"
         )
 
     def __str__(self) -> str:
         ws = self._whitespace
-        macro = "%global" if self.is_global else "%define"
-        return f"{ws[0]}{macro}{ws[1]}{self.name}{ws[2]}{self.body}{ws[3]}"
+        dnl = ""
+        sc = "%"
+        if self.commented_out:
+            if self.comment_out_style is CommentOutStyle.DNL:
+                dnl = f"%dnl{self._dnl_whitespace}"
+            elif self.comment_out_style is CommentOutStyle.HASH:
+                sc = "#"
+        macro = "global" if self.is_global else "define"
+        return f"{ws[0]}{dnl}{sc}{macro}{ws[1]}{self.name}{ws[2]}{self.body}{ws[3]}"
 
     def get_position(self, container: "MacroDefinitions") -> int:
         """
@@ -73,13 +96,20 @@ class MacroDefinition:
     def get_raw_data(self) -> List[str]:
         result = self._preceding_lines.copy()
         ws = self._whitespace
-        macro = "%global" if self.is_global else "%define"
+        dnl = ""
+        sc = "%"
+        if self.commented_out:
+            if self.comment_out_style is CommentOutStyle.DNL:
+                dnl = f"%dnl{self._dnl_whitespace}"
+            elif self.comment_out_style is CommentOutStyle.HASH:
+                sc = "#"
+        macro = "global" if self.is_global else "define"
         body = self.body.splitlines()
         if body:
             body[-1] += ws[3]
         else:
             body = [ws[3]]
-        result.append(f"{ws[0]}{macro}{ws[1]}{self.name}{ws[2]}{body[0]}")
+        result.append(f"{ws[0]}{dnl}{sc}{macro}{ws[1]}{self.name}{ws[2]}{body[0]}")
         result.extend(body[1:])
         return result
 
@@ -249,7 +279,9 @@ class MacroDefinitions(collections.UserList):
             r"""
             ^
             (\s*)                 # optional preceding whitespace
-            (%(?:global|define))  # scope-defining macro definition
+            (%dnl\s+)?            # optional DNL prefix
+            ((?(2)%|(?:%|\#)))    # starting character
+            (global|define)       # scope-defining macro definition
             (\s+)
             (\w+(?:\(.*?\))?)     # macro name with optional arguments in parentheses
             (\s+)
@@ -267,15 +299,16 @@ class MacroDefinitions(collections.UserList):
             line, valid = pop(lines)
             m = md_regex.match(line)
             if m:
-                ws0, macro, ws1, name, ws2, body, ws3 = m.groups()
-                if ws3 == "\\":
-                    body += ws3
-                    ws3 = ""
-                bc, pc = count_brackets(body)
-                while (bc > 0 or pc > 0 or body.endswith("\\")) and lines:
-                    line, _ = pop(lines)
-                    body += "\n" + line
+                ws0, dnl, sc, macro, ws1, name, ws2, body, ws3 = m.groups()
+                if not dnl and sc == "%":
+                    if ws3 == "\\":
+                        body += ws3
+                        ws3 = ""
                     bc, pc = count_brackets(body)
+                    while (bc > 0 or pc > 0 or body.endswith("\\")) and lines:
+                        line, _ = pop(lines)
+                        body += "\n" + line
+                        bc, pc = count_brackets(body)
                 tokens = re.split(r"(\s+)$", body, maxsplit=1)
                 if len(tokens) == 1:
                     body = tokens[0]
@@ -286,8 +319,11 @@ class MacroDefinitions(collections.UserList):
                     MacroDefinition(
                         name,
                         body,
-                        macro == "%global",
+                        macro == "global",
+                        bool(dnl or sc == "#"),
+                        CommentOutStyle.HASH if sc == "#" else CommentOutStyle.DNL,
                         (ws0, ws1, ws2, ws3),
+                        dnl[4:] if dnl else "",
                         valid,
                         buffer,
                     )

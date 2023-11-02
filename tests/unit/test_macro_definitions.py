@@ -5,21 +5,39 @@ import copy
 
 import pytest
 
-from specfile.macro_definitions import MacroDefinition, MacroDefinitions
+from specfile.macro_definitions import (
+    CommentOutStyle,
+    MacroDefinition,
+    MacroDefinitions,
+)
 
 
 def test_find():
     macro_definitions = MacroDefinitions(
         [
-            MacroDefinition("gitdate", "20160901", True, ("", " ", "     ", "")),
+            MacroDefinition(
+                "gitdate",
+                "20160901",
+                True,
+                False,
+                CommentOutStyle.DNL,
+                ("", " ", "     ", ""),
+            ),
             MacroDefinition(
                 "commit",
                 "9ab9717cf7d1be1a85b165a8eacb71b9e5831113",
                 True,
+                False,
+                CommentOutStyle.DNL,
                 ("", " ", "      ", ""),
             ),
             MacroDefinition(
-                "shortcommit", "%(c=%{commit}; echo ${c:0:7})", True, ("", " ", " ", "")
+                "shortcommit",
+                "%(c=%{commit}; echo ${c:0:7})",
+                True,
+                False,
+                CommentOutStyle.DNL,
+                ("", " ", " ", ""),
             ),
         ]
     )
@@ -32,15 +50,29 @@ def test_find():
 def test_get():
     macro_definitions = MacroDefinitions(
         [
-            MacroDefinition("gitdate", "20160901", True, ("", " ", "     ", "")),
+            MacroDefinition(
+                "gitdate",
+                "20160901",
+                True,
+                False,
+                CommentOutStyle.DNL,
+                ("", " ", "     ", ""),
+            ),
             MacroDefinition(
                 "commit",
                 "9ab9717cf7d1be1a85b165a8eacb71b9e5831113",
                 True,
+                False,
+                CommentOutStyle.DNL,
                 ("", " ", "      ", ""),
             ),
             MacroDefinition(
-                "shortcommit", "%(c=%{commit}; echo ${c:0:7})", True, ("", " ", " ", "")
+                "shortcommit",
+                "%(c=%{commit}; echo ${c:0:7})",
+                True,
+                False,
+                CommentOutStyle.DNL,
+                ("", " ", " ", ""),
             ),
         ]
     )
@@ -59,6 +91,9 @@ def test_parse():
             "%global commit      9ab9717cf7d1be1a85b165a8eacb71b9e5831113",
             "%global shortcommit %(c=%{commit}; echo ${c:0:7})",
             "",
+            "%dnl %global pre         a1",
+            "#global prerel      beta2",
+            "",
             "Name:           test",
             "Version:        0.1.0",
             "",
@@ -74,8 +109,14 @@ def test_parse():
     assert macro_definitions[1].name == "commit"
     assert macro_definitions.commit.body == "9ab9717cf7d1be1a85b165a8eacb71b9e5831113"
     assert macro_definitions[2].name == "shortcommit"
-    assert macro_definitions[3].name == "desc(x)"
-    assert macro_definitions[3].body == (
+    assert macro_definitions[3].name == "pre"
+    assert macro_definitions[3].commented_out
+    assert macro_definitions[3].comment_out_style is CommentOutStyle.DNL
+    assert macro_definitions[4].name == "prerel"
+    assert macro_definitions[4].commented_out
+    assert macro_definitions[4].comment_out_style is CommentOutStyle.HASH
+    assert macro_definitions[5].name == "desc(x)"
+    assert macro_definitions[5].body == (
         "Test spec file containing several \\\n"
         "macro definitions in various formats (%?1)"
     )
@@ -90,21 +131,57 @@ def test_parse():
 def test_get_raw_data():
     macro_definitions = MacroDefinitions(
         [
-            MacroDefinition("gitdate", "20160901", True, ("", " ", "     ", "")),
+            MacroDefinition(
+                "gitdate",
+                "20160901",
+                True,
+                False,
+                CommentOutStyle.DNL,
+                ("", " ", "     ", ""),
+            ),
             MacroDefinition(
                 "commit",
                 "9ab9717cf7d1be1a85b165a8eacb71b9e5831113",
                 True,
+                False,
+                CommentOutStyle.DNL,
                 ("", " ", "      ", ""),
             ),
             MacroDefinition(
-                "shortcommit", "%(c=%{commit}; echo ${c:0:7})", True, ("", " ", " ", "")
+                "shortcommit",
+                "%(c=%{commit}; echo ${c:0:7})",
+                True,
+                False,
+                CommentOutStyle.DNL,
+                ("", " ", " ", ""),
+            ),
+            MacroDefinition(
+                "pre",
+                "a1",
+                True,
+                True,
+                CommentOutStyle.DNL,
+                ("", " ", "         ", ""),
+                " ",
+                True,
+                [""],
+            ),
+            MacroDefinition(
+                "prerel",
+                "beta2",
+                True,
+                True,
+                CommentOutStyle.HASH,
+                ("", " ", "      ", ""),
             ),
             MacroDefinition(
                 "desc(x)",
                 "Test spec file containing several \\\nmacro definitions in various formats (%?1)",
                 False,
+                False,
+                CommentOutStyle.DNL,
                 ("", " ", " ", ""),
+                "",
                 True,
                 [
                     "",
@@ -119,7 +196,10 @@ def test_get_raw_data():
                 "This an example of a macro definition with body \n"
                 "spawning across mutiple lines}",
                 False,
+                False,
+                CommentOutStyle.DNL,
                 ("", " ", " ", ""),
+                "",
                 True,
                 [""],
             ),
@@ -129,6 +209,9 @@ def test_get_raw_data():
         "%global gitdate     20160901",
         "%global commit      9ab9717cf7d1be1a85b165a8eacb71b9e5831113",
         "%global shortcommit %(c=%{commit}; echo ${c:0:7})",
+        "",
+        "%dnl %global pre         a1",
+        "#global prerel      beta2",
         "",
         "Name:           test",
         "Version:        0.1.0",
@@ -149,6 +232,8 @@ def test_copy_macro_definitions():
                 "commit",
                 "9ab9717cf7d1be1a85b165a8eacb71b9e5831113",
                 True,
+                False,
+                CommentOutStyle.DNL,
                 ("", " ", "      ", ""),
             ),
         ],
