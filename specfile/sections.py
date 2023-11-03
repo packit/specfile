@@ -18,6 +18,7 @@ from specfile.macro_definitions import MacroDefinitions
 from specfile.macros import Macros
 from specfile.options import Options
 from specfile.types import SupportsIndex
+from specfile.utils import UserList
 
 if TYPE_CHECKING:
     from specfile.specfile import Specfile
@@ -139,7 +140,7 @@ class Section(collections.UserList):
         return str(self).splitlines()
 
 
-class Sections(collections.UserList):
+class Sections(UserList[Section]):
     """
     Class that represents all spec file sections, hence the entire spec file.
 
