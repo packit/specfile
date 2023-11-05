@@ -12,9 +12,9 @@ Originally, [rebase-helper](https://github.com/rebase-helper/rebase-helper/) pro
 
 Section is a spec file section, it has a well-defined name that starts with _%_ character and that can optionally be followed by arguments.
 
-In this library, the starting _%_ of section name is ommited for convenience.
+In this library, the starting _%_ of section name is omitted for convenience.
 
-There is a special section internally called `%package`, often also referred to as preamble, and it represents the content of the spec file that preceeds the first named section (usually `%description`). This section contains the main package metadata (tags). Metadata of subpackages are defined in subsequent `%package` sections, that are not anonymous and are always followed by arguments specifying the name of the subpackage (e.g. `%package doc` or `%package -n completely-different-subpackage-name`).
+There is a special section internally called `%package`, often also referred to as preamble, and it represents the content of the spec file that precedes the first named section (usually `%description`). This section contains the main package metadata (tags). Metadata of subpackages are defined in subsequent `%package` sections, that are not anonymous and are always followed by arguments specifying the name of the subpackage (e.g. `%package doc` or `%package -n completely-different-subpackage-name`).
 
 ### Tag
 
