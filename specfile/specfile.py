@@ -730,6 +730,7 @@ class Specfile:
                     )
                     for md in macro_definitions
                     if md.valid
+                    and not md.commented_out
                     and not protected_regex.match(md.name)
                     and not md.name.endswith(")")  # skip macro definitions with options
                 ]
