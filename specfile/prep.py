@@ -11,7 +11,7 @@ from specfile.formatter import formatted
 from specfile.options import Options
 from specfile.sections import Section
 from specfile.types import SupportsIndex
-from specfile.utils import split_conditional_macro_expansion
+from specfile.utils import UserList, split_conditional_macro_expansion
 
 
 def valid_prep_macro(name: str) -> bool:
@@ -149,7 +149,7 @@ class AutopatchMacro(PrepMacro):
     DEFAULTS: Dict[str, Union[bool, int, str]] = {}
 
 
-class PrepMacros(collections.UserList):
+class PrepMacros(UserList[PrepMacro]):
     """
     Class that represents a list of %prep macros.
 
@@ -185,7 +185,7 @@ class PrepMacros(collections.UserList):
         if isinstance(item, type):
             return any(isinstance(m, item) for m in self.data)
         return any(
-            m.name.startswith(item) if item == "%patch" else m.name == item
+            m.name.startswith(cast(str, item)) if item == "%patch" else m.name == item
             for m in self.data
         )
 

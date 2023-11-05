@@ -79,9 +79,10 @@ def process_conditions(
         List of tuples in the form of (line, validity).
     """
     excluded_lines = []
-    for md in macro_definitions or []:
-        position = md.get_position(macro_definitions)
-        excluded_lines.append(range(position, position + len(md.body.splitlines())))
+    if macro_definitions:
+        for md in macro_definitions:
+            position = md.get_position(macro_definitions)
+            excluded_lines.append(range(position, position + len(md.body.splitlines())))
     condition_regex = re.compile(
         r"""
         ^

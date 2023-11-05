@@ -539,7 +539,7 @@ class Sources(collections.abc.MutableSequence):
                 valid = self._get_tag_validity(cast(TagSource, source))
                 container.insert(
                     index,
-                    Tag(
+                    Tag(  # type: ignore[arg-type]
                         name,
                         location,
                         separator,

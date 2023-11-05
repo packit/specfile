@@ -3,7 +3,8 @@
 
 import collections
 import re
-from typing import Tuple
+import sys
+from typing import TYPE_CHECKING, Tuple
 
 from specfile.constants import ARCH_NAMES
 from specfile.exceptions import SpecfileException, UnterminatedMacroException
@@ -160,3 +161,13 @@ def split_conditional_macro_expansion(value: str) -> Tuple[str, str, str]:
     if not isinstance(node, ConditionalMacroExpansion):
         return value, "", ""
     return "".join(str(n) for n in node.body), f"%{{{node.prefix}{node.name}:", "}"
+
+
+# Python 3.6-3.8 do not allow creating a generic UserList at runtime.
+# This hack allows type checkers to determine the UserList dunder method return
+# types while still working at runtime.
+if TYPE_CHECKING or sys.version_info >= (3, 9):
+    UserList = collections.UserList
+else:
+    # UserList[...] always returns a UserList
+    UserList = collections.defaultdict(lambda: collections.UserList)

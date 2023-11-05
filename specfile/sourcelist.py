@@ -1,7 +1,6 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
-import collections
 import copy
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, overload
 
@@ -12,6 +11,7 @@ from specfile.macros import Macros
 from specfile.sections import Section
 from specfile.tags import Comments
 from specfile.types import SupportsIndex
+from specfile.utils import UserList
 
 if TYPE_CHECKING:
     from specfile.specfile import Specfile
@@ -81,7 +81,7 @@ class SourcelistEntry:
         return Macros.expand(self.location)
 
 
-class Sourcelist(collections.UserList):
+class Sourcelist(UserList[SourcelistEntry]):
     """
     Class that represents entries in a %sourcelist/%patchlist section.
 

@@ -1,7 +1,6 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
-import collections
 import copy
 import re
 from enum import Enum, auto
@@ -10,6 +9,7 @@ from typing import TYPE_CHECKING, List, Optional, Tuple, Union, overload
 from specfile.conditions import process_conditions
 from specfile.formatter import formatted
 from specfile.types import SupportsIndex
+from specfile.utils import UserList
 
 if TYPE_CHECKING:
     from specfile.specfile import Specfile
@@ -114,7 +114,7 @@ class MacroDefinition:
         return result
 
 
-class MacroDefinitions(collections.UserList):
+class MacroDefinitions(UserList[MacroDefinition]):
     """
     Class that represents all macro definitions.
 
@@ -162,7 +162,7 @@ class MacroDefinitions(collections.UserList):
         except ValueError:
             raise AttributeError(name)
 
-    def __setattr__(self, name: str, value: Union[MacroDefinition, List[str]]) -> None:
+    def __setattr__(self, name: str, value: Union[MacroDefinition, str]) -> None:
         if name not in self:
             return super().__setattr__(name, value)
         try:

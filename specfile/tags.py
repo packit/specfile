@@ -1,7 +1,6 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
-import collections
 import copy
 import itertools
 import re
@@ -24,7 +23,7 @@ from specfile.macro_definitions import MacroDefinitions
 from specfile.macros import Macros
 from specfile.sections import Section
 from specfile.types import SupportsIndex
-from specfile.utils import split_conditional_macro_expansion
+from specfile.utils import UserList, split_conditional_macro_expansion
 
 if TYPE_CHECKING:
     from specfile.specfile import Specfile
@@ -66,7 +65,7 @@ class Comment:
         return f"Comment({self.text!r}, {self.prefix!r})"
 
 
-class Comments(collections.UserList):
+class Comments(UserList[Comment]):
     """
     Class that represents comments associated with a tag, that is consecutive comment lines
     located directly above a tag definition.
@@ -312,7 +311,7 @@ class Tag:
         ) + len(self.comments.get_raw_data())
 
 
-class Tags(collections.UserList):
+class Tags(UserList[Tag]):
     """
     Class that represents all tags in a certain %package section.
 

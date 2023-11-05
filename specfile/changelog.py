@@ -1,7 +1,6 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
-import collections
 import copy
 import datetime
 import getpass
@@ -19,7 +18,7 @@ from specfile.formatter import formatted
 from specfile.macros import Macros
 from specfile.sections import Section
 from specfile.types import SupportsIndex
-from specfile.utils import EVR
+from specfile.utils import EVR, UserList
 
 WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 MONTHS = (
@@ -199,7 +198,7 @@ class ChangelogEntry:
         return cls(header, content, [""] if append_newline else None)
 
 
-class Changelog(collections.UserList):
+class Changelog(UserList[ChangelogEntry]):
     """
     Class that represents a changelog.
 
@@ -326,7 +325,7 @@ class Changelog(collections.UserList):
             Constructed instance of `Changelog` class.
         """
 
-        def extract_following_lines(content):
+        def extract_following_lines(content: List[str]) -> List[str]:
             following_lines: List[str] = []
             while content and not content[-1].strip():
                 following_lines.insert(0, content.pop())
