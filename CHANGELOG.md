@@ -1,3 +1,9 @@
+# 0.24.0
+
+- Improve type annotations for UserList subclasses (#299)
+- Fix typos in the README (#300)
+- Macro definitions gained a new `commented_out` property indicating that a macro definition is commented out. Another new property, `comment_out_style`, determines if it is achieved by using a `%dnl` (discard next line) directive (e.g. `%dnl %global prerelease beta2`) or by replacing the starting `%` with `#` (e.g. `#global prerelease beta2`). (#298)
+
 # 0.23.0
 
 - Sources now have a `valid` property that indicates whether a source is valid in the current context, meaning it is not present in a false branch of any condition. (#295)
