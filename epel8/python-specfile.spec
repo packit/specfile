@@ -5,7 +5,7 @@ in a minimal diff.}
 
 
 Name:           python-specfile
-Version:        0.23.0
+Version:        0.24.0
 Release:        1%{?dist}
 
 Summary:        A library for parsing and manipulating RPM spec files
@@ -61,6 +61,9 @@ rm -rf specfile.egg-info
 
 
 %changelog
+* Mon Nov 06 2023 Packit Team <hello@packit.dev> - 0.24.0-1
+- New upstream release 0.24.0
+
 * Sun Oct 29 2023 Packit Team <hello@packit.dev> - 0.23.0-1
 - New upstream release 0.23.0
 
