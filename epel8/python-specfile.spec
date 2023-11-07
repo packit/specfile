@@ -4,15 +4,22 @@ Main focus is on modifying existing spec files, any change should result
 in a minimal diff.}
 
 
+%global base_version 0.24.0
+#global prerelease %%{nil}
+
+%global package_version %{base_version}%{?prerelease:~%{prerelease}}
+%global pypi_version    %{base_version}%{?prerelease:-%{prerelease}}
+
+
 Name:           python-specfile
-Version:        0.24.0
+Version:        %{package_version}
 Release:        1%{?dist}
 
 Summary:        A library for parsing and manipulating RPM spec files
 License:        MIT
 URL:            https://github.com/packit/specfile
 
-Source0:        %{pypi_source specfile}
+Source0:        %{pypi_source specfile %{pypi_version}}
 
 BuildArch:      noarch
 
@@ -36,7 +43,7 @@ Summary:        %{summary}
 
 
 %prep
-%autosetup -p1 -n specfile-%{version}
+%autosetup -p1 -n specfile-%{pypi_version}
 # Remove bundled egg-info
 rm -rf specfile.egg-info
 
