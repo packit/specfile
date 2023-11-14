@@ -5,10 +5,10 @@ in a minimal diff.}
 
 
 %global base_version 0.24.1
-%global prerelease   rc1
+%global prerelease   rc2
 
 %global package_version %{base_version}%{?prerelease:~%{prerelease}}
-%global pypi_version    %{base_version}%{?prerelease:-%{prerelease}}
+%global pypi_version    %{base_version}%{?prerelease}
 
 
 Name:           python-specfile
@@ -68,6 +68,9 @@ rm -rf specfile.egg-info
 
 
 %changelog
+* Tue Nov 14 2023 Nikola Forró <nforro@redhat.com> - 0.24.1~rc2-1
+- New upstream release 0.24.1rc2
+
 * Tue Nov 14 2023 Nikola Forró <nforro@redhat.com> - 0.24.1~rc1-1
 - New upstream release 0.24.1-rc1
 

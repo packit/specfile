@@ -1,3 +1,7 @@
+# 0.24.1rc2
+
+- Second pre-release for testing Packit support.
+
 # 0.24.1-rc1
 
 - First pre-release for testing Packit support.
