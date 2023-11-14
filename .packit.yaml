@@ -5,8 +5,8 @@ upstream_project_url: https://github.com/packit/specfile
 issue_repository: https://github.com/packit/specfile
 
 # PEP440
-#prerelease_suffix_pattern: "([.-_]?)(a(lpha)?|b(eta)?|(r)?c|pre(view)?)([.-_]?\\d+)?"
-#prerelease_suffix_macro: prerelease
+prerelease_suffix_pattern: "([.\\-_]?)(a(lpha)?|b(eta)?|(r)?c|pre(view)?)([.\\-_]?\\d+)?"
+prerelease_suffix_macro: prerelease
 
 copy_upstream_release_description: true
 

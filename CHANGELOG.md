@@ -1,3 +1,7 @@
+# 0.24.1-rc1
+
+- First pre-release for testing Packit support.
+
 # 0.24.0
 
 - Improved type annotations for `UserList` subclasses. (#299)
