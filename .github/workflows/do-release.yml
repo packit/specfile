@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Create GitHub release
         run: |
-          VERSION=$(grep -oP '^# \K[0-9.]+([.\-_][a-zA-Z0-9.\-_]+)?' CHANGELOG.md | head -n 1)
+          VERSION=$(grep -oP '^# \K[0-9.]+([.\-_]?[a-zA-Z0-9.\-_]+)?' CHANGELOG.md | head -n 1)
           # Take the lines between the first two headers from CHANGELOG.md,
           # and use it as a description for the new release.
           CHANGELOG=$(awk 'BEGIN { first = 0 } /^# / { if (first == 0) { first = 1 } else { exit } } /^[^#]/ { print $0 }' CHANGELOG.md)
