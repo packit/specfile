@@ -294,8 +294,9 @@ class ValueParser:
         cls,
         value: str,
         modifiable_entities: Set[str],
+        flippable_entities: Set[str],
         context: Optional["Specfile"] = None,
-    ) -> Tuple[Pattern, Template]:
+    ) -> Tuple[Pattern, Template, Set[str]]:
         """
         Parses the given value and constructs a regex that allows matching
         substrings of a different, but similar value to macro substitutions
@@ -317,10 +318,12 @@ class ValueParser:
             value: Value string to parse.
             modifiable_entities: Names of modifiable entities, i.e. local macro definitions
               and tags.
+            flippable_entities: Names of entities that can be enabled/disabled,
+              i.e. macro definitions. Must be a subset of modifiable_entities.
             context: `Specfile` instance that defines the context for macro expansions.
 
         Returns:
-            Tuple in the form of (constructed regex, corresponding template).
+            Tuple in the form of (constructed regex, corresponding template, entities to flip).
         """
 
         def expand(s):
@@ -333,13 +336,39 @@ class ValueParser:
                 return result
             return Macros.expand(s)
 
+        processed_entities = set()
+        entities_to_flip = set()
+
         def flatten(nodes):
             # get rid of conditional macro expansions
+
+            def evaluate(node):
+                if node.name not in modifiable_entities:
+                    return False
+                negative_check = node.prefix.count("!") % 2 > 0
+                defined = expand(f"%{{?{node.name}:1}}")
+                if negative_check and defined or not (negative_check or defined):
+                    if node.name not in flippable_entities:
+                        return False
+                    if (
+                        node.name in processed_entities
+                        and node.name not in entities_to_flip
+                    ):
+                        # it's not possible to flip this one because it was
+                        # already processed without flipping
+                        return False
+                    entities_to_flip.add(node.name)
+                elif node.name in entities_to_flip:
+                    # this one was flipped earlier, so we can't continue
+                    # without flipping
+                    return False
+                processed_entities.add(node.name)
+                return True
+
             result = []
             for node in nodes:
                 if isinstance(node, ConditionalMacroExpansion):
-                    # evaluate the condition
-                    if expand(f"%{node.prefix}{node.name}"):
+                    if evaluate(node):
                         result.append(f"%{{{node.prefix}{node.name}:")
                         result.extend(flatten(node.body))
                         result.append("}")
@@ -394,7 +423,7 @@ class ValueParser:
                 groups = list(grp)
                 if len(groups) > 1:
                     # there are unseparated groups, reliable match is impossible
-                    return re.compile("^$"), Template(escape(value))
+                    return re.compile("^$"), Template(escape(value)), set()
                 _tokens.extend(groups)
         tokens = _tokens
 
@@ -459,4 +488,4 @@ class ValueParser:
                 regex += re.escape(suffix)
                 template += escape(suffix)
         regex += "$"
-        return re.compile(regex), Template(template)
+        return re.compile(regex), Template(template), entities_to_flip

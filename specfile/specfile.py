@@ -706,14 +706,22 @@ class Specfile:
             Updated value. Can be equal to the original value.
         """
 
+        def expand(s):
+            result = self.expand(s, skip_parsing=getattr(expand, "skip_parsing", False))
+            # parse only once
+            expand.skip_parsing = True
+            return result
+
         @dataclass
         class Entity:
             name: str
             value: str
             type: Type
             position: int
+            disabled: bool = False
             locked: bool = False
             updated: bool = False
+            flip_pending: bool = False
 
         protected_regex = re.compile(
             # (?!) doesn't match anything
@@ -726,11 +734,14 @@ class Specfile:
             entities.extend(
                 [
                     Entity(
-                        md.name, md.body, type(md), md.get_position(macro_definitions)
+                        md.name,
+                        md.body,
+                        type(md),
+                        md.get_position(macro_definitions),
+                        md.commented_out or not expand(md.body),
                     )
                     for md in macro_definitions
                     if md.valid
-                    and not md.commented_out
                     and not protected_regex.match(md.name)
                     and not md.name.endswith(")")  # skip macro definitions with options
                 ]
@@ -746,16 +757,28 @@ class Specfile:
         entities.sort(key=lambda e: e.position)
 
         def update(value, requested_value, position):
-            modifiable_entities = {e.name for e in entities if e.position < position}
+            modifiable_entities = {
+                e.name
+                for e in entities
+                if e.position < position and (not e.flip_pending or e.disabled)
+            }
             # tags can be referenced as %{tag} or %{TAG}
             modifiable_entities.update(
                 e.name.upper()
                 for e in entities
                 if e.position < position and e.type == Tag
             )
-            regex, template = ValueParser.construct_regex(
-                value, modifiable_entities, context=self
+            flippable_entities = {
+                e.name
+                for e in entities
+                if e.position < position
+                and e.type == MacroDefinition
+                and not e.flip_pending
+            }
+            regex, template, entities_to_flip = ValueParser.construct_regex(
+                value, modifiable_entities, flippable_entities, context=self
             )
+
             m = regex.match(requested_value)
             if m:
                 d = m.groupdict()
@@ -783,6 +806,9 @@ class Specfile:
                     finally:
                         entity.locked = False
                         entity.updated = True
+                for entity in entities:
+                    if entity.position < position and entity.name in entities_to_flip:
+                        entity.flip_pending = True
                 return template.substitute(d)
             # no match, simply return the requested value
             return requested_value
@@ -790,15 +816,22 @@ class Specfile:
         result = update(value, requested_value, position)
         # synchronize back any changes
         with self.macro_definitions() as macro_definitions:
-            for entity in [
-                e for e in entities if e.updated and e.type == MacroDefinition
-            ]:
+            for entity in entities:
+                if entity.type != MacroDefinition:
+                    continue
                 macro_definition = macro_definitions.get(entity.name, entity.position)
-                macro_definition.body = entity.value
+                if entity.updated:
+                    macro_definition.body = entity.value
+                    macro_definition.commented_out = False
+                elif entity.flip_pending:
+                    macro_definition.commented_out = not entity.disabled
         with self.tags() as tags:
-            for entity in [e for e in entities if e.updated and e.type == Tag]:
+            for entity in entities:
+                if entity.type != Tag:
+                    continue
                 tag = tags.get(entity.name, entity.position)
-                tag.value = entity.value
+                if entity.updated:
+                    tag.value = entity.value
         return result
 
     def update_tag(

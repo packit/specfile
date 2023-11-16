@@ -448,6 +448,19 @@ def test_update_tag(spec_macros):
         assert md.mainver.body == "%{majorver}.%{minorver}.%{patchver}"
         assert md.prever.body == "rc5"
     assert spec.version == "%{package_version}"
+    spec = Specfile(spec_macros)
+    with spec.macro_definitions() as md:
+        md.prever.commented_out = True
+    assert spec.expanded_version == "0.1.2"
+    spec.update_tag("Version", "1.2.3~beta4")
+    with spec.macro_definitions() as md:
+        assert md.majorver.body == "1"
+        assert md.minorver.body == "2"
+        assert md.patchver.body == "3"
+        assert md.mainver.body == "%{majorver}.%{minorver}.%{patchver}"
+        assert md.prever.body == "beta4"
+        assert not md.prever.commented_out
+    assert spec.version == "%{package_version}"
 
 
 def test_multiple_instances(spec_minimal, spec_autosetup):
