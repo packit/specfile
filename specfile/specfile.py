@@ -14,7 +14,11 @@ from specfile.changelog import Changelog, ChangelogEntry, guess_packager
 from specfile.context_management import ContextManager
 from specfile.exceptions import SourceNumberException, SpecfileException
 from specfile.formatter import formatted
-from specfile.macro_definitions import MacroDefinition, MacroDefinitions
+from specfile.macro_definitions import (
+    CommentOutStyle,
+    MacroDefinition,
+    MacroDefinitions,
+)
 from specfile.macros import Macro, Macros
 from specfile.prep import Prep
 from specfile.sections import Section, Sections
@@ -859,3 +863,65 @@ class Specfile:
         )
         with self.tags() as tags:
             getattr(tags, name).value = updated_value
+
+    def update_version(
+        self,
+        version: str,
+        prerelease_suffix_pattern: Optional[str] = None,
+        prerelease_suffix_macro: Optional[str] = None,
+        comment_out_style: CommentOutStyle = CommentOutStyle.DNL,
+    ) -> None:
+        """
+        Updates spec file version.
+
+        If `prerelease_suffix_pattern` is not set, this method is equivalent
+        to calling `update_tag("Version", version)`.
+        If `prerelease_suffix_pattern` is set and the specified version matches it,
+        the detected pre-release suffix is prepended with '~' (any existing delimiter
+        is removed) before updating Version to ensure proper sorting by RPM.
+        If `prerelease_suffix_macro` is also set and such macro definition exists,
+        it is commented out or uncommented accordingly before updating Version.
+
+        Args:
+            version: Version string.
+            prerelease_suffix_pattern: Regular expression specifying recognized
+              pre-release suffixes. The first capturing group must capture the delimiter
+              between base version and pre-release suffix and can be empty in case
+              there is no delimiter.
+            prerelease_suffix_macro: Macro definition that controls whether spec file
+              version is a pre-release and contains the pre-release suffix.
+              To be commented out or uncommented accordingly.
+            comment_out_style: Whether to use `%dnl` macro or swap the leading '%'
+              with '#' to comment out `prerelease_suffix_macro`. Defaults to `%dnl`.
+
+        Raises:
+            SpecfileException if `prerelease_suffix_pattern` is invalid.
+        """
+
+        def update_macro(prerelease_detected):
+            if not prerelease_suffix_macro:
+                return
+            with self.macro_definitions() as macro_definitions:
+                try:
+                    macro = macro_definitions.get(prerelease_suffix_macro)
+                except (IndexError, ValueError):
+                    return
+                if not macro.commented_out:
+                    macro.comment_out_style = comment_out_style
+                macro.commented_out = not prerelease_detected
+
+        def handle_prerelease(version):
+            if not prerelease_suffix_pattern:
+                return version
+            m = re.match(f"^.*?{prerelease_suffix_pattern}$", version, re.IGNORECASE)
+            if not m:
+                update_macro(False)
+                return version
+            try:
+                base_end, suffix_start = m.span(1)
+            except IndexError:
+                raise SpecfileException("Invalid pre-release pattern")
+            update_macro(True)
+            return version[:base_end] + "~" + version[suffix_start:]
+
+        self.update_tag("Version", handle_prerelease(version))
