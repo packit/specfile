@@ -323,7 +323,7 @@ class MacroDefinitions(UserList[MacroDefinition]):
                         bool(dnl or sc == "#"),
                         CommentOutStyle.HASH if sc == "#" else CommentOutStyle.DNL,
                         (ws0, ws1, ws2, ws3),
-                        dnl[4:] if dnl else "",
+                        dnl[4:] if dnl else " ",
                         valid,
                         buffer,
                     )
