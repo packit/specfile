@@ -132,7 +132,9 @@ def process_conditions(
                 result.append((line, branches[-1]))
                 expression = expression[:-1] + line
             branch = (
-                False if not branches[-1] else resolve_expression(keyword, expression)
+                False
+                if not branches[-1]
+                else resolve_expression(keyword, expression, context)
             )
             if keyword.startswith("%el"):
                 branches[-1] = branch
