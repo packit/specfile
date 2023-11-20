@@ -1,6 +1,5 @@
 # 0.25.1rc1
 
-
 # 0.25.0
 
 - There is a new method, `Specfile.update_version()`, that allows updating spec file version even if it is a pre-release. (#317)
