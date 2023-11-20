@@ -1,3 +1,7 @@
+# 0.25.0
+
+- There is a new method, `Specfile.update_version()`, that allows updating spec file version even if it is a pre-release. (#317)
+
 # 0.24.1rc2
 
 - Second pre-release for testing Packit support.
