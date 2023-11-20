@@ -107,6 +107,10 @@ def test_macros_define():
     }
 
 
+@pytest.mark.xfail(
+    rpm.__version__ == "4.16.1.3",
+    reason="rpm 4.16.1.3 doesn't seem to dump builtin macros",
+)
 def test_macros_reinit():
     Macros.reinit(MacroLevel.BUILTIN)
     assert all(m.level == MacroLevel.BUILTIN for m in Macros.dump())
