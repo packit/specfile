@@ -15,6 +15,7 @@ from tests.constants import (
     SPEC_MINIMAL,
     SPEC_MULTIPLE_SOURCES,
     SPEC_PATCHLIST,
+    SPEC_PRERELEASE,
     SPEC_RPMAUTOSPEC,
     SPEC_SHELL_EXPANSIONS,
     SPEC_TRADITIONAL,
@@ -75,6 +76,13 @@ def spec_includes(tmp_path):
 def spec_macros(tmp_path):
     destination = tmp_path / "spec_macros"
     shutil.copytree(SPEC_MACROS, destination)
+    return destination / SPECFILE
+
+
+@pytest.fixture(scope="function")
+def spec_prerelease(tmp_path):
+    destination = tmp_path / "spec_prerelease"
+    shutil.copytree(SPEC_PRERELEASE, destination)
     return destination / SPECFILE
 
 

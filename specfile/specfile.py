@@ -14,7 +14,11 @@ from specfile.changelog import Changelog, ChangelogEntry, guess_packager
 from specfile.context_management import ContextManager
 from specfile.exceptions import SourceNumberException, SpecfileException
 from specfile.formatter import formatted
-from specfile.macro_definitions import MacroDefinition, MacroDefinitions
+from specfile.macro_definitions import (
+    CommentOutStyle,
+    MacroDefinition,
+    MacroDefinitions,
+)
 from specfile.macros import Macro, Macros
 from specfile.prep import Prep
 from specfile.sections import Section, Sections
@@ -706,14 +710,22 @@ class Specfile:
             Updated value. Can be equal to the original value.
         """
 
+        def expand(s):
+            result = self.expand(s, skip_parsing=getattr(expand, "skip_parsing", False))
+            # parse only once
+            expand.skip_parsing = True
+            return result
+
         @dataclass
         class Entity:
             name: str
             value: str
             type: Type
             position: int
+            disabled: bool = False
             locked: bool = False
             updated: bool = False
+            flip_pending: bool = False
 
         protected_regex = re.compile(
             # (?!) doesn't match anything
@@ -726,11 +738,14 @@ class Specfile:
             entities.extend(
                 [
                     Entity(
-                        md.name, md.body, type(md), md.get_position(macro_definitions)
+                        md.name,
+                        md.body,
+                        type(md),
+                        md.get_position(macro_definitions),
+                        md.commented_out or not expand(md.body),
                     )
                     for md in macro_definitions
                     if md.valid
-                    and not md.commented_out
                     and not protected_regex.match(md.name)
                     and not md.name.endswith(")")  # skip macro definitions with options
                 ]
@@ -746,16 +761,28 @@ class Specfile:
         entities.sort(key=lambda e: e.position)
 
         def update(value, requested_value, position):
-            modifiable_entities = {e.name for e in entities if e.position < position}
+            modifiable_entities = {
+                e.name
+                for e in entities
+                if e.position < position and (not e.flip_pending or e.disabled)
+            }
             # tags can be referenced as %{tag} or %{TAG}
             modifiable_entities.update(
                 e.name.upper()
                 for e in entities
                 if e.position < position and e.type == Tag
             )
-            regex, template = ValueParser.construct_regex(
-                value, modifiable_entities, context=self
+            flippable_entities = {
+                e.name
+                for e in entities
+                if e.position < position
+                and e.type == MacroDefinition
+                and not e.flip_pending
+            }
+            regex, template, entities_to_flip = ValueParser.construct_regex(
+                value, modifiable_entities, flippable_entities, context=self
             )
+
             m = regex.match(requested_value)
             if m:
                 d = m.groupdict()
@@ -783,6 +810,9 @@ class Specfile:
                     finally:
                         entity.locked = False
                         entity.updated = True
+                for entity in entities:
+                    if entity.position < position and entity.name in entities_to_flip:
+                        entity.flip_pending = True
                 return template.substitute(d)
             # no match, simply return the requested value
             return requested_value
@@ -790,15 +820,22 @@ class Specfile:
         result = update(value, requested_value, position)
         # synchronize back any changes
         with self.macro_definitions() as macro_definitions:
-            for entity in [
-                e for e in entities if e.updated and e.type == MacroDefinition
-            ]:
+            for entity in entities:
+                if entity.type != MacroDefinition:
+                    continue
                 macro_definition = macro_definitions.get(entity.name, entity.position)
-                macro_definition.body = entity.value
+                if entity.updated:
+                    macro_definition.body = entity.value
+                    macro_definition.commented_out = False
+                elif entity.flip_pending:
+                    macro_definition.commented_out = not entity.disabled
         with self.tags() as tags:
-            for entity in [e for e in entities if e.updated and e.type == Tag]:
+            for entity in entities:
+                if entity.type != Tag:
+                    continue
                 tag = tags.get(entity.name, entity.position)
-                tag.value = entity.value
+                if entity.updated:
+                    tag.value = entity.value
         return result
 
     def update_tag(
@@ -826,3 +863,65 @@ class Specfile:
         )
         with self.tags() as tags:
             getattr(tags, name).value = updated_value
+
+    def update_version(
+        self,
+        version: str,
+        prerelease_suffix_pattern: Optional[str] = None,
+        prerelease_suffix_macro: Optional[str] = None,
+        comment_out_style: CommentOutStyle = CommentOutStyle.DNL,
+    ) -> None:
+        """
+        Updates spec file version.
+
+        If `prerelease_suffix_pattern` is not set, this method is equivalent
+        to calling `update_tag("Version", version)`.
+        If `prerelease_suffix_pattern` is set and the specified version matches it,
+        the detected pre-release suffix is prepended with '~' (any existing delimiter
+        is removed) before updating Version to ensure proper sorting by RPM.
+        If `prerelease_suffix_macro` is also set and such macro definition exists,
+        it is commented out or uncommented accordingly before updating Version.
+
+        Args:
+            version: Version string.
+            prerelease_suffix_pattern: Regular expression specifying recognized
+              pre-release suffixes. The first capturing group must capture the delimiter
+              between base version and pre-release suffix and can be empty in case
+              there is no delimiter.
+            prerelease_suffix_macro: Macro definition that controls whether spec file
+              version is a pre-release and contains the pre-release suffix.
+              To be commented out or uncommented accordingly.
+            comment_out_style: Whether to use `%dnl` macro or swap the leading '%'
+              with '#' to comment out `prerelease_suffix_macro`. Defaults to `%dnl`.
+
+        Raises:
+            SpecfileException if `prerelease_suffix_pattern` is invalid.
+        """
+
+        def update_macro(prerelease_detected):
+            if not prerelease_suffix_macro:
+                return
+            with self.macro_definitions() as macro_definitions:
+                try:
+                    macro = macro_definitions.get(prerelease_suffix_macro)
+                except (IndexError, ValueError):
+                    return
+                if not macro.commented_out:
+                    macro.comment_out_style = comment_out_style
+                macro.commented_out = not prerelease_detected
+
+        def handle_prerelease(version):
+            if not prerelease_suffix_pattern:
+                return version
+            m = re.match(f"^.*?{prerelease_suffix_pattern}$", version, re.IGNORECASE)
+            if not m:
+                update_macro(False)
+                return version
+            try:
+                base_end, suffix_start = m.span(1)
+            except IndexError:
+                raise SpecfileException("Invalid pre-release pattern")
+            update_macro(True)
+            return version[:base_end] + "~" + version[suffix_start:]
+
+        self.update_tag("Version", handle_prerelease(version))
