@@ -20,10 +20,12 @@ jobs:
         with:
           fetch-depth: 0
       - name: Prepare release content
-        uses: packit/prepare-release@v1
+        uses: packit/prepare-release@v2
         with:
           version: ${{ inputs.version }}
           specfiles: fedora/python-specfile.spec,epel8/python-specfile.spec
+          prerelease_suffix_pattern: ([.\\-_]?)(a(lpha)?|b(eta)?|r?c|pre(view)?)([.\\-_]?\\d+)?
+          prerelease_suffix_macro: prerelease
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
         with:
