@@ -1,3 +1,7 @@
+# 0.25.1rc1
+
+- Third pre-release for testing Packit support.
+
 # 0.25.0
 
 - There is a new method, `Specfile.update_version()`, that allows updating spec file version even if it is a pre-release. (#317)
