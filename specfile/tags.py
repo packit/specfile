@@ -441,11 +441,35 @@ class Tags(UserList[Tag]):
         return self.data[self.find(name, position)]
 
     def find(self, name: str, position: Optional[int] = None) -> int:
+        """
+        Finds a tag with the specified name. If position is not specified,
+        returns the first valid matching tag. If there is no such tag, returns
+        the first match, if any. If position is specified and there is a matching
+        tag at that position, it is returned, otherwise ValueError is raised.
+
+        Args:
+            name: Name of the tag to find.
+            position: Optional position in the spec file.
+
+        Returns:
+            Index of the matching tag.
+
+        Raises:
+            ValueError if there is no match.
+        """
+        first_match = None
         for i, tag in enumerate(self.data):
             if tag.name.capitalize() == name.capitalize():
-                if position is None or tag.get_position(self) == position:
+                if position is None:
+                    if first_match is None:
+                        first_match = i
+                    if tag.valid:
+                        return i
+                elif tag.get_position(self) == position:
                     return i
-        raise ValueError
+        if first_match is None or position is not None:
+            raise ValueError
+        return first_match
 
     def insert(self, i: int, item: Tag) -> None:
         if i > len(self.data):
