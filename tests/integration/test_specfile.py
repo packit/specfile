@@ -575,7 +575,7 @@ def test_parse_if_necessary(spec_macros):
     rpm.__version__ < "4.16",
     reason="condition expression evaluation requires rpm 4.16 or higher",
 )
-def test_update_version(spec_prerelease):
+def test_update_version(spec_prerelease, spec_conditionalized_version):
     spec = Specfile(spec_prerelease)
     prerelease_suffix_pattern = r"(-)rc\d+"
     prerelease_suffix_macro = "prerel"
@@ -609,3 +609,20 @@ def test_update_version(spec_prerelease):
         assert md.prerel.body == "rc2"
         assert md.prerel.commented_out
     assert spec.version == "%{pkgver}"
+    spec = Specfile(spec_conditionalized_version)
+    version = "0.1.3"
+    assert spec.version == "%{upstream_version}"
+    spec.update_version(version, prerelease_suffix_pattern)
+    with spec.macro_definitions() as md:
+        assert md.upstream_version.body == version
+    assert spec.version == "%{upstream_version}"
+    assert spec.expanded_version == version
+    spec = Specfile(spec_conditionalized_version)
+    with spec.macro_definitions() as md:
+        md.commit.commented_out = False
+    assert spec.version == "%{upstream_version}^git%{shortcommit}"
+    spec.update_version(version, prerelease_suffix_pattern)
+    with spec.macro_definitions() as md:
+        assert md.upstream_version.body != version
+    assert spec.version == version
+    assert spec.expanded_version == version

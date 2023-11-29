@@ -18,5 +18,6 @@ SPEC_MULTIPLE_SOURCES = DATA_DIR / "spec_multiple_sources"
 SPEC_COMMENTED_PATCHES = DATA_DIR / "spec_commented_patches"
 SPEC_SHELL_EXPANSIONS = DATA_DIR / "spec_shell_expansions"
 SPEC_CONDITIONALIZED_CHANGELOG = DATA_DIR / "spec_conditionalized_changelog"
+SPEC_CONDITIONALIZED_VERSION = DATA_DIR / "spec_conditionalized_version"
 
 SPECFILE = "test.spec"
