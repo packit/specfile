@@ -10,6 +10,7 @@ from tests.constants import (
     SPEC_AUTOSETUP,
     SPEC_COMMENTED_PATCHES,
     SPEC_CONDITIONALIZED_CHANGELOG,
+    SPEC_CONDITIONALIZED_VERSION,
     SPEC_INCLUDES,
     SPEC_MACROS,
     SPEC_MINIMAL,
@@ -111,4 +112,11 @@ def spec_shell_expansions(tmp_path):
 def spec_conditionalized_changelog(tmp_path):
     specfile_path = tmp_path / SPECFILE
     shutil.copyfile(SPEC_CONDITIONALIZED_CHANGELOG / SPECFILE, specfile_path)
+    return specfile_path
+
+
+@pytest.fixture(scope="function")
+def spec_conditionalized_version(tmp_path):
+    specfile_path = tmp_path / SPECFILE
+    shutil.copyfile(SPEC_CONDITIONALIZED_VERSION / SPECFILE, specfile_path)
     return specfile_path

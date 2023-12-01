@@ -219,11 +219,36 @@ class MacroDefinitions(UserList[MacroDefinition]):
         return self.data[self.find(name, position)]
 
     def find(self, name: str, position: Optional[int] = None) -> int:
+        """
+        Finds a macro definition with the specified name. If position is not specified,
+        returns the first valid matching macro definiton. If there is no such macro
+        definition, returns the first match, if any. If position is specified and there is
+        a matching macro definition at that position, it is returned, otherwise
+        ValueError is raised.
+
+        Args:
+            name: Name of the tag to find.
+            position: Optional position in the spec file.
+
+        Returns:
+            Index of the matching tag.
+
+        Raises:
+            ValueError if there is no match.
+        """
+        first_match = None
         for i, macro_definition in enumerate(self.data):
             if macro_definition.name == name:
-                if position is None or macro_definition.get_position(self) == position:
+                if position is None:
+                    if first_match is None:
+                        first_match = i
+                    if macro_definition.valid:
+                        return i
+                elif macro_definition.get_position(self) == position:
                     return i
-        raise ValueError
+        if first_match is None or position is not None:
+            raise ValueError
+        return first_match
 
     @classmethod
     def _parse(
