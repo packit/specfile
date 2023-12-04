@@ -354,7 +354,9 @@ class Specfile:
             try:
                 yield Sources(
                     tags,
-                    list(zip(*sourcelists))[1] if sourcelists else [],
+                    cast(List[Sourcelist], list(zip(*sourcelists))[1])
+                    if sourcelists
+                    else [],
                     allow_duplicates,
                     default_to_implicit_numbering,
                     default_source_number_digits,
@@ -391,7 +393,9 @@ class Specfile:
             try:
                 yield Patches(
                     tags,
-                    list(zip(*patchlists))[1] if patchlists else [],
+                    cast(List[Sourcelist], list(zip(*patchlists))[1])
+                    if patchlists
+                    else [],
                     allow_duplicates,
                     default_to_implicit_numbering,
                     default_source_number_digits,
