@@ -1,3 +1,7 @@
+# 0.26.0
+
+- When accessing tags or macro definitions by name, specfile now takes validity into account when looking for the best match. For example if there are two instances of `Version` tag, one in the true and one in the false branch of a condition, `Specfile.version` will always access the one that is in the true branch. (#328)
+
 # 0.25.1rc1
 
 - Third pre-release for testing Packit support.
