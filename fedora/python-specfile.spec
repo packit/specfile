@@ -8,7 +8,7 @@ in a minimal diff.}
 
 
 %global base_version 0.26.0
-#%global prerelease   rc1
+#global prerelease   rc1
 
 %global package_version %{base_version}%{?prerelease:~%{prerelease}}
 %global pypi_version    %{base_version}%{?prerelease}
