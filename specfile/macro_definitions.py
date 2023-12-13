@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 class CommentOutStyle(Enum):
     DNL = auto()
     HASH = auto()
+    OTHER = auto()
 
 
 class MacroDefinition:
@@ -30,6 +31,7 @@ class MacroDefinition:
         comment_out_style: CommentOutStyle,
         whitespace: Tuple[str, str, str, str],
         dnl_whitespace: str = "",
+        comment_prefix: str = "",
         valid: bool = True,
         preceding_lines: Optional[List[str]] = None,
     ) -> None:
@@ -40,6 +42,7 @@ class MacroDefinition:
         self.comment_out_style = comment_out_style
         self._whitespace = whitespace
         self._dnl_whitespace = dnl_whitespace
+        self._comment_prefix = comment_prefix
         self.valid = valid
         self._preceding_lines = (
             preceding_lines.copy() if preceding_lines is not None else []
@@ -56,6 +59,7 @@ class MacroDefinition:
             and self.comment_out_style == other.comment_out_style
             and self._whitespace == other._whitespace
             and self._dnl_whitespace == other._dnl_whitespace
+            and self._comment_prefix == other._comment_prefix
             and self._preceding_lines == other._preceding_lines
         )
 
@@ -64,20 +68,26 @@ class MacroDefinition:
         return (
             f"MacroDefinition({self.name!r}, {self.body!r}, {self.is_global!r}, "
             f"{self.commented_out!r}, {self.comment_out_style!r}, {self._whitespace!r}, "
+            f"{self._dnl_whitespace!r}, {self._comment_prefix!r}, "
             f"{self.valid!r}, {self._preceding_lines!r})"
         )
 
     def __str__(self) -> str:
         ws = self._whitespace
         dnl = ""
+        pre = ""
         sc = "%"
         if self.commented_out:
             if self.comment_out_style is CommentOutStyle.DNL:
                 dnl = f"%dnl{self._dnl_whitespace}"
+            elif self.comment_out_style is CommentOutStyle.OTHER:
+                pre = self._comment_prefix
             elif self.comment_out_style is CommentOutStyle.HASH:
                 sc = "#"
         macro = "global" if self.is_global else "define"
-        return f"{ws[0]}{dnl}{sc}{macro}{ws[1]}{self.name}{ws[2]}{self.body}{ws[3]}"
+        return (
+            f"{ws[0]}{dnl}{pre}{sc}{macro}{ws[1]}{self.name}{ws[2]}{self.body}{ws[3]}"
+        )
 
     def get_position(self, container: "MacroDefinitions") -> int:
         """
@@ -97,10 +107,13 @@ class MacroDefinition:
         result = self._preceding_lines.copy()
         ws = self._whitespace
         dnl = ""
+        pre = ""
         sc = "%"
         if self.commented_out:
             if self.comment_out_style is CommentOutStyle.DNL:
                 dnl = f"%dnl{self._dnl_whitespace}"
+            elif self.comment_out_style is CommentOutStyle.OTHER:
+                pre = self._comment_prefix
             elif self.comment_out_style is CommentOutStyle.HASH:
                 sc = "#"
         macro = "global" if self.is_global else "define"
@@ -109,7 +122,7 @@ class MacroDefinition:
             body[-1] += ws[3]
         else:
             body = [ws[3]]
-        result.append(f"{ws[0]}{dnl}{sc}{macro}{ws[1]}{self.name}{ws[2]}{body[0]}")
+        result.append(f"{ws[0]}{dnl}{pre}{sc}{macro}{ws[1]}{self.name}{ws[2]}{body[0]}")
         result.extend(body[1:])
         return result
 
@@ -303,16 +316,16 @@ class MacroDefinitions(UserList[MacroDefinition]):
         md_regex = re.compile(
             r"""
             ^
-            (\s*)                 # optional preceding whitespace
-            (%dnl\s+)?            # optional DNL prefix
-            ((?(2)%|(?:%|\#)))    # starting character
-            (global|define)       # scope-defining macro definition
+            (\s*)                       # optional preceding whitespace
+            (%dnl\s+)?                  # optional DNL prefix
+            ((?(2)%|(?:%|\#(?:.*?%)?))) # starting character with optional comment prefix
+            (global|define)             # scope-defining macro definition
             (\s+)
-            (\w+(?:\(.*?\))?)     # macro name with optional arguments in parentheses
+            (\w+(?:\(.*?\))?)           # macro name with optional arguments in parentheses
             (\s+)
-            (.*?)                 # macro body
-            (\s*|\\)              # optional following whitespace or a backslash indicating
-                                  # that the macro body continues on the next line
+            (.*?)                       # macro body
+            (\s*|\\)                    # optional following whitespace or a backslash indicating
+                                        # that the macro body continues on the next line
             $
             """,
             re.VERBOSE,
@@ -345,10 +358,15 @@ class MacroDefinitions(UserList[MacroDefinition]):
                         name,
                         body,
                         macro == "global",
-                        bool(dnl or sc == "#"),
-                        CommentOutStyle.HASH if sc == "#" else CommentOutStyle.DNL,
+                        bool(dnl or sc.startswith("#")),
+                        CommentOutStyle.HASH
+                        if sc == "#"
+                        else CommentOutStyle.OTHER
+                        if sc.startswith("#")
+                        else CommentOutStyle.DNL,
                         (ws0, ws1, ws2, ws3),
                         dnl[4:] if dnl else " ",
+                        sc[:-1] if len(sc) > 1 else "",
                         valid,
                         buffer,
                     )
