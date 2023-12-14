@@ -93,6 +93,7 @@ def test_parse():
             "",
             "%dnl %global pre         a1",
             "#global prerel      beta2",
+            "# %global prerelease pre3",
             "",
             "Name:           test",
             "Version:        0.1.0",
@@ -115,8 +116,11 @@ def test_parse():
     assert macro_definitions[4].name == "prerel"
     assert macro_definitions[4].commented_out
     assert macro_definitions[4].comment_out_style is CommentOutStyle.HASH
-    assert macro_definitions[5].name == "desc(x)"
-    assert macro_definitions[5].body == (
+    assert macro_definitions[5].name == "prerelease"
+    assert macro_definitions[5].commented_out
+    assert macro_definitions[5].comment_out_style is CommentOutStyle.OTHER
+    assert macro_definitions[6].name == "desc(x)"
+    assert macro_definitions[6].body == (
         "Test spec file containing several \\\n"
         "macro definitions in various formats (%?1)"
     )
@@ -163,6 +167,7 @@ def test_get_raw_data():
                 CommentOutStyle.DNL,
                 ("", " ", "         ", ""),
                 " ",
+                "",
                 True,
                 [""],
             ),
@@ -175,12 +180,23 @@ def test_get_raw_data():
                 ("", " ", "      ", ""),
             ),
             MacroDefinition(
+                "prerelease",
+                "pre3",
+                True,
+                True,
+                CommentOutStyle.OTHER,
+                ("", " ", " ", ""),
+                "",
+                "# ",
+            ),
+            MacroDefinition(
                 "desc(x)",
                 "Test spec file containing several \\\nmacro definitions in various formats (%?1)",
                 False,
                 False,
                 CommentOutStyle.DNL,
                 ("", " ", " ", ""),
+                "",
                 "",
                 True,
                 [
@@ -200,6 +216,7 @@ def test_get_raw_data():
                 CommentOutStyle.DNL,
                 ("", " ", " ", ""),
                 "",
+                "",
                 True,
                 [""],
             ),
@@ -212,6 +229,7 @@ def test_get_raw_data():
         "",
         "%dnl %global pre         a1",
         "#global prerel      beta2",
+        "# %global prerelease pre3",
         "",
         "Name:           test",
         "Version:        0.1.0",
