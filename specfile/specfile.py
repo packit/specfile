@@ -783,12 +783,16 @@ class Specfile:
                 and e.type == MacroDefinition
                 and not e.flip_pending
             }
-            regex, template, entities_to_flip = ValueParser.construct_regex(
-                value, modifiable_entities, flippable_entities, context=self
-            )
 
-            m = regex.match(requested_value)
-            if m:
+            # in case the value doesn't match after trying with flippable entities
+            # do a second pass without them
+            for flippable_ents in (flippable_entities, set()):
+                regex, template, entities_to_flip = ValueParser.construct_regex(
+                    value, modifiable_entities, flippable_ents, context=self
+                )
+                m = regex.match(requested_value)
+                if not m:
+                    continue
                 d = m.groupdict()
                 for grp, val in d.items():
                     if grp.startswith(SUBSTITUTION_GROUP_PREFIX):

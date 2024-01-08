@@ -575,7 +575,9 @@ def test_parse_if_necessary(spec_macros):
     rpm.__version__ < "4.16",
     reason="condition expression evaluation requires rpm 4.16 or higher",
 )
-def test_update_version(spec_prerelease, spec_conditionalized_version):
+def test_update_version(
+    spec_prerelease, spec_prerelease2, spec_conditionalized_version
+):
     spec = Specfile(spec_prerelease)
     prerelease_suffix_pattern = r"(-)rc\d+"
     prerelease_suffix_macro = "prerel"
@@ -608,6 +610,39 @@ def test_update_version(spec_prerelease, spec_conditionalized_version):
         assert md.basever.body == "%{majorver}.%{minorver}.%{patchver}"
         assert md.prerel.body == "rc2"
         assert md.prerel.commented_out
+    assert spec.version == "%{pkgver}"
+    spec = Specfile(spec_prerelease2)
+    prerelease_suffix_pattern = r"(-)rc\d+"
+    prerelease_suffix_macro = "prerel"
+    spec.update_version("0.1.2", prerelease_suffix_pattern, prerelease_suffix_macro)
+    with spec.macro_definitions() as md:
+        assert md.majorver.body == "0"
+        assert md.minorver.body == "1"
+        assert md.patchver.body == "2"
+        assert md.basever.body == "%{majorver}.%{minorver}.%{patchver}"
+        assert md.prerel.body == "rc2"
+        assert md.prerel.commented_out
+    assert spec.version == "%{pkgver}"
+    spec.update_version("0.1.3-rc1", prerelease_suffix_pattern, prerelease_suffix_macro)
+    with spec.macro_definitions() as md:
+        assert md.majorver.body == "0"
+        assert md.minorver.body == "1"
+        assert md.patchver.body == "3"
+        assert md.basever.body == "%{majorver}.%{minorver}.%{patchver}"
+        assert md.prerel.body == "rc1"
+        assert not md.prerel.commented_out
+    assert spec.version == "%{pkgver}"
+    spec = Specfile(spec_prerelease2)
+    with spec.macro_definitions() as md:
+        md.prerel.commented_out = True
+    spec.update_version("0.1.3-rc1", prerelease_suffix_pattern)
+    with spec.macro_definitions() as md:
+        assert md.majorver.body == "0"
+        assert md.minorver.body == "1"
+        assert md.patchver.body == "3"
+        assert md.basever.body == "%{majorver}.%{minorver}.%{patchver}"
+        assert md.prerel.body == "rc1"
+        assert not md.prerel.commented_out
     assert spec.version == "%{pkgver}"
     spec = Specfile(spec_conditionalized_version)
     version = "0.1.3"
