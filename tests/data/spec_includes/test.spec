@@ -12,8 +12,10 @@ Source3:        description1.inc
 Source4:        description2.inc
 Source5:        macros1.inc
 Source6:        macros2.inc
+Source7:        sources.inc
 
 %include %{SOURCE1}
+%include %{SOURCE7}
 
 Provides:       %(sed "s/$/-%{version}/" %{SOURCE2} | tr "\n" " ")
 

@@ -489,6 +489,23 @@ def test_includes(spec_includes):
         assert sections.description[1] == "%(cat %{S:4})"
     assert spec.parsed_sections.description[0] == "Test package"
     assert spec.parsed_sections.description[1] == "Additional description"
+
+    actual_sources = [
+        tag_source.expanded_filename for tag_source in spec.sources().content
+    ]
+    expected_sources = [
+        "test-0.1.tar.xz",
+        "patches.inc",
+        "provides.inc",
+        "description1.inc",
+        "description2.inc",
+        "macros1.inc",
+        "macros2.inc",
+        "sources.inc",
+        "other_source.txt",
+    ]
+    assert actual_sources == expected_sources
+
     for inc in ["patches.inc", "provides.inc", "description1.inc", "description2.inc"]:
         (spec.sourcedir / inc).unlink()
     with pytest.raises(RPMException):
