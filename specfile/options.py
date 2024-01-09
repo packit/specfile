@@ -67,13 +67,10 @@ class Positionals(collections.abc.MutableSequence):
 
     def __init__(self, options: "Options") -> None:
         """
-        Constructs a `Positionals` object.
+        Initializes a positionals object.
 
         Args:
-            options: Options instance this object is tied with.
-
-        Returns:
-            Constructed instance of `Positionals` class.
+            options: `Options` instance this object is tied with.
         """
         self._options = options
 
@@ -179,7 +176,7 @@ class Positionals(collections.abc.MutableSequence):
 
     def insert(self, i: int, value: Union[int, str]) -> None:
         """
-        Inserts a new positional argument at a specified index.
+        Inserts a new positional argument at the specified index.
 
         Args:
             i: Requested index.
@@ -214,9 +211,9 @@ class Options(collections.abc.MutableMapping):
 
     Attributes:
         optstring: getopt-like option string containing recognized option characters.
-          Option characters are ASCII letters, upper or lower-case.
-          If such a character is followed by a colon, the option
-          requires an argument.
+            Option characters are ASCII letters, upper or lower-case.
+            If such a character is followed by a colon, the option
+            requires an argument.
         defaults: Dict specifying default arguments to options.
     """
 
@@ -227,18 +224,15 @@ class Options(collections.abc.MutableMapping):
         defaults: Optional[Dict[str, Union[bool, int, str]]] = None,
     ) -> None:
         """
-        Constructs a `Options` object.
+        Initializes an options object.
 
         Args:
             tokens: List of tokens in an option string.
             optstring: String containing recognized option characters.
-              Option characters are ASCII letters, upper or lower-case.
-              If such a character is followed by a colon, the option
-              requires an argument.
+                Option characters are ASCII letters, upper or lower-case.
+                If such a character is followed by a colon, the option
+                requires an argument.
             defaults: Dict specifying default arguments to options.
-
-        Returns:
-            Constructed instance of `Options` class.
         """
         self._tokens = tokens.copy()
         self.optstring = optstring or ""
@@ -259,7 +253,7 @@ class Options(collections.abc.MutableMapping):
             name: Name of the option.
 
         Returns:
-            True if the option is recognized, otherwise False.
+            `True` if the option is recognized, otherwise `False`.
         """
         try:
             # use parent's __getattribute__() so this method can be called from __getattr__()
@@ -276,10 +270,10 @@ class Options(collections.abc.MutableMapping):
             option: Name of the option.
 
         Returns:
-            True if the option requires an argument, otherwise False.
+            `True` if the option requires an argument, otherwise `False`.
 
         Raises:
-            ValueError if the specified option is not valid.
+            ValueError: If the specified option is not valid.
         """
         i = self.optstring.index(option) + 1
         return i < len(self.optstring) and self.optstring[i] == ":"
@@ -294,7 +288,7 @@ class Options(collections.abc.MutableMapping):
         Returns:
             Tuple of indices where the first is the index of a token matching
             the option and the second is the index of a token matching
-            its argument, or None if there is no match.
+            its argument, or `None` if there is no match.
         """
         option = f"-{name}"
         for i, token in reversed(list(enumerate(self._tokens))):
@@ -464,7 +458,7 @@ class Options(collections.abc.MutableMapping):
         """
         Tokenizes an option string.
 
-        Follows the same rules as poptParseArgvString() that is used by RPM.
+        Follows the same rules as `poptParseArgvString()` that is used by RPM.
 
         Args:
             option_string: Option string.
@@ -473,7 +467,7 @@ class Options(collections.abc.MutableMapping):
             List of tokens.
 
         Raises:
-            OptionsException if the option string is untokenizable.
+            OptionsException: If the option string is untokenizable.
         """
         result: List[Token] = []
         token = ""

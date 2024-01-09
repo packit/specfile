@@ -43,7 +43,7 @@ class StringLiteral(Node):
 
 
 class ShellExpansion(Node):
-    """Node representing shell expansion, e.g. %(whoami)."""
+    """Node representing shell expansion, e.g. _%(whoami)_."""
 
     def __init__(self, body: str) -> None:
         self.body = body
@@ -64,14 +64,14 @@ class ShellExpansion(Node):
 
 
 class ExpressionExpansion(ShellExpansion):
-    """Node representing expression expansion, e.g. %[1+1]."""
+    """Node representing expression expansion, e.g. _%[1+1]_."""
 
     def __str__(self) -> str:
         return f"%[{self.body}]"
 
 
 class MacroSubstitution(Node):
-    """Node representing macro substitution, e.g. %version."""
+    """Node representing macro substitution, e.g. _%version_."""
 
     def __init__(self, body: str) -> None:
         tokens = re.split(r"([?!]*)", body, maxsplit=1)
@@ -94,7 +94,7 @@ class MacroSubstitution(Node):
 
 
 class EnclosedMacroSubstitution(Node):
-    """Node representing macro substitution enclosed in brackets, e.g. %{?dist}."""
+    """Node representing macro substitution enclosed in brackets, e.g. _%{?dist}_."""
 
     def __init__(self, body: str) -> None:
         tokens = re.split(r"([?!]*)", body, maxsplit=1)
@@ -126,7 +126,7 @@ class EnclosedMacroSubstitution(Node):
 
 
 class ConditionalMacroExpansion(Node):
-    """Node representing conditional macro expansion, e.g. %{?prerel:0.}."""
+    """Node representing conditional macro expansion, e.g. _%{?prerel:0.}_."""
 
     def __init__(self, condition: str, body: List[Node]) -> None:
         tokens = re.split(r"([?!]*)", condition, maxsplit=1)
@@ -157,7 +157,7 @@ class ConditionalMacroExpansion(Node):
 
 
 class BuiltinMacro(Node):
-    """Node representing built-in macro, e.g. %{quote:Ancient Greek}."""
+    """Node representing built-in macro, e.g. _%{quote:Ancient Greek}_."""
 
     def __init__(self, name: str, body: str) -> None:
         self.name = name
@@ -200,7 +200,7 @@ class ValueParser:
         """
         Parses a value into a list of nodes.
 
-        Follows the parsing logic of expandMacro() from rpm/rpmio/macro.c in RPM source.
+        Follows the parsing logic of `expandMacro()` from _rpm/rpmio/macro.c_ in RPM source.
 
         Args:
             value: Value string to parse.
@@ -209,7 +209,7 @@ class ValueParser:
             Parsed value as a list of nodes.
 
         Raises:
-            UnterminatedMacroException if there is a macro that doesn't end.
+            UnterminatedMacroException: If there is a macro that doesn't end.
         """
         pairs = {"(": ")", "{": "}", "[": "]"}
 
@@ -317,9 +317,9 @@ class ValueParser:
         Args:
             value: Value string to parse.
             modifiable_entities: Names of modifiable entities, i.e. local macro definitions
-              and tags.
+                and tags.
             flippable_entities: Names of entities that can be enabled/disabled,
-              i.e. macro definitions. Must be a subset of modifiable_entities.
+                i.e. macro definitions. Must be a subset of modifiable_entities.
             context: `Specfile` instance that defines the context for macro expansions.
 
         Returns:

@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 class SourcelistEntry:
     """
-    Class that represents a spec file source/patch in a %sourcelist/%patchlist.
+    Class that represents a spec file source/patch in a _%sourcelist_/_%patchlist_.
 
     Attributes:
         location: Literal location of the source/patch as stored in the spec file.
@@ -35,16 +35,13 @@ class SourcelistEntry:
         context: Optional["Specfile"] = None,
     ) -> None:
         """
-        Constructs a `SourceListEntry` object.
+        Initializes a sourcelist entry object.
 
         Args:
             location: Literal location of the source/patch as stored in the spec file.
             comments: List of comments associated with the source/patch.
             valid: Whether the entry is not located in a false branch of a condition.
             context: `Specfile` instance that defines the context for macro expansions.
-
-        Returns:
-            Constructed instance of `SourceListEntry` class.
         """
         self.location = location
         self.comments = comments.copy()
@@ -83,7 +80,7 @@ class SourcelistEntry:
 
 class Sourcelist(UserList[SourcelistEntry]):
     """
-    Class that represents entries in a %sourcelist/%patchlist section.
+    Class that represents entries in a _%sourcelist_/_%patchlist_ section.
 
     Attributes:
         data: List of individual sources/patches.
@@ -95,14 +92,11 @@ class Sourcelist(UserList[SourcelistEntry]):
         remainder: Optional[List[str]] = None,
     ) -> None:
         """
-        Constructs a `Sourcelist` object.
+        Initializes a sourcelist object.
 
         Args:
             data: List of individual sources/patches.
             remainder: Leftover lines in a section that can't be parsed into sources/patches.
-
-        Returns:
-            Constructed instance of `Sourcelist` class.
         """
         super().__init__()
         if data is not None:
@@ -138,11 +132,11 @@ class Sourcelist(UserList[SourcelistEntry]):
         Parses a section into sources/patches.
 
         Args:
-            section: %sourcelist/%patchlist section.
+            section: _%sourcelist_/_%patchlist_ section.
             context: `Specfile` instance that defines the context for macro expansions.
 
         Returns:
-            Constructed instance of `Sourcelist` class.
+            New instance of `Sourcelist` class.
         """
         macro_definitions = MacroDefinitions.parse(list(section))
         lines = process_conditions(list(section), macro_definitions, context)

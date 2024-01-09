@@ -19,9 +19,9 @@ def resolve_expression(
     Resolves a RPM expression.
 
     Args:
-        keyword: Condition keyword, e.g. `%if` or `%ifarch`.
+        keyword: Condition keyword, e.g. _%if_ or _%ifarch_.
         expression: Expression string or a whitespace-delimited list
-          of arches/OSes in case keyword is a variant of `%ifarch`/`%ifos`.
+            of arches/OSes in case keyword is a variant of _%ifarch_/_%ifos_.
         context: `Specfile` instance that defines the context for macro expansions.
 
     Returns:
@@ -72,7 +72,7 @@ def process_conditions(
     Args:
         lines: List of lines in a spec file.
         macro_definitions: Parsed macro definitions to be used to prevent parsing conditions
-          inside their bodies (and most likely failing).
+            inside their bodies (and most likely failing).
         context: `Specfile` instance that defines the context for macro expansions.
 
     Returns:

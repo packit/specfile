@@ -51,7 +51,7 @@ class Specfile:
         force_parse: bool = False,
     ) -> None:
         """
-        Constructs a `Specfile` object.
+        Initializes a specfile object.
 
         Args:
             path: Path to the spec file.
@@ -59,12 +59,9 @@ class Specfile:
             autosave: Whether to automatically save any changes made.
             macros: List of extra macro definitions.
             force_parse: Whether to attempt to parse the spec file even if one or more
-              sources required to be present at parsing time are not available.
-              Such sources include sources referenced from shell expansions
-              in tag values and sources included using the %include directive.
-
-        Returns:
-            Constructed instance of `Specfile` class.
+                sources required to be present at parsing time are not available.
+                Such sources include sources referenced from shell expansions
+                in tag values and sources included using the _%include_ directive.
         """
         self.autosave = autosave
         self._path = Path(path)
@@ -161,11 +158,11 @@ class Specfile:
         return self._parser.spec
 
     def reload(self) -> None:
-        """Reload the spec file content."""
+        """Reloads the spec file content."""
         self._lines = self._read_lines(self.path)
 
     def save(self) -> None:
-        """Save the spec file content."""
+        """Saves the spec file content."""
         self.path.write_text(str(self), encoding="utf8", errors="surrogateescape")
 
     def expand(
@@ -181,8 +178,8 @@ class Specfile:
             expression: Expression to expand.
             extra_macros: Extra macros to be defined before expansion is performed.
             skip_parsing: Do not parse the spec file before expansion is performed.
-              Defaults to False. Mutually exclusive with extra_macros. Set this to True
-              only if you are certain that the global macro context is up-to-date.
+                Defaults to `False`. Mutually exclusive with `extra_macros`. Set this to `True`
+                only if you are certain that the global macro context is up-to-date.
 
         Returns:
             Expanded expression.
@@ -264,7 +261,7 @@ class Specfile:
 
         Args:
             section: Name of the requested section or an existing `Section` instance.
-              Defaults to preamble.
+                Defaults to preamble.
 
         Yields:
             Tags in the section as `Tags` object.
@@ -287,10 +284,10 @@ class Specfile:
 
         Args:
             section: Optional `Section` instance to be processed. If not set, the first
-              %changelog section (if any) will be processed.
+                _%changelog_ section (if any) will be processed.
 
         Yields:
-            Spec file changelog as `Changelog` object or None if there is no %changelog section.
+            Spec file changelog as `Changelog` object or `None` if there is no _%changelog_ section.
         """
         with self.sections() as sections:
             if section is None:
@@ -310,10 +307,10 @@ class Specfile:
     @ContextManager
     def prep(self) -> Generator[Optional[Prep], None, None]:
         """
-        Context manager for accessing %prep section.
+        Context manager for accessing _%prep_ section.
 
         Yields:
-            Spec file %prep section as `Prep` object.
+            Spec file _%prep_ section as `Prep` object.
         """
         with self.sections() as sections:
             try:
@@ -407,7 +404,7 @@ class Specfile:
 
     @property
     def has_autorelease(self) -> bool:
-        """Whether the spec file uses %autorelease."""
+        """Whether the spec file uses _%autorelease_."""
         for node in ValueParser.flatten(ValueParser.parse(self.raw_release)):
             if (
                 isinstance(node, (MacroSubstitution, EnclosedMacroSubstitution))
@@ -419,13 +416,13 @@ class Specfile:
     @staticmethod
     def contains_autochangelog(section: Section) -> bool:
         """
-        Determines if the specified section contains the %autochangelog macro.
+        Determines if the specified section contains the _%autochangelog_ macro.
 
         Args:
             section: Section to examine.
 
         Returns:
-            True if the section contains %autochangelog, False otherwise.
+            `True` if the section contains _%autochangelog_, `False` otherwise.
         """
         for line in section:
             if line.lstrip().startswith("#"):
@@ -441,7 +438,7 @@ class Specfile:
 
     @property
     def has_autochangelog(self) -> bool:
-        """Whether the spec file uses %autochangelog."""
+        """Whether the spec file uses _%autochangelog_."""
         with self.sections() as sections:
             # there could be multiple changelog sections, consider all of them
             for section in sections:
@@ -460,8 +457,8 @@ class Specfile:
         evr: Optional[str] = None,
     ) -> None:
         """
-        Adds a new %changelog entry. Does nothing if there is no %changelog section
-        or if %autochangelog is being used.
+        Adds a new _%changelog_ entry. Does nothing if there is no _%changelog_ section
+        or if _%autochangelog_ is being used.
 
         If not specified, author and e-mail will be automatically determined, if possible.
         Timestamp, if not set, will be set to current time (in local timezone).
@@ -471,11 +468,11 @@ class Specfile:
             author: Author of the entry.
             email: E-mail of the author.
             timestamp: Timestamp of the entry.
-              Supply `datetime` rather than `date` for extended format.
+                Supply `datetime` rather than `date` for extended format.
             evr: Override the EVR part of the changelog entry.
-              Macros will be expanded automatically. By default, the function
-              determines the appropriate value based on the specfile's current
-              %{epoch}, %{version}, and %{release} values.
+                Macros will be expanded automatically. By default, the function
+                determines the appropriate value based on the spec file current
+                _%{epoch}_, _%{version}_, and _%{release}_ values.
         """
         with self.sections() as sections:
             # there could be multiple changelog sections, update all of them
@@ -649,7 +646,7 @@ class Specfile:
 
         Args:
             version: Version string.
-            release: Release string, defaults to '1'.
+            release: Release string, defaults to "1".
         """
         with self.tags() as tags:
             tags.version.value = version
@@ -669,14 +666,14 @@ class Specfile:
         Args:
             location: Patch location (filename or URL).
             number: Patch number. It will be auto-assigned if not specified.
-              If specified, it must be higher than any existing patch number.
+                If specified, it must be higher than any existing patch number.
             comment: Associated comment.
             initial_number: Auto-assigned number to start with if there are no patches.
             number_digits: Number of digits in the patch number.
 
         Raises:
-            SourceNumberException when the specified patch number is not higher
-              than any existing patch number.
+            SourceNumberException: If the specified patch number is not higher
+                than any existing patch number.
         """
         with self.patches(default_source_number_digits=number_digits) as patches:
             highest_number = max((p.number for p in patches), default=-1)
@@ -708,7 +705,7 @@ class Specfile:
             requested_value: Requested new value.
             position: Position (line number) of the value in the spec file.
             protected_entities: Regular expression specifying protected tags and macro definitions,
-              ensuring their values won't be updated.
+                ensuring their values won't be updated.
 
         Returns:
             Updated value. Can be equal to the original value.
@@ -858,7 +855,7 @@ class Specfile:
             name: Tag name.
             value: Requested new value.
             protected_entities: Regular expression specifying protected tags and macro definitions,
-              ensuring their values won't be updated.
+                ensuring their values won't be updated.
         """
         with self.tags() as tags:
             tag = getattr(tags, name)
@@ -893,17 +890,17 @@ class Specfile:
         Args:
             version: Version string.
             prerelease_suffix_pattern: Regular expression specifying recognized
-              pre-release suffixes. The first capturing group must capture the delimiter
-              between base version and pre-release suffix and can be empty in case
-              there is no delimiter.
+                pre-release suffixes. The first capturing group must capture the delimiter
+                between base version and pre-release suffix and can be empty in case
+                there is no delimiter.
             prerelease_suffix_macro: Macro definition that controls whether spec file
-              version is a pre-release and contains the pre-release suffix.
-              To be commented out or uncommented accordingly.
-            comment_out_style: Whether to use `%dnl` macro or swap the leading '%'
-              with '#' to comment out `prerelease_suffix_macro`. Defaults to `%dnl`.
+                version is a pre-release and contains the pre-release suffix.
+                To be commented out or uncommented accordingly.
+            comment_out_style: Style of commenting out `prerelease_suffix_macro`.
+                See `CommentOutStyle`. Defaults to `CommentOutStyle.DNL`.
 
         Raises:
-            SpecfileException if `prerelease_suffix_pattern` is invalid.
+            SpecfileException: If `prerelease_suffix_pattern` is invalid.
         """
 
         def update_macro(prerelease_detected):

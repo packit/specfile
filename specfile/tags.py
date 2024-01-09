@@ -80,14 +80,11 @@ class Comments(UserList[Comment]):
         preceding_lines: Optional[List[str]] = None,
     ) -> None:
         """
-        Constructs a `Comments` object.
+        Initializes a comments object.
 
         Args:
             data: List of individual comments.
             preceding_lines: Extra lines that precede comments associated with a tag.
-
-        Returns:
-            Constructed instance of `Comments` class.
         """
         super().__init__()
         if data is not None:
@@ -180,7 +177,7 @@ class Comments(UserList[Comment]):
             lines: List of lines that precede a tag definition.
 
         Returns:
-            Constructed instance of `Comments` class.
+            New instance of `Comments` class.
         """
         comment_regex = re.compile(r"^(\s*#\s*)(.*)$")
         comments: List[Comment] = []
@@ -219,23 +216,18 @@ class Tag:
         context: Optional["Specfile"] = None,
     ) -> None:
         """
-        Constructs a `Tag` object.
+        Initializes a tag object.
 
         Args:
             name: Name of the tag.
             value: Literal value of the tag as stored in the spec file.
-            expanded_value: Value of the tag after expansion by RPM.
-            separator:
-              Separator between name and literal value (colon usually surrounded by some
-              amount of whitespace).
+            separator: Separator between name and literal value (colon usually surrounded by some
+                amount of whitespace).
             comments: List of comments associated with the tag.
             valid: Whether the tag is not located in a false branch of a condition.
             prefix: Characters preceding the tag on a line.
             suffix: Characters following the tag on a line.
             context: `Specfile` instance that defines the context for macro expansions.
-
-        Returns:
-            Constructed instance of `Tag` class.
         """
         name_regexes = [
             re.compile(get_tag_name_regex(t), re.IGNORECASE) for t in TAG_NAMES
@@ -335,14 +327,11 @@ class Tags(UserList[Tag]):
         self, data: Optional[List[Tag]] = None, remainder: Optional[List[str]] = None
     ) -> None:
         """
-        Constructs a `Tags` object.
+        Initializes a tags object.
 
         Args:
             data: List of individual tags.
             remainder: Leftover lines in a section that can't be parsed into tags.
-
-        Returns:
-            Constructed instance of `Tags` class.
         """
         super().__init__()
         if data is not None:
@@ -445,7 +434,7 @@ class Tags(UserList[Tag]):
         Finds a tag with the specified name. If position is not specified,
         returns the first valid matching tag. If there is no such tag, returns
         the first match, if any. If position is specified and there is a matching
-        tag at that position, it is returned, otherwise ValueError is raised.
+        tag at that position, it is returned, otherwise `ValueError` is raised.
 
         Args:
             name: Name of the tag to find.
@@ -455,7 +444,7 @@ class Tags(UserList[Tag]):
             Index of the matching tag.
 
         Raises:
-            ValueError if there is no match.
+            ValueError: If there is no match.
         """
         first_match = None
         for i, tag in enumerate(self.data):
@@ -497,7 +486,7 @@ class Tags(UserList[Tag]):
             context: `Specfile` instance that defines the context for macro expansions.
 
         Returns:
-            Constructed instance of `Tags` class.
+            New instance of `Tags` class.
         """
 
         def regex_pattern(tag):

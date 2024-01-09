@@ -35,7 +35,7 @@ class Section(collections.UserList):
         name: Name of the section (without the leading '%').
         options: Options of the section.
         data: List of lines forming the content of the section,
-          not including newline characters.
+            not including newline characters.
     """
 
     def __init__(
@@ -47,19 +47,16 @@ class Section(collections.UserList):
         data: Optional[List[str]] = None,
     ) -> None:
         """
-        Constructs a `Section` object.
+        Initializes a section object.
 
         Args:
             name: Name of the section (without the leading '%').
             options: Options of the section.
             delimiter: Delimiter separating name and option string.
             separator: String separating name and options from section content,
-              defaults to newline.
+                defaults to newline.
             data: List of lines forming the content of the section,
-              not including newline characters.
-
-        Returns:
-            Constructed instance of `Section` class.
+                not including newline characters.
         """
         super().__init__()
         if name.lower() not in SECTION_NAMES:
@@ -229,7 +226,7 @@ class Sections(UserList[Section]):
             context: `Specfile` instance that defines the context for macro expansions.
 
         Returns:
-            Constructed instance of `Sections` class.
+            New instance of `Sections` class.
         """
 
         def expand(s):

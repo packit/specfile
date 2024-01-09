@@ -16,12 +16,33 @@ if TYPE_CHECKING:
 
 
 class CommentOutStyle(Enum):
+    """Style of commenting out a macro definition."""
+
     DNL = auto()
+    """Using the _%dnl_ macro."""
+
     HASH = auto()
+    """Replacing _%_ in _%global_/_%define_ with _#_."""
+
     OTHER = auto()
+    """Prepending the definition with _#_ followed by arbitrary string."""
 
 
 class MacroDefinition:
+    """
+    Class that represents a macro definition. Macro definition starts with _%global_
+    or _%define_ keyword, followed by macro name, optional argument string enclosed
+    in parentheses and macro body.
+
+    Attributes:
+        name: Macro name.
+        body: Macro body.
+        is_global: Whether the macro is defined using _%global_ rather than _%define_.
+        commented_out: Whether the definition is commented out.
+        comment_out_style: Style of commenting out. See `CommentOutStyle`.
+        valid: Whether the definition is not located in a false branch of a condition.
+    """
+
     def __init__(
         self,
         name: str,
@@ -35,6 +56,24 @@ class MacroDefinition:
         valid: bool = True,
         preceding_lines: Optional[List[str]] = None,
     ) -> None:
+        """
+        Initializes a macro definition object.
+
+        Args:
+            name: Macro name.
+            body: Macro body.
+            is_global: Whether the macro is defined using _%global_ rather than _%define_.
+            commented_out: Whether the definition is commented out.
+            comment_out_style: Style of commenting out. See `CommentOutStyle`.
+            whitespace: Tuple of whitespace - (preceding the definition, preceding macro name,
+                preceding macro body, following the body).
+            dnl_whitespace: Whitespace between _%dnl_ macro and start of the definition
+                in case of `CommentOutStyle.DNL`.
+            comment_prefix: String between _#_ and start of the definition
+                in case of `CommentOutStyle.OTHER`.
+            valid: Whether the definition is not located in a false branch of a condition.
+            preceding_lines: Extra lines that precede the definition.
+        """
         self.name = name
         self.body = body
         self.is_global = is_global
@@ -129,7 +168,7 @@ class MacroDefinition:
 
 class MacroDefinitions(UserList[MacroDefinition]):
     """
-    Class that represents all macro definitions.
+    Class that represents a list of all macro definitions.
 
     Attributes:
         data: List of individual macro definitions.
@@ -141,14 +180,11 @@ class MacroDefinitions(UserList[MacroDefinition]):
         remainder: Optional[List[str]] = None,
     ) -> None:
         """
-        Constructs a `MacroDefinitions` object.
+        Initializes a macro definitions object.
 
         Args:
             data: List of individual macro definitions.
             remainder: Leftover lines that can't be parsed into macro definitions.
-
-        Returns:
-            Constructed instance of `MacroDefinitions` class.
         """
         super().__init__()
         if data is not None:
@@ -237,7 +273,7 @@ class MacroDefinitions(UserList[MacroDefinition]):
         returns the first valid matching macro definiton. If there is no such macro
         definition, returns the first match, if any. If position is specified and there is
         a matching macro definition at that position, it is returned, otherwise
-        ValueError is raised.
+        `ValueError` is raised.
 
         Args:
             name: Name of the tag to find.
@@ -247,7 +283,7 @@ class MacroDefinitions(UserList[MacroDefinition]):
             Index of the matching tag.
 
         Raises:
-            ValueError if there is no match.
+            ValueError: If there is no match.
         """
         first_match = None
         for i, macro_definition in enumerate(self.data):
@@ -274,7 +310,7 @@ class MacroDefinitions(UserList[MacroDefinition]):
             lines: Lines to parse.
 
         Returns:
-            Constructed instance of `MacroDefinitions` class.
+            New instance of `MacroDefinitions` class.
         """
 
         def pop(lines):
@@ -389,11 +425,11 @@ class MacroDefinitions(UserList[MacroDefinition]):
         Args:
             lines: Lines to parse.
             with_conditions: Whether to process conditions before parsing and populate
-              the `valid` attribute.
+                the `valid` attribute.
             context: `Specfile` instance that defines the context for macro expansions.
 
         Returns:
-            Constructed instance of `MacroDefinitions` class.
+            New instance of `MacroDefinitions` class.
         """
         result = cls._parse(lines)
         if not with_conditions:

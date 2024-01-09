@@ -78,14 +78,11 @@ class TagSource(Source):
 
     def __init__(self, tag: Tag, number: Optional[int] = None) -> None:
         """
-        Constructs a `TagSource` object.
+        Initializes a tag source object.
 
         Args:
             tag: Tag that this source represents.
             number: Source number (in the case of implicit numbering).
-
-        Returns:
-            Constructed instance of `TagSource` class.
         """
         self._tag = tag
         self._number = number
@@ -106,7 +103,7 @@ class TagSource(Source):
         Extracts source number from tag name.
 
         Returns:
-            Extracted number or None if there isn't one.
+            Extracted number or `None` if there isn't one.
         """
         tokens = re.split(r"(\d+)", self._tag.name, maxsplit=1)
         if len(tokens) > 1:
@@ -174,18 +171,15 @@ class TagSource(Source):
 
 
 class ListSource(Source):
-    """Class that represents a source backed by a line in a %sourcelist section."""
+    """Class that represents a source backed by a line in a _%sourcelist_ section."""
 
     def __init__(self, source: SourcelistEntry, number: int) -> None:
         """
-        Constructs a `ListSource` object.
+        Initializes a list source object.
 
         Args:
-            source: Sourcelist entry that this source represents.
+            source: `Sourcelist` entry that this source represents.
             number: Source number.
-
-        Returns:
-            Constructed instance of `ListSource` class.
         """
         self._source = source
         self._number = number
@@ -258,7 +252,7 @@ class Sources(collections.abc.MutableSequence):
         context: Optional["Specfile"] = None,
     ) -> None:
         """
-        Constructs a `Sources` object.
+        Initializes a sources object.
 
         Args:
             tags: All spec file tags.
@@ -267,9 +261,6 @@ class Sources(collections.abc.MutableSequence):
             default_to_implicit_numbering: Use implicit numbering (no source numbers) by default.
             default_source_number_digits: Default number of digits in a source number.
             context: `Specfile` instance that defines the context for macro expansions.
-
-        Returns:
-            Constructed instance of `Sources` class.
         """
         self._tags = tags
         self._sourcelists = sourcelists
@@ -408,7 +399,7 @@ class Sources(collections.abc.MutableSequence):
         tags don't have numbers.
 
         Returns:
-            True if implicit numbering is being/should be used, False otherwise.
+            `True` if implicit numbering is being/should be used, `False` otherwise.
         """
         tags = self._get_tags()
         if any(t._number is None for t, _, _ in tags):
@@ -428,7 +419,7 @@ class Sources(collections.abc.MutableSequence):
         a reference tag and the requested source number.
 
         The new name has the same number of digits as the reference
-        (unless number_digits_override is set to a different value)
+        (unless `number_digits_override` is set to a different value)
         and the length of the separator is adjusted accordingly.
 
         Args:
@@ -477,7 +468,7 @@ class Sources(collections.abc.MutableSequence):
     def _get_tag_validity(self, reference: Optional[TagSource] = None) -> bool:
         """
         Determines validity of a new source tag based on a reference tag, if specified,
-        or the last tag in the spec file. Defaults to True.
+        or the last tag in the spec file. Defaults to `True`.
 
         Args:
             reference: Optional reference tag source.
@@ -518,8 +509,8 @@ class Sources(collections.abc.MutableSequence):
             location: Location of the new source.
 
         Raises:
-            DuplicateSourceException if duplicates are disallowed and there
-              already is a source with the same location.
+            DuplicateSourceException: If duplicates are disallowed and there
+                already is a source with the same location.
         """
         if not self._allow_duplicates and location in self:
             raise DuplicateSourceException(f"{self.prefix} '{location}' already exists")
@@ -585,8 +576,8 @@ class Sources(collections.abc.MutableSequence):
             Index of the newly inserted source.
 
         Raises:
-            DuplicateSourceException if duplicates are disallowed and there
-              already is a source with the same location.
+            DuplicateSourceException: If duplicates are disallowed and there
+                already is a source with the same location.
         """
         if not self._allow_duplicates and location in self:
             raise DuplicateSourceException(f"{self.prefix} '{location}' already exists")
@@ -663,7 +654,7 @@ class TagPatch(TagSource, Patch):
 
 
 class ListPatch(ListSource, Patch):
-    """Class that represents a patch backed by a line in a %patchlist section."""
+    """Class that represents a patch backed by a line in a _%patchlist_ section."""
 
 
 class Patches(Sources):

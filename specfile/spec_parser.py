@@ -34,13 +34,13 @@ class SpecParser:
         sourcedir: Path to sources and patches.
         macros: List of extra macro definitions.
         force_parse: Whether to attempt to parse the spec file even if one or more
-          sources required to be present at parsing time are not available.
-          Such sources include sources referenced from shell expansions
-          in tag values and sources included using the %include directive.
+            sources required to be present at parsing time are not available.
+            Such sources include sources referenced from shell expansions
+            in tag values and sources included using the _%include_ directive.
         spec: `rpm.spec` instance representing parsed spec file.
         tainted: Indication that parsing of the spec file was forced and one or more
-          sources required to be present at parsing time were not available
-          and were replaced with dummy files.
+            sources required to be present at parsing time were not available
+            and were replaced with dummy files.
     """
 
     # hash of input parameters to the last parse performed
@@ -167,7 +167,7 @@ class SpecParser:
         """
         Context manager for sanitizing the environment for shell expansions.
 
-        Temporarily sets LANG and LC_ALL to C.UTF-8 locale.
+        Temporarily sets _LANG_ and _LC_ALL_ to _C.UTF-8_ locale.
 
         Yields:
             Sanitized environment.
@@ -206,7 +206,7 @@ class SpecParser:
               at least one file to be included was ignored).
 
         Raises:
-            RPMException, if parsing error occurs.
+            RPMException: If parsing error occurs.
         """
 
         def get_rpm_spec(content, flags):
@@ -355,7 +355,7 @@ class SpecParser:
             extra_macros: List of extra macro definitions.
 
         Raises:
-            RPMException, if parsing error occurs.
+            RPMException: If parsing error occurs.
         """
         # calculate hash of all input parameters
         payload = (
