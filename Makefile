@@ -23,3 +23,6 @@ check-in-container:
 		--env COLOR \
 		--env COV_REPORT \
 		$(TEST_IMAGE) make check
+
+generate-api-docs:
+	PYTHONPATH=$(CURDIR)/docs/api pydoc-markdown --verbose docs/api/specfile.yml

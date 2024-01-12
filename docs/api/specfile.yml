@@ -1,0 +1,32 @@
+loaders:
+  - type: python
+    modules:
+      - specfile.specfile
+      - specfile.changelog
+      - specfile.conditions
+      - specfile.context_management
+      - specfile.exceptions
+      - specfile.formatter
+      - specfile.macro_definitions
+      - specfile.macros
+      - specfile.options
+      - specfile.prep
+      - specfile.sections
+      - specfile.sourcelist
+      - specfile.sources
+      - specfile.spec_parser
+      - specfile.tags
+      - specfile.utils
+      - specfile.value_parser
+processors:
+  - type: filter
+  - type: google
+  - type: crossref
+  - type: processors.EscapeBracketsProcessor
+renderer:
+  type: docusaurus
+  docs_base_path: docs
+  relative_output_path: api
+  markdown:
+    descriptive_class_title: false
+    render_typehint_in_data_header: true
