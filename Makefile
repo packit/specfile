@@ -25,4 +25,4 @@ check-in-container:
 		$(TEST_IMAGE) make check
 
 generate-api-docs:
-	PYTHONPATH=$(CURDIR)/docs/api pydoc-markdown --verbose docs/api/specfile.yml
+	PYTHONPATH=$(CURDIR):$(CURDIR)/docs/api pydoc-markdown --verbose docs/api/specfile.yml
