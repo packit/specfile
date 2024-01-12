@@ -20,7 +20,7 @@ def valid_prep_macro(name: str) -> bool:
 
 class PrepMacro(ABC):
     """
-    Class that represents a %prep macro.
+    Class that represents a _%prep_ macro.
 
     Attributes:
         name: Literal name of the macro.
@@ -41,7 +41,7 @@ class PrepMacro(ABC):
         preceding_lines: Optional[List[str]] = None,
     ) -> None:
         """
-        Constructs a `PrepMacro` object.
+        Initializes a prep macro object.
 
         Args:
             name: Literal name of the macro.
@@ -50,9 +50,6 @@ class PrepMacro(ABC):
             prefix: Characters preceding the macro on a line.
             suffix: Characters following the macro on a line.
             preceding_lines: Lines of the %prep section preceding the macro.
-
-        Returns:
-            Constructed instance of `PrepMacro` class.
         """
         self.name = name
         self.options = copy.deepcopy(options)
@@ -96,7 +93,7 @@ class PrepMacro(ABC):
 
 
 class SetupMacro(PrepMacro):
-    """Class that represents a %setup macro."""
+    """Class that represents a _%setup_ macro."""
 
     CANONICAL_NAME: str = "%setup"
     OPTSTRING: str = "a:b:cDn:Tq"
@@ -106,7 +103,7 @@ class SetupMacro(PrepMacro):
 
 
 class PatchMacro(PrepMacro):
-    """Class that represents a %patch macro."""
+    """Class that represents a _%patch_ macro."""
 
     CANONICAL_NAME: str = "%patch"
     OPTSTRING: str = "P:p:REb:z:F:d:o:Z"
@@ -131,7 +128,7 @@ class PatchMacro(PrepMacro):
 
 
 class AutosetupMacro(PrepMacro):
-    """Class that represents an %autosetup macro."""
+    """Class that represents an _%autosetup_ macro."""
 
     CANONICAL_NAME: str = "%autosetup"
     OPTSTRING: str = "a:b:cDn:TvNS:p:"
@@ -142,7 +139,7 @@ class AutosetupMacro(PrepMacro):
 
 
 class AutopatchMacro(PrepMacro):
-    """Class that represents an %autopatch macro."""
+    """Class that represents an _%autopatch_ macro."""
 
     CANONICAL_NAME: str = "%autopatch"
     OPTSTRING: str = "vp:m:M:"
@@ -151,10 +148,10 @@ class AutopatchMacro(PrepMacro):
 
 class PrepMacros(UserList[PrepMacro]):
     """
-    Class that represents a list of %prep macros.
+    Class that represents a list of _%prep_ macros.
 
     Attributes:
-        data: List of individual %prep macros.
+        data: List of individual _%prep_ macros.
     """
 
     def __init__(
@@ -163,14 +160,11 @@ class PrepMacros(UserList[PrepMacro]):
         remainder: Optional[List[str]] = None,
     ) -> None:
         """
-        Constructs a `PrepMacros` object.
+        Initializes a prep macros object.
 
         Args:
-            data: List of individual %prep macros.
+            data: List of individual _%prep_ macros.
             remainder: Leftover lines in the section.
-
-        Returns:
-            Constructed instance of `PrepMacros` class.
         """
         super().__init__()
         if data is not None:
@@ -255,10 +249,10 @@ class PrepMacros(UserList[PrepMacro]):
 
 class Prep(collections.abc.Container):
     """
-    Class that represents a %prep section.
+    Class that represents a _%prep_ section.
 
     Attributes:
-        macros: List of individual %prep macros.
+        macros: List of individual _%prep_ macros.
     """
 
     def __init__(self, macros: PrepMacros) -> None:
@@ -288,20 +282,20 @@ class Prep(collections.abc.Container):
 
     def add_patch_macro(self, number: int, **kwargs: Any) -> None:
         """
-        Adds a new %patch macro with given number and options.
+        Adds a new _%patch_ macro with given number and options.
 
         Args:
             number: Macro number.
-            P: The -P option (patch number).
-            p: The -p option (strip number).
-            R: The -R option (reverse).
-            E: The -E option (remove empty files).
-            b: The -b option (backup).
-            z: The -z option (suffix).
-            F: The -F option (fuzz factor).
-            d: The -d option (working directory).
-            o: The -o option (output file).
-            Z: The -Z option (set UTC times).
+            P: The _-P_ option (patch number).
+            p: The _-p_ option (strip number).
+            R: The _-R_ option (reverse).
+            E: The _-E_ option (remove empty files).
+            b: The _-b_ option (backup).
+            z: The _-z_ option (suffix).
+            F: The _-F_ option (fuzz factor).
+            d: The _-d_ option (working directory).
+            o: The _-o_ option (output file).
+            Z: The _-Z_ option (set UTC times).
         """
         options = Options([], PatchMacro.OPTSTRING, PatchMacro.DEFAULTS)
         for k, v in kwargs.items():
@@ -322,7 +316,7 @@ class Prep(collections.abc.Container):
 
     def remove_patch_macro(self, number: int) -> None:
         """
-        Removes a %patch macro with given number.
+        Removes a _%patch_ macro with given number.
 
         Args:
             number: Macro number.
@@ -344,10 +338,10 @@ class Prep(collections.abc.Container):
         Parses a section into a `Prep` object.
 
         Args:
-            section: %prep section.
+            section: _%prep_ section.
 
         Returns:
-            Constructed instance of `Prep` class.
+            New instance of `Prep` class.
         """
         macro_regex = re.compile(
             r"(?P<m>%(setup|patch\d*|autopatch|autosetup))(?P<d>\s*)(?P<o>.*?)$"

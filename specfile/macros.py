@@ -76,10 +76,10 @@ class Macros:
     @staticmethod
     def _parse(dump: List[str]) -> List[Macro]:
         """
-        Parses macros in the format of %dump output.
+        Parses macros in the format of _%dump_ output.
 
         Args:
-            dump: List of lines in the same format as what the %dump macro outputs
+            dump: List of lines in the same format as what the _%dump_ macro outputs
                   to stderr, including newline characters.
 
         Returns:
@@ -142,7 +142,7 @@ class Macros:
             Expanded expression.
 
         Raises:
-            RPMException, if expansion error occurs.
+            RPMException: If expansion error occurs.
         """
         try:
             with capture_stderr() as stderr:
@@ -159,7 +159,7 @@ class Macros:
             macro: Macro name.
 
         Raises:
-            MacroRemovalException, if there were too many unsuccessful
+            MacroRemovalException: If there were too many unsuccessful
                 retries to remove the macro.
         """
         # Ideally, we would loop until the macro is defined, however in rpm

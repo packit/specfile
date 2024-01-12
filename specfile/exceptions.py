@@ -5,11 +5,11 @@ from typing import List
 
 
 class SpecfileException(Exception):
-    """Something went wrong during our execution."""
+    """Base class for all library exceptions."""
 
 
 class RPMException(SpecfileException):
-    """Exception related to RPM."""
+    """RPM exception."""
 
     def __init__(self, stderr: List[bytes]) -> None:
         super().__init__()
@@ -24,20 +24,20 @@ class RPMException(SpecfileException):
 
 
 class MacroRemovalException(SpecfileException):
-    """Exception related to failed removal of RPM macros."""
+    """Impossible to remove a RPM macro."""
 
 
 class OptionsException(SpecfileException):
-    """Exception related to processing options."""
+    """Unparseable option string."""
 
 
 class UnterminatedMacroException(SpecfileException):
-    """Exception related to parsing unterminated macro."""
+    """Macro starts but doesn't end."""
 
 
 class DuplicateSourceException(SpecfileException):
-    """Exception related to adding a duplicate source."""
+    """Source with the same location already exists."""
 
 
 class SourceNumberException(SpecfileException):
-    """Exception related to source numbers."""
+    """Incorrect numbering of sources."""

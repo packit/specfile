@@ -16,8 +16,9 @@ from typing import Any, Callable, Dict, Generator, List, Optional, overload
 @contextlib.contextmanager
 def capture_stderr() -> Generator[List[bytes], None, None]:
     """
-    Context manager for capturing output to stderr. A stderr output of anything run
-    in its context will be captured in the target variable of the with statement.
+    Context manager for capturing output to _stderr_. A _stderr_ output
+    of anything run in its context will be captured in the target variable
+    of the __with__ statement.
 
     Yields:
         List of captured lines.
@@ -39,7 +40,7 @@ def capture_stderr() -> Generator[List[bytes], None, None]:
 
 class GeneratorContextManager(contextlib._GeneratorContextManager):
     """
-    Extended contextlib._GeneratorContextManager that provides content property.
+    Extended `contextlib._GeneratorContextManager` that provides `content` property.
     """
 
     def __init__(self, function: Callable) -> None:
@@ -56,10 +57,10 @@ class GeneratorContextManager(contextlib._GeneratorContextManager):
         Fully consumes the underlying generator and returns the yielded value.
 
         Returns:
-            Value that would normally be the target variable of an associated with statement.
+            Value that would normally be the target variable of an associated __with__ statement.
 
         Raises:
-            StopIteration if the underlying generator is already exhausted.
+            StopIteration: If the underlying generator is already exhausted.
         """
         result = next(self.gen)
         next(self.gen, None)
@@ -70,7 +71,7 @@ class ContextManager:
     """
     Class for decorating generator functions that should act as a context manager.
 
-    Just like with contextlib.contextmanager, the generator returned from the decorated function
+    Just like with `contextlib.contextmanager`, the generator returned from the decorated function
     must yield exactly one value that will be used as the target variable of the with statement.
     If the same function with the same arguments is called again from within previously generated
     context, the generator will be ignored and the target variable will be reused.

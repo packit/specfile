@@ -1,0 +1,17 @@
+name: Rebuild docs on merge
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger packit.dev
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.PACKIT_DEV_TOKEN }}
+          repository: packit/packit.dev
+          event-type: specfile-docs-updated

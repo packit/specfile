@@ -12,19 +12,19 @@ def format_expression(expression: str, line_length_threshold: int = 80) -> str:
     """
     Formats the specified Python expression.
 
-    Only supports a small subset of Python AST that should be sufficient for use in __repr__().
+    Only supports a small subset of Python AST that should be sufficient for use in `__repr__()`.
 
     Args:
         expression: Python expression to reformat.
         line_length_threshold: Threshold for line lengths. It's not a hard limit,
-          it can be exceeded in some cases.
+            it can be exceeded in some cases.
 
     Returns:
         Formatted expression.
 
     Raises:
-        SyntaxError if the expression is not parseable.
-        SpecfileException if there is an unsupported AST node in the expression.
+        SyntaxError: If the expression is not parseable.
+        SpecfileException: If there is an unsupported AST node in the expression.
     """
 
     def fmt(node, indent=0, prefix="", multiline=False):
@@ -127,7 +127,7 @@ def format_expression(expression: str, line_length_threshold: int = 80) -> str:
 
 
 def formatted(function: Callable[..., str]) -> Callable[..., str]:
-    """Decorator for formatting the output of __repr__()."""
+    """Decorator for formatting the output of `__repr__()`."""
 
     @functools.wraps(function)
     def wrapper(*args, **kwargs):

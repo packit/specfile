@@ -39,7 +39,9 @@ MONTHS = (
 
 class ChangelogEntry:
     """
-    Class that represents a changelog entry.
+    Class that represents a changelog entry. Changelog entry consists of
+    a header line starting with _*_, followed by timestamp, author and optional
+    extra text (usually EVR), and one or more content lines.
 
     Attributes:
         header: Header of the entry.
@@ -53,15 +55,12 @@ class ChangelogEntry:
         following_lines: Optional[List[str]] = None,
     ) -> None:
         """
-        Constructs a `ChangelogEntry` object.
+        Initializes a changelog entry object.
 
         Args:
             header: Header of the entry.
             content: List of lines forming the content of the entry.
             following_lines: Extra lines that follow the entry.
-
-        Returns:
-            Constructed instance of `ChangelogEntry` class.
         """
         self.header = header
         self.content = content.copy()
@@ -87,7 +86,7 @@ class ChangelogEntry:
 
     @property
     def evr(self) -> Optional[str]:
-        """EVR (Epoch, Version, Release) of the entry."""
+        """EVR (epoch, version, release) of the entry."""
         m = re.match(
             r"""
             ^.*
@@ -170,7 +169,7 @@ class ChangelogEntry:
 
         Args:
             timestamp: Timestamp of the entry.
-              Supply `datetime` rather than `date` for extended format.
+                Supply `datetime` rather than `date` for extended format.
             author: Author of the entry.
             content: List of lines forming the content of the entry.
             evr: EVR (epoch, version, release) of the entry.
@@ -178,7 +177,7 @@ class ChangelogEntry:
             append_newline: Whether the entry should be followed by an empty line.
 
         Returns:
-            Constructed instance of `ChangelogEntry` class.
+            New instance of `ChangelogEntry` class.
         """
         weekday = WEEKDAYS[timestamp.weekday()]
         month = MONTHS[timestamp.month - 1]
@@ -200,7 +199,9 @@ class ChangelogEntry:
 
 class Changelog(UserList[ChangelogEntry]):
     """
-    Class that represents a changelog.
+    Class that represents a changelog. It behaves like a list of changelog entries,
+    ordered from bottom to top - the top (newest) entry has index _-1_, the bottom
+    (oldest) one has index _0_.
 
     Attributes:
         data: List of individual entries.
@@ -212,15 +213,12 @@ class Changelog(UserList[ChangelogEntry]):
         predecessor: Optional[List[str]] = None,
     ) -> None:
         """
-        Constructs a `Changelog` object.
+        Initializes a changelog object.
 
         Args:
             data: List of individual changelog entries.
-            predecessor: Lines at the beginning of a section that can't be parsed
-              into changelog entries.
-
-        Returns:
-            Constructed instance of `Changelog` class.
+            predecessor: List of lines at the beginning of a section
+                that can't be parsed into changelog entries.
         """
         super().__init__()
         if data is not None:
@@ -274,9 +272,9 @@ class Changelog(UserList[ChangelogEntry]):
 
         Args:
             since: Optional lower bound. If specified, entries with EVR higher
-              than or equal to this will be included.
+                than or equal to this will be included.
             until: Optional upper bound. If specified, entries with EVR lower
-              than or equal to this will be included.
+                than or equal to this will be included.
 
         Returns:
             Filtered changelog.
@@ -316,13 +314,13 @@ class Changelog(UserList[ChangelogEntry]):
     @classmethod
     def parse(cls, section: Section) -> "Changelog":
         """
-        Parses a %changelog section.
+        Parses a `%changelog` section.
 
         Args:
             section: Section to parse.
 
         Returns:
-            Constructed instance of `Changelog` class.
+            New instance of `Changelog` class.
         """
 
         def extract_following_lines(content: List[str]) -> List[str]:
@@ -378,13 +376,15 @@ def _getent_name() -> str:
 
 def guess_packager() -> str:
     """
-    Guess the name and email of a packager to use for changelog entries.
-    This uses similar logic to rpmdev-packager.
+    Guesses the name and e-mail of a packager to use for changelog entries.
+    This function uses logic similar to `rpmdev-packager` utility.
+
     The following places are searched for this value (in this order):
-        - $RPM_PACKAGER envvar
-        - %packager macro
-        - git config
-        - Unix username
+
+    - `$RPM_PACKAGER` environment variable
+    - `%packager` macro
+    - git config
+    - Unix username
 
     Returns:
         A string to use for the changelog entry author.
