@@ -9,3 +9,7 @@ prepare:
     script: pip3 install pytest-fail-slow
   - how: shell
     script: curl --output-dir /tmp -O https://src.fedoraproject.org/rpms/texlive/raw/rawhide/f/texlive.spec
+adjust:
+  - when: "initiator != packit"
+    because: "skip this plan on dist-git pull requests"
+    enabled: false
