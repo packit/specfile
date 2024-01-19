@@ -10,7 +10,7 @@ in a minimal diff.}
 %global base_version 0.26.0
 #global prerelease   rc1
 
-%global package_version %{base_version}%{?prerelease:~%{prerelease}}
+%global package_version 0.27.0
 %global pypi_version    %{base_version}%{?prerelease}
 
 
@@ -77,6 +77,9 @@ sed -i 's/setuptools_scm\[toml\]>=7/setuptools_scm[toml]/' pyproject.toml
 
 
 %changelog
+* Fri Jan 19 2024 Packit Team <hello@packit.dev> - 0.27.0-1
+- New upstream release 0.27.0
+
 * Fri Dec 08 2023 Packit Team <hello@packit.dev> - 0.26.0-1
 - New upstream release 0.26.0
 
