@@ -195,9 +195,11 @@ class Positionals(collections.abc.MutableSequence):
         self._options._tokens.insert(
             index,
             Token(
-                TokenType.DOUBLE_QUOTED
-                if self._options._needs_quoting(value)
-                else TokenType.DEFAULT,
+                (
+                    TokenType.DOUBLE_QUOTED
+                    if self._options._needs_quoting(value)
+                    else TokenType.DEFAULT
+                ),
                 str(value),
             ),
         )
@@ -359,9 +361,11 @@ class Options(collections.abc.MutableMapping):
                     self._tokens.append(Token(TokenType.WHITESPACE, " "))
                     self._tokens.append(
                         Token(
-                            TokenType.DOUBLE_QUOTED
-                            if self._needs_quoting(value)
-                            else TokenType.DEFAULT,
+                            (
+                                TokenType.DOUBLE_QUOTED
+                                if self._needs_quoting(value)
+                                else TokenType.DEFAULT
+                            ),
                             value,
                         )
                     )
@@ -484,9 +488,11 @@ class Options(collections.abc.MutableMapping):
                 if token:
                     result.append(
                         Token(
-                            TokenType.QUOTED
-                            if quote == "'"
-                            else TokenType.DOUBLE_QUOTED,
+                            (
+                                TokenType.QUOTED
+                                if quote == "'"
+                                else TokenType.DOUBLE_QUOTED
+                            ),
                             token,
                         )
                     )

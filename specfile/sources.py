@@ -33,8 +33,7 @@ class Source(ABC):
         ...
 
     @location.setter
-    def location(self, value: str) -> None:
-        ...
+    def location(self, value: str) -> None: ...
 
     @property
     @abstractmethod
