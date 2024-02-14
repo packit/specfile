@@ -395,11 +395,15 @@ class MacroDefinitions(UserList[MacroDefinition]):
                         body,
                         macro == "global",
                         bool(dnl or sc.startswith("#")),
-                        CommentOutStyle.HASH
-                        if sc == "#"
-                        else CommentOutStyle.OTHER
-                        if sc.startswith("#")
-                        else CommentOutStyle.DNL,
+                        (
+                            CommentOutStyle.HASH
+                            if sc == "#"
+                            else (
+                                CommentOutStyle.OTHER
+                                if sc.startswith("#")
+                                else CommentOutStyle.DNL
+                            )
+                        ),
                         (ws0, ws1, ws2, ws3),
                         dnl[4:] if dnl else " ",
                         sc[:-1] if len(sc) > 1 else "",
