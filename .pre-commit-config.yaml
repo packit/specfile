@@ -63,6 +63,11 @@ repos:
         args:
           - https://github.com/packit/specfile.git
         stages: [manual, push]
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.28.0
+    hooks:
+      - id: check-github-workflows
+        args: ["--verbose"]
   - repo: https://github.com/Lucas-C/pre-commit-hooks
     rev: v1.5.5
     hooks:
