@@ -15,6 +15,7 @@ from tests.constants import (
     SPEC_MACROS,
     SPEC_MINIMAL,
     SPEC_MULTIPLE_SOURCES,
+    SPEC_NO_TRAILING_NEWLINE,
     SPEC_PATCHLIST,
     SPEC_PRERELEASE,
     SPEC_PRERELEASE2,
@@ -113,6 +114,13 @@ def spec_commented_patches(tmp_path):
 def spec_shell_expansions(tmp_path):
     destination = tmp_path / "spec_shell_expansions"
     shutil.copytree(SPEC_SHELL_EXPANSIONS, destination)
+    return destination / SPECFILE
+
+
+@pytest.fixture(scope="function")
+def spec_no_trailing_newline(tmp_path):
+    destination = tmp_path / "spec_no_trailing_newline"
+    shutil.copytree(SPEC_NO_TRAILING_NEWLINE, destination)
     return destination / SPECFILE
 
 

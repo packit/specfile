@@ -18,6 +18,7 @@ SPEC_PRERELEASE2 = DATA_DIR / "spec_prerelease2"
 SPEC_MULTIPLE_SOURCES = DATA_DIR / "spec_multiple_sources"
 SPEC_COMMENTED_PATCHES = DATA_DIR / "spec_commented_patches"
 SPEC_SHELL_EXPANSIONS = DATA_DIR / "spec_shell_expansions"
+SPEC_NO_TRAILING_NEWLINE = DATA_DIR / "spec_no_trailing_newline"
 SPEC_CONDITIONALIZED_CHANGELOG = DATA_DIR / "spec_conditionalized_changelog"
 SPEC_CONDITIONALIZED_VERSION = DATA_DIR / "spec_conditionalized_version"
 

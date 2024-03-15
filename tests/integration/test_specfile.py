@@ -661,3 +661,10 @@ def test_update_version(
         assert md.upstream_version.body != version
     assert spec.version == version
     assert spec.expanded_version == version
+
+
+def test_trailing_newline(spec_autosetup, spec_no_trailing_newline):
+    spec = Specfile(spec_autosetup)
+    assert str(spec)[-1] == "\n"
+    spec = Specfile(spec_no_trailing_newline)
+    assert str(spec)[-1] != "\n"

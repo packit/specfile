@@ -65,7 +65,7 @@ class Specfile:
         """
         self.autosave = autosave
         self._path = Path(path)
-        self._lines = self._read_lines(self._path)
+        self._lines, self._trailing_newline = self._read_lines(self._path)
         self._parser = SpecParser(
             Path(sourcedir or self.path.parent), macros, force_parse
         )
@@ -89,7 +89,7 @@ class Specfile:
         )
 
     def __str__(self) -> str:
-        return "\n".join(self._lines) + "\n"
+        return "\n".join(self._lines) + ("\n" if self._trailing_newline else "")
 
     def __enter__(self) -> "Specfile":
         return self
@@ -103,8 +103,9 @@ class Specfile:
         self.save()
 
     @staticmethod
-    def _read_lines(path: Path) -> List[str]:
-        return path.read_text(encoding="utf8", errors="surrogateescape").splitlines()
+    def _read_lines(path: Path) -> Tuple[List[str], bool]:
+        content = path.read_text(encoding="utf8", errors="surrogateescape")
+        return content.splitlines(), content[-1] == "\n"
 
     @property
     def path(self) -> Path:
@@ -159,7 +160,7 @@ class Specfile:
 
     def reload(self) -> None:
         """Reloads the spec file content."""
-        self._lines = self._read_lines(self.path)
+        self._lines, self._trailing_newline = self._read_lines(self.path)
 
     def save(self) -> None:
         """Saves the spec file content."""
