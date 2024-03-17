@@ -1,3 +1,7 @@
+# 0.28.0
+
+- A trailing newline is no longer added to spec files without one upon saving. (#353)
+
 # 0.27.0
 
 - Improved handling of commented-out macro definitions and fixed related logic in `Specfile.update_value()`. (#338)
