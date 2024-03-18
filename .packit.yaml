@@ -185,6 +185,7 @@ jobs:
     trigger: commit
     packages: [specfile]
     packit_instances: ["stg"]
+    allowed_builders: ["packit-stg", "packit"]
     dist_git_branches:
       - fedora-branched # rawhide updates are created automatically
       - epel-9
