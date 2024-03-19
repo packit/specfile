@@ -357,6 +357,10 @@ class Prep(collections.abc.Container):
                     m.group("d"),
                     m.group("o"),
                 )
+                if delimiter == "" and option_string != "":
+                    # delimiter can't be empty unless the match is just base macro with no options
+                    buffer.append(line)
+                    continue
                 prefix += line[: m.start("m")]
                 suffix = line[m.end("o") :] + suffix
                 klass = next(
