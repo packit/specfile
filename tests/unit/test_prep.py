@@ -112,13 +112,15 @@ def test_prep_parse():
             "prep",
             data=[
                 "%setup -q",
-                "# a comment",
+                "# list all patches",
+                "echo %patches",
                 "%patch0 -p1",
                 "%{!?skip_patch2:%patch2 -p2}",
                 "",
             ],
         )
     )
+    assert len(prep.macros) == 3
     assert prep.macros[0].name == "%setup"
     assert prep.macros[0].options.q
     assert prep.macros[1].name == "%patch0"
@@ -147,7 +149,7 @@ def test_prep_get_raw_section_data():
                         PatchMacro.DEFAULTS,
                     ),
                     " ",
-                    preceding_lines=["# a comment"],
+                    preceding_lines=["# list all patches", "echo %patches"],
                 ),
                 PatchMacro(
                     PatchMacro.CANONICAL_NAME + "2",
@@ -166,7 +168,8 @@ def test_prep_get_raw_section_data():
     )
     assert prep.get_raw_section_data() == [
         "%setup -q",
-        "# a comment",
+        "# list all patches",
+        "echo %patches",
         "%patch0 -p1",
         "%{!?skip_patch2:%patch2 -p2}",
         "",
