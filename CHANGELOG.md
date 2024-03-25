@@ -1,3 +1,7 @@
+# 0.28.1
+
+- We have fixed an issue in `%prep` section processing. For instance, if the `%patches` macro appeared there, it would have been converted to `%patch es`, causing failure when executing `%prep` later. (#356)
+
 # 0.28.0
 
 - A trailing newline is no longer added to spec files without one upon saving. (#353)
