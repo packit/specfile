@@ -190,3 +190,11 @@ jobs:
       - fedora-branched # rawhide updates are created automatically
       - epel-9
       - epel-8
+
+  - job: copr_build
+    trigger: commit
+    branch: debug
+    packages: [specfile]
+    packit_instances: ["prod"]
+    owner: nforro
+    project: debug
