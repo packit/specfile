@@ -1,5 +1,5 @@
 ---
-packit_instances: ["prod", "stg"]
+packit_instances: ["prod"]
 
 upstream_project_url: https://github.com/packit/specfile
 issue_repository: https://github.com/packit/specfile
@@ -10,191 +10,30 @@ prerelease_suffix_macro: prerelease
 
 copy_upstream_release_description: true
 
-packages:
-  specfile:
-    upstream_package_name: specfile
-    downstream_package_name: python-specfile
-    specfile_path: &specfile_path fedora/python-specfile.spec
-    files_to_sync:
-      - *specfile_path
-      - .packit.yaml
-      - src: plans/
-        dest: plans/
-      - src: .fmf/
-        dest: .fmf/
-    srpm_build_deps:
-      - python3-build
-      - python3-setuptools_scm
-    actions:
-      pre-sync:
-        - python3 plans/git_reference.py
-      create-archive:
-        - python3 -m build --sdist --outdir ./fedora/
-        - bash -c "ls -1t ./fedora/*.tar.gz | head -n 1"
-      get-current-version: python3 -m setuptools_scm
-
-  specfile-epel8:
-    upstream_package_name: specfile
-    downstream_package_name: python-specfile
-    specfile_path: &specfile_path_epel8 epel8/python-specfile.spec
-    files_to_sync:
-      - *specfile_path_epel8
-      - .packit.yaml
-      - src: plans/
-        dest: plans/
-      - src: .fmf/
-        dest: .fmf/
-    srpm_build_deps:
-      - python3-setuptools_scm
-    actions:
-      pre-sync:
-        - python3 plans/git_reference.py
-      create-archive:
-        - python3 setup.py sdist --dist-dir ./epel8/
-        - bash -c "ls -1t ./epel8/*.tar.gz | head -n 1"
-      get-current-version: python3 setup.py --version
+upstream_package_name: specfile
+downstream_package_name: python-specfile
+specfile_path: &specfile_path fedora/python-specfile.spec
+files_to_sync:
+  - *specfile_path
+  - .packit.yaml
+  - src: plans/
+    dest: plans/
+  - src: .fmf/
+    dest: .fmf/
+srpm_build_deps:
+  - python3-build
+  - python3-setuptools_scm
+actions:
+  pre-sync:
+    - python3 plans/git_reference.py
+  create-archive:
+    - python3 -m build --sdist --outdir ./fedora/
+    - bash -c "ls -1t ./fedora/*.tar.gz | head -n 1"
+  get-current-version: python3 -m setuptools_scm
 
 jobs:
   - job: copr_build
-    trigger: pull_request
-    packages: [specfile]
-    targets:
-      - fedora-all
-      - epel-9
-  - job: copr_build
-    trigger: pull_request
-    packages: [specfile-epel8]
-    targets:
-      - epel-8
-
-  - job: copr_build
-    trigger: commit
-    branch: main
-    packages: [specfile]
-    targets:
-      - fedora-all
-      - epel-9
-    project: packit-dev
-    list_on_homepage: True
-    preserve_project: True
-  - job: copr_build
-    trigger: commit
-    branch: main
-    packages: [specfile-epel8]
-    targets:
-      - epel-8
-    project: packit-dev
-    list_on_homepage: True
-    preserve_project: True
-
-  - job: copr_build
-    trigger: commit
-    branch: stable
-    packages: [specfile]
-    targets:
-      - fedora-stable
-      - epel-9
-    project: packit-stable
-    list_on_homepage: True
-    preserve_project: True
-  - job: copr_build
-    trigger: commit
-    branch: stable
-    packages: [specfile-epel8]
-    targets:
-      - epel-8
-    project: packit-stable
-    list_on_homepage: True
-    preserve_project: True
-
-  - job: copr_build
-    trigger: release
-    packages: [specfile]
-    targets:
-      - fedora-all
-      - epel-9
-    project: packit-releases
-    list_on_homepage: True
-    preserve_project: True
-  - job: copr_build
-    trigger: release
-    packages: [specfile-epel8]
-    targets:
-      - epel-8
-    project: packit-releases
-    list_on_homepage: True
-    preserve_project: True
-
-  - job: tests
-    trigger: pull_request
-    packages: [specfile]
-    tmt_plan: "smoke|full|packit-integration"
-    targets:
-      - fedora-all
-      - epel-9
-  - job: tests
-    trigger: pull_request
-    packages: [specfile-epel8]
-    tmt_plan: "smoke|full"
-    targets:
-      - epel-8
-
-  - job: tests
-    trigger: pull_request
-    packages: [specfile]
-    identifier: performance
-    tmt_plan: performance
-    targets:
-      - fedora-rawhide
-
-  - job: propose_downstream
-    trigger: release
-    packages: [specfile]
-    dist_git_branches:
-      - fedora-all
-      - epel-9
-  - job: propose_downstream
-    trigger: release
-    packages: [specfile-epel8]
-    dist_git_branches:
-      - epel-8
-
-  - job: pull_from_upstream
-    trigger: release
-    packages: [specfile]
-    dist_git_branches:
-      - fedora-all
-      - epel-9
-  - job: pull_from_upstream
-    trigger: release
-    packages: [specfile-epel8]
-    dist_git_branches:
-      - epel-8
-
-  - job: koji_build
-    trigger: commit
-    packages: [specfile]
-    packit_instances: ["stg"]
-    allowed_pr_authors: ["packit-stg", "packit"]
-    dist_git_branches:
-      - fedora-all
-      - epel-9
-      - epel-8
-
-  - job: bodhi_update
-    trigger: commit
-    packages: [specfile]
-    packit_instances: ["stg"]
-    allowed_builders: ["packit-stg", "packit"]
-    dist_git_branches:
-      - fedora-branched # rawhide updates are created automatically
-      - epel-9
-      - epel-8
-
-  - job: copr_build
     trigger: commit
     branch: debug
-    packages: [specfile]
-    packit_instances: ["prod"]
     owner: nforro
     project: debug
