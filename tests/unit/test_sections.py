@@ -6,9 +6,9 @@ import copy
 import pytest
 from flexmock import flexmock
 
+from specfile.macro_definitions import MacroDefinitions
 from specfile.options import Options, Token, TokenType
 from specfile.sections import Section, Sections
-from specfile.macro_definitions import MacroDefinitions
 
 
 def test_find():

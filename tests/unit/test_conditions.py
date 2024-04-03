@@ -78,6 +78,8 @@ def test_process_conditions(lines, validity, resolve_func):
     processed_lines, processed_validity = zip(*process_conditions(lines))
     assert list(processed_lines) == lines
     assert list(processed_validity) == validity
-    processed_lines, processed_validity = zip(*process_conditions(lines, MacroDefinitions.parse(lines)))
+    processed_lines, processed_validity = zip(
+        *process_conditions(lines, MacroDefinitions.parse(lines))
+    )
     assert list(processed_lines) == lines
     assert list(processed_validity) == validity
