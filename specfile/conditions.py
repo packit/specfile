@@ -82,7 +82,7 @@ def process_conditions(
     if macro_definitions:
         for md in macro_definitions:
             position = md.get_position(macro_definitions)
-            excluded_lines.append(range(position, position + len(md.body.splitlines())))
+            excluded_lines.append(range(position, position + len(md.body.split("\n"))))
     condition_regex = re.compile(
         r"""
         ^

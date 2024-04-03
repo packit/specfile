@@ -156,11 +156,7 @@ class MacroDefinition:
             elif self.comment_out_style is CommentOutStyle.HASH:
                 sc = "#"
         macro = "global" if self.is_global else "define"
-        body = self.body.splitlines()
-        if body:
-            body[-1] += ws[3]
-        else:
-            body = [ws[3]]
+        body = (self.body + ws[3]).split("\n")
         result.append(f"{ws[0]}{dnl}{pre}{sc}{macro}{ws[1]}{self.name}{ws[2]}{body[0]}")
         result.extend(body[1:])
         return result
@@ -383,7 +379,7 @@ class MacroDefinitions(UserList[MacroDefinition]):
                         line, _ = pop(lines)
                         body += "\n" + line
                         bc, pc = count_brackets(body)
-                tokens = re.split(r"(\s+)$", body, maxsplit=1)
+                tokens = re.split(r"([^\S\n]+)$", body, maxsplit=1)
                 if len(tokens) == 1:
                     body = tokens[0]
                 else:
