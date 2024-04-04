@@ -192,6 +192,7 @@ with Specfile("example.spec") as spec:
 ```python
 # adding a new entry, author is automatically determined
 # (using the same heuristics that rpmdev-packager uses) if possible
+# this function already honors autochangelog
 specfile.add_changelog_entry('New upstream release 2.1')
 
 # adding a new entry, specifying author and timestamp explicitly
@@ -201,6 +202,9 @@ specfile.add_changelog_entry(
     email='nforro@redhat.com',
     timestamp=datetime.date(2021, 11, 20),
 )
+
+if specfile.has_autochangelog:
+    # do something
 ```
 
 #### Sources and patches
