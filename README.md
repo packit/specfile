@@ -175,6 +175,18 @@ specfile.set_version_and_release('2.1', release='3')
 specfile.set_version_and_release('2.1', preserve_macros=True)
 ```
 
+#### Bumping release
+
+To bump release and add a new changelog entry, you could use the following code:
+
+```python
+from specfile import Specfile
+
+with Specfile("example.spec") as spec:
+    spec.release = str(int(spec.expanded_release) + 1)
+    spec.add_changelog_entry("- Bumped release for test purposes")
+```
+
 #### Changelog
 
 ```python
