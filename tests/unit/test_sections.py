@@ -6,6 +6,7 @@ import copy
 import pytest
 from flexmock import flexmock
 
+from specfile.macro_definitions import MacroDefinitions
 from specfile.options import Options, Token, TokenType
 from specfile.sections import Section, Sections
 
@@ -104,32 +105,35 @@ def test_parse_invalid_name():
 
 
 def test_parse_macro_definitions():
-    sections = Sections.parse(
-        [
-            "%package -n test",
-            "Summary: Subpackage test",
-            "",
-            "%description -n test",
-            "Subpackage test.",
-            "",
-            "%define template1()\\",
-            "%package -n %{1}\\",
-            "Summary: Subpackage %{1}\\",
-            "\\",
-            "%description -n %{1}\\",
-            "Subpackage %{1}.",
-            "",
-            "%define template2() %{expand:",
-            "%package -n %{1}",
-            "Summary: Subpackage %{1}",
-            "",
-            "%description -n %{1}",
-            "Subpackage %{1}.}",
-            "",
-            "%prep",
-            "%autosetup",
-        ]
-    )
+    lines = [
+        "%package -n test",
+        "Summary: Subpackage test",
+        "",
+        "%description -n test",
+        "Subpackage test.",
+        "",
+        "%define template1()\\",
+        "%package -n %{1}\\",
+        "Summary: Subpackage %{1}\\",
+        "\\",
+        "%description -n %{1}\\",
+        "Subpackage %{1}.",
+        "",
+        "%define template2() %{expand:",
+        "%package -n %{1}",
+        "Summary: Subpackage %{1}",
+        "",
+        "%description -n %{1}",
+        "Subpackage %{1}.}",
+        "",
+        "%prep",
+        "%autosetup",
+    ]
+    sections = Sections.parse(lines)
+    assert len(sections) == 4
+    assert sections[1].id == "package -n test"
+    assert sections[-1].id == "prep"
+    sections = Sections.parse(lines, MacroDefinitions.parse(lines))
     assert len(sections) == 4
     assert sections[1].id == "package -n test"
     assert sections[-1].id == "prep"

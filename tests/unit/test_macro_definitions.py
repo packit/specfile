@@ -101,6 +101,9 @@ def test_parse():
             "%define desc(x) Test spec file containing several \\",
             "macro definitions in various formats (%?1)",
             "",
+            "%global trailing_newline \\",
+            "body with trailing newline \\",
+            "",
             "%define example() %{expand:",
             "This an example of a macro definition with body ",
             "spawning across mutiple lines}",
@@ -124,6 +127,12 @@ def test_parse():
         "Test spec file containing several \\\n"
         "macro definitions in various formats (%?1)"
     )
+    assert macro_definitions[7].name == "trailing_newline"
+    assert macro_definitions[7].body == "\\\nbody with trailing newline \\\n"
+    assert macro_definitions[7].is_global
+    assert not macro_definitions[7].commented_out
+    assert macro_definitions[7]._whitespace == ("", " ", " ", "")
+    assert macro_definitions[7].valid
     assert macro_definitions[-1].name == "example()"
     assert macro_definitions[-1].body == (
         "%{expand:\n"
@@ -220,6 +229,14 @@ def test_get_raw_data():
                 True,
                 [""],
             ),
+            MacroDefinition(
+                "trailing_newline",
+                "\\\nbody with trailing newline \\\n",
+                True,
+                False,
+                CommentOutStyle.DNL,
+                ("", " ", " ", ""),
+            ),
         ]
     )
     assert macro_definitions.get_raw_data() == [
@@ -240,6 +257,9 @@ def test_get_raw_data():
         "%define example() %{expand:",
         "This an example of a macro definition with body ",
         "spawning across mutiple lines}",
+        "%global trailing_newline \\",
+        "body with trailing newline \\",
+        "",
     ]
 
 
