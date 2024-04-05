@@ -36,6 +36,10 @@ Prep macros are macros that often appear in (and only in, they don't make sense 
 
 4 such macros are recognized by this library, [`%setup`](https://rpm-packaging-guide.github.io/#setup), [`%patch`](http://ftp.rpm.org/max-rpm/s1-rpm-inside-macros.html#S2-RPM-INSIDE-PATCH-MACRO), [`%autosetup`](https://rpm-software-management.github.io/rpm/manual/autosetup.html#autosetup-description) and [`%autopatch`](https://rpm-software-management.github.io/rpm/manual/autosetup.html#autopatch). A typical spec file uses either `%autosetup` or a combination of `%setup` and `%patch` or `%autopatch`.
 
+## Documentation
+
+[Full documentation generated from code](https://packit.dev/specfile/api/specfile).
+
 ## Examples and use cases
 
 The following examples should cover use cases required by [packit](https://github.com/packit/research/blob/main/specfile/README.md).
@@ -175,20 +179,36 @@ specfile.set_version_and_release('2.1', release='3')
 specfile.set_version_and_release('2.1', preserve_macros=True)
 ```
 
+#### Bumping release
+
+To bump release and add a new changelog entry, you could use the following code:
+
+```python
+from specfile import Specfile
+
+with Specfile("example.spec") as spec:
+    spec.release = str(int(spec.expanded_release) + 1)
+    spec.add_changelog_entry("- Bumped release for test purposes")
+```
+
 #### Changelog
 
 ```python
 # adding a new entry, author is automatically determined
 # (using the same heuristics that rpmdev-packager uses) if possible
-specfile.add_changelog_entry('New upstream release 2.1')
+# this function already honors autochangelog
+specfile.add_changelog_entry('- New upstream release 2.1')
 
 # adding a new entry, specifying author and timestamp explicitly
 specfile.add_changelog_entry(
-    'New upstream release 2.1',
+    '- New upstream release 2.1',
     author='Nikola Forró',
     email='nforro@redhat.com',
     timestamp=datetime.date(2021, 11, 20),
 )
+
+if specfile.has_autochangelog:
+    # do something
 ```
 
 #### Sources and patches
