@@ -1,3 +1,7 @@
+# 0.28.2
+
+- Handling of trailing newlines in the macro defintions has been improved. (#361)
+
 # 0.28.1
 
 - We have fixed an issue in `%prep` section processing. For instance, if the `%patches` macro appeared there, it would have been converted to `%patch es`, causing failure when executing `%prep` later. (#356)
