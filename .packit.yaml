@@ -52,6 +52,7 @@ packages:
       create-archive:
         - python3 setup.py sdist --dist-dir ./epel8/
         - bash -c "ls -1t ./epel8/*.tar.gz | head -n 1"
+        - false
       get-current-version: python3 setup.py --version
 
 jobs:
