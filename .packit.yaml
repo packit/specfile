@@ -58,12 +58,16 @@ packages:
 jobs:
   - job: copr_build
     trigger: pull_request
+    owner: nforro
+    project: debug
     packages: [specfile]
     targets:
       - fedora-all
       - epel-9
   - job: copr_build
     trigger: pull_request
+    owner: nforro
+    project: debug
     packages: [specfile-epel8]
     targets:
       - epel-8
