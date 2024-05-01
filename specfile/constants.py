@@ -2,9 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 # valid section names as defined in build/parseSpec.c in RPM source
-SECTION_NAMES = {
-
-}
+SECTION_NAMES = {}
 
 SIMPLE_SCRIPT_SECTIONS = {
     "build",
@@ -52,9 +50,7 @@ SECTION_OPTIONS = {
 SECTION_OPTIONS.update({s: "n:f:p:P:eq" for s in SCRIPT_SECTIONS})
 
 # valid tag names as defined in build/parsePreamble.c in RPM source
-TAG_NAMES = {
-
-}
+TAG_NAMES = {}
 
 # tags that can optionally have an argument (language or qualifier)
 TAGS_WITH_ARG = {
