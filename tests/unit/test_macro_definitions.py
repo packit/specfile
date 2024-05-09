@@ -93,7 +93,9 @@ def test_parse():
             "",
             "%dnl %global pre         a1",
             "#global prerel      beta2",
-            "# %global prerelease pre3",
+            "# %%global prerelease pre3",
+            "",
+            "#%global seemingly_commented_out 1",
             "",
             "Name:           test",
             "Version:        0.1.0",
@@ -122,17 +124,19 @@ def test_parse():
     assert macro_definitions[5].name == "prerelease"
     assert macro_definitions[5].commented_out
     assert macro_definitions[5].comment_out_style is CommentOutStyle.OTHER
-    assert macro_definitions[6].name == "desc(x)"
-    assert macro_definitions[6].body == (
+    assert macro_definitions[6].name == "seemingly_commented_out"
+    assert not macro_definitions[6].commented_out
+    assert macro_definitions[7].name == "desc(x)"
+    assert macro_definitions[7].body == (
         "Test spec file containing several \\\n"
         "macro definitions in various formats (%?1)"
     )
-    assert macro_definitions[7].name == "trailing_newline"
-    assert macro_definitions[7].body == "\\\nbody with trailing newline \\\n"
-    assert macro_definitions[7].is_global
-    assert not macro_definitions[7].commented_out
-    assert macro_definitions[7]._whitespace == ("", " ", " ", "")
-    assert macro_definitions[7].valid
+    assert macro_definitions[8].name == "trailing_newline"
+    assert macro_definitions[8].body == "\\\nbody with trailing newline \\\n"
+    assert macro_definitions[8].is_global
+    assert not macro_definitions[8].commented_out
+    assert macro_definitions[8]._whitespace == ("", " ", " ", "")
+    assert macro_definitions[8].valid
     assert macro_definitions[-1].name == "example()"
     assert macro_definitions[-1].body == (
         "%{expand:\n"
@@ -176,7 +180,6 @@ def test_get_raw_data():
                 CommentOutStyle.DNL,
                 ("", " ", "         ", ""),
                 " ",
-                "",
                 True,
                 [""],
             ),
@@ -195,8 +198,18 @@ def test_get_raw_data():
                 True,
                 CommentOutStyle.OTHER,
                 ("", " ", " ", ""),
+                "# %",
+            ),
+            MacroDefinition(
+                "seemingly_commented_out",
+                "1",
+                True,
+                False,
+                CommentOutStyle.DNL,
+                ("#", " ", " ", ""),
                 "",
-                "# ",
+                True,
+                [""],
             ),
             MacroDefinition(
                 "desc(x)",
@@ -205,7 +218,6 @@ def test_get_raw_data():
                 False,
                 CommentOutStyle.DNL,
                 ("", " ", " ", ""),
-                "",
                 "",
                 True,
                 [
@@ -224,7 +236,6 @@ def test_get_raw_data():
                 False,
                 CommentOutStyle.DNL,
                 ("", " ", " ", ""),
-                "",
                 "",
                 True,
                 [""],
@@ -246,7 +257,9 @@ def test_get_raw_data():
         "",
         "%dnl %global pre         a1",
         "#global prerel      beta2",
-        "# %global prerelease pre3",
+        "# %%global prerelease pre3",
+        "",
+        "#%global seemingly_commented_out 1",
         "",
         "Name:           test",
         "Version:        0.1.0",
