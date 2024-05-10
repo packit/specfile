@@ -359,11 +359,12 @@ class Sources(collections.abc.MutableSequence):
         """
         result = []
         last_number = -1
+        numbered_pattern = re.compile(rf"{self.prefix}\d+")
         for i, tag in enumerate(self._tags):
             if tag.normalized_name == self.prefix:
                 last_number += 1
                 ts = self.tag_class(tag, last_number)
-            elif tag.normalized_name.startswith(self.prefix):
+            elif numbered_pattern.match(tag.normalized_name):
                 ts = self.tag_class(tag)
                 last_number = ts.number
             else:
@@ -675,11 +676,12 @@ class Patches(Sources):
         Returns:
             Tuple in the form of (index, name, separator).
         """
+        source_pattern = re.compile(rf"{Sources.prefix}\d*")
         try:
             index, source = [
                 (i, Sources.tag_class(t))
                 for i, t in enumerate(self._tags)
-                if t.normalized_name.startswith(Sources.prefix)
+                if source_pattern.match(t.normalized_name)
             ][-1]
         except IndexError:
             return super()._get_initial_tag_setup(number)
