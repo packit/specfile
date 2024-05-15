@@ -32,11 +32,12 @@ def extract_sections(filename: Path) -> List[str]:
 
     static const struct PartRec {
         int part;
+        int prebuildonly;
         size_t len;
         const char * token;
     } partList[] = {
-        { PART_PREAMBLE,      LEN_AND_STR("%package")},
-        { PART_PREP,          LEN_AND_STR("%prep")},
+        { PART_PREAMBLE,      0, LEN_AND_STR("%package")},
+        { PART_PREP,          1, LEN_AND_STR("%prep")},
         ...
         {0, 0, 0}
     };
@@ -50,7 +51,8 @@ def extract_sections(filename: Path) -> List[str]:
     constant = Word(srange("[A-Z_]")).suppress()
     name = dbl_quoted_string.set_parse_action(remove_quotes)
     macro = "LEN_AND_STR(" + name + ")"
-    item = "{" + Suppress(constant) + "," + macro + "}"
+    number = pyparsing_common.number
+    item = "{" + Suppress(constant) + "," + number.suppress() + "," + macro + "}"
     sentinel = Suppress("{" + delimited_list(Literal("0")) + "}")
     parser = (
         Suppress("partList[]") + "=" + "{" + delimited_list(item) + "," + sentinel + "}"
@@ -67,8 +69,8 @@ def extract_tags(filename: Path, with_args: bool = False) -> List[str]:
     Extracts tag names from a constant array looking like this:
 
     static struct PreambleRec_s const preambleList[] = {
-        {RPMTAG_NAME,       0, 0, 1, LEN_AND_STR("name")},
-        {RPMTAG_VERSION,        0, 0, 1, LEN_AND_STR("version")},
+        {RPMTAG_NAME,		0, 0, 1, 0, LEN_AND_STR("name")},
+        {RPMTAG_VERSION,		0, 0, 1, 0, LEN_AND_STR("version")},
         ...
         {0, 0, 0, 0}
     };
@@ -89,6 +91,8 @@ def extract_tags(filename: Path, with_args: bool = False) -> List[str]:
         + constant
         + ","
         + number("type")
+        + ","
+        + number.suppress()
         + ","
         + number.suppress()
         + ","
