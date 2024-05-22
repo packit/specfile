@@ -11,8 +11,6 @@ import shutil
 import subprocess
 from typing import List, Optional, Union, overload
 
-import rpm
-
 from specfile.exceptions import SpecfileException
 from specfile.formatter import formatted
 from specfile.macros import Macros
@@ -282,10 +280,9 @@ class Changelog(UserList[ChangelogEntry]):
 
         def parse_evr(s):
             try:
-                evr = EVR.from_string(s)
+                return EVR.from_string(s)
             except SpecfileException:
-                return "0", "0", ""
-            return str(evr.epoch), evr.version or "0", evr.release
+                return EVR(version="0")
 
         if since is None:
             start_index = 0
@@ -294,7 +291,7 @@ class Changelog(UserList[ChangelogEntry]):
                 (
                     i
                     for i, e in enumerate(self.data)
-                    if rpm.labelCompare(parse_evr(e.evr), parse_evr(since)) >= 0
+                    if parse_evr(e.evr) >= parse_evr(since)
                 ),
                 len(self.data) + 1,
             )
@@ -305,7 +302,7 @@ class Changelog(UserList[ChangelogEntry]):
                 (
                     i + 1
                     for i, e in reversed(list(enumerate(self.data)))
-                    if rpm.labelCompare(parse_evr(e.evr), parse_evr(until)) <= 0
+                    if parse_evr(e.evr) <= parse_evr(until)
                 ),
                 0,
             )

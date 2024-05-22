@@ -6,6 +6,8 @@ import re
 import sys
 from typing import TYPE_CHECKING, Tuple
 
+import rpm
+
 from specfile.constants import ARCH_NAMES
 from specfile.exceptions import SpecfileException, UnterminatedMacroException
 from specfile.formatter import formatted
@@ -28,10 +30,41 @@ class EVR(collections.abc.Hashable):
     def __hash__(self) -> int:
         return hash(self._key())
 
+    def _rpm_evr_tuple(self) -> Tuple[str, str, str]:
+        return str(self.epoch), self.version or "0", self.release
+
+    def _cmp(self, other: "EVR") -> int:
+        return rpm.labelCompare(self._rpm_evr_tuple(), other._rpm_evr_tuple())
+
+    def __lt__(self, other: object) -> bool:
+        if type(other) is not self.__class__:
+            return NotImplemented
+        return self._cmp(other) < 0
+
+    def __le__(self, other: object) -> bool:
+        if type(other) is not self.__class__:
+            return NotImplemented
+        return self._cmp(other) <= 0
+
     def __eq__(self, other: object) -> bool:
         if type(other) is not self.__class__:
             return NotImplemented
-        return self._key() == other._key()
+        return self._cmp(other) == 0
+
+    def __ne__(self, other: object) -> bool:
+        if type(other) is not self.__class__:
+            return NotImplemented
+        return self._cmp(other) != 0
+
+    def __ge__(self, other: object) -> bool:
+        if type(other) is not self.__class__:
+            return NotImplemented
+        return self._cmp(other) >= 0
+
+    def __gt__(self, other: object) -> bool:
+        if type(other) is not self.__class__:
+            return NotImplemented
+        return self._cmp(other) > 0
 
     @formatted
     def __repr__(self) -> str:
@@ -64,6 +97,44 @@ class NEVR(EVR):
 
     def _key(self) -> tuple:
         return self.name, self.epoch, self.version, self.release
+
+    def __lt__(self, other: object) -> bool:
+        if type(other) is not self.__class__:
+            return NotImplemented
+        if self.name != other.name:
+            return NotImplemented
+        return self._cmp(other) < 0
+
+    def __le__(self, other: object) -> bool:
+        if type(other) is not self.__class__:
+            return NotImplemented
+        if self.name != other.name:
+            return NotImplemented
+        return self._cmp(other) <= 0
+
+    def __eq__(self, other: object) -> bool:
+        if type(other) is not self.__class__:
+            return NotImplemented
+        return self.name == other.name and self._cmp(other) == 0
+
+    def __ne__(self, other: object) -> bool:
+        if type(other) is not self.__class__:
+            return NotImplemented
+        return self.name != other.name or self._cmp(other) != 0
+
+    def __ge__(self, other: object) -> bool:
+        if type(other) is not self.__class__:
+            return NotImplemented
+        if self.name != other.name:
+            return NotImplemented
+        return self._cmp(other) >= 0
+
+    def __gt__(self, other: object) -> bool:
+        if type(other) is not self.__class__:
+            return NotImplemented
+        if self.name != other.name:
+            return NotImplemented
+        return self._cmp(other) > 0
 
     @formatted
     def __repr__(self) -> str:
@@ -100,6 +171,50 @@ class NEVRA(NEVR):
 
     def _key(self) -> tuple:
         return self.name, self.epoch, self.version, self.release, self.arch
+
+    def __lt__(self, other: object) -> bool:
+        if type(other) is not self.__class__:
+            return NotImplemented
+        if self.name != other.name or self.arch != other.arch:
+            return NotImplemented
+        return self._cmp(other) < 0
+
+    def __le__(self, other: object) -> bool:
+        if type(other) is not self.__class__:
+            return NotImplemented
+        if self.name != other.name or self.arch != other.arch:
+            return NotImplemented
+        return self._cmp(other) <= 0
+
+    def __eq__(self, other: object) -> bool:
+        if type(other) is not self.__class__:
+            return NotImplemented
+        return (
+            self.name == other.name
+            and self.arch == other.arch
+            and self._cmp(other) == 0
+        )
+
+    def __ne__(self, other: object) -> bool:
+        if type(other) is not self.__class__:
+            return NotImplemented
+        return (
+            self.name != other.name or self.arch != other.arch or self._cmp(other) != 0
+        )
+
+    def __ge__(self, other: object) -> bool:
+        if type(other) is not self.__class__:
+            return NotImplemented
+        if self.name != other.name or self.arch != other.arch:
+            return NotImplemented
+        return self._cmp(other) >= 0
+
+    def __gt__(self, other: object) -> bool:
+        if type(other) is not self.__class__:
+            return NotImplemented
+        if self.name != other.name or self.arch != other.arch:
+            return NotImplemented
+        return self._cmp(other) > 0
 
     @formatted
     def __repr__(self) -> str:
