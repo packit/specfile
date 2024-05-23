@@ -1,3 +1,8 @@
+# 0.28.3
+
+- Fixed several minor issues such as processing seemingly commented-out macro definitions (e.g. `#%global prerel rc1`) and treating `SourceLicense` tag as a source. (#374, #376)
+- Made `EVR`, `NEVR` and `NEVRA` objects comparable. (#379)
+
 # 0.28.2
 
 - Handling of trailing newlines in the macro defintions has been improved. (#361)
