@@ -32,6 +32,42 @@ def test_get_filename_from_location(location, filename):
     assert get_filename_from_location(location) == filename
 
 
+def test_EVR_compare():
+    assert EVR(version="0") == EVR(version="0")
+    assert EVR(version="0", release="1") != EVR(version="0", release="2")
+    assert EVR(version="12.0", release="1") <= EVR(version="12.0", release="1")
+    assert EVR(version="12.0", release="1") <= EVR(version="12.0", release="2")
+    assert EVR(epoch=2, version="56.8", release="5") > EVR(
+        epoch=1, version="99.2", release="2"
+    )
+
+
+def test_NEVR_compare():
+    assert NEVR(name="test", version="1", release="1") == NEVR(
+        name="test", version="1", release="1"
+    )
+    assert NEVR(name="test", version="3", release="1") != NEVR(
+        name="test2", version="3", release="1"
+    )
+    with pytest.raises(TypeError):
+        NEVR(name="test", version="3", release="1") > NEVR(
+            name="test2", version="1", release="2"
+        )
+
+
+def test_NEVRA_compare():
+    assert NEVRA(name="test", version="1", release="1", arch="x86_64") == NEVRA(
+        name="test", version="1", release="1", arch="x86_64"
+    )
+    assert NEVRA(name="test", version="2", release="1", arch="x86_64") != NEVRA(
+        name="test", version="2", release="1", arch="aarch64"
+    )
+    with pytest.raises(TypeError):
+        NEVRA(name="test", version="1", release="1", arch="aarch64") < NEVRA(
+            name="test", version="2", release="1", arch="x86_64"
+        )
+
+
 @pytest.mark.parametrize(
     "evr, result",
     [
