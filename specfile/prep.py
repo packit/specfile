@@ -112,19 +112,26 @@ class PatchMacro(PrepMacro):
     @property
     def number(self) -> int:
         """Number of the %patch macro."""
-        if self.options.P is not None:
-            return int(self.options.P)
         tokens = re.split(r"(\d+)", self.name, maxsplit=1)
         if len(tokens) > 1:
             return int(tokens[1])
+        if self.options.P is not None:
+            return int(self.options.P)
+        if self.options.positional:
+            return int(self.options.positional[0])
         return 0
 
     @number.setter
     def number(self, value: int) -> None:
-        if self.options.P is not None:
+        tokens = re.split(r"(\d+)", self.name, maxsplit=1)
+        if len(tokens) > 1:
+            self.name = f"{tokens[0]}{value}"
+        elif self.options.P is not None:
             self.options.P = value
-            return
-        self.name = f"{self.CANONICAL_NAME}{value}"
+        elif self.options.positional:
+            self.options.positional[0] = value
+        else:
+            self.name = f"{self.CANONICAL_NAME}{value}"
 
 
 class AutosetupMacro(PrepMacro):
@@ -280,12 +287,18 @@ class Prep(collections.abc.Container):
             return super().__delattr__(name)
         return delattr(self.macros, name)
 
-    def add_patch_macro(self, number: int, **kwargs: Any) -> None:
+    def add_patch_macro(
+        self,
+        number: Optional[int] = None,
+        old_style_number: bool = False,
+        **kwargs: Any,
+    ) -> None:
         """
         Adds a new _%patch_ macro with given number and options.
 
         Args:
-            number: Macro number.
+            number: Optional macro number.
+            old_style_number: Whether the number should be part of macro name.
             P: The _-P_ option (patch number).
             p: The _-p_ option (strip number).
             R: The _-R_ option (reverse).
@@ -297,19 +310,24 @@ class Prep(collections.abc.Container):
             o: The _-o_ option (output file).
             Z: The _-Z_ option (set UTC times).
         """
+        name = PatchMacro.CANONICAL_NAME
         options = Options([], PatchMacro.OPTSTRING, PatchMacro.DEFAULTS)
+        if number is not None:
+            if old_style_number:
+                name += str(number)
+            else:
+                options.positional.append(number)
         for k, v in kwargs.items():
             setattr(options, k, v)
-        macro = PatchMacro(PatchMacro.CANONICAL_NAME, options, " ")
-        macro.number = number
+        macro = PatchMacro(name, options, " ")
         index, _ = min(
             ((i, m) for i, m in enumerate(self.macros) if isinstance(m, PatchMacro)),
-            key=lambda im: abs(im[1].number - number),
+            key=lambda im: abs(im[1].number - macro.number),
             default=(len(self.macros), None),
         )
         if (
             index < len(self.macros)
-            and cast(PatchMacro, self.macros[index]).number <= number
+            and cast(PatchMacro, self.macros[index]).number <= macro.number
         ):
             index += 1
         self.macros.insert(index, macro)
