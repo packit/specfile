@@ -41,12 +41,13 @@ def test_prep_traditional(spec_traditional):
         assert len([m for m in prep.macros if isinstance(m, PatchMacro)]) == 2
         prep.add_patch_macro(0, p=2, b=".test")
         assert len(prep.macros) == 4
-        assert prep.patch0.options.p == 2
-        assert prep.patch0.options.b == ".test"
-        prep.patch0.options.b = ".test2"
-        prep.patch0.options.E = True
+        assert prep.macros[1].options.positional == [0]
+        assert prep.macros[1].options.p == 2
+        assert prep.macros[1].options.b == ".test"
+        prep.macros[1].options.b = ".test2"
+        prep.macros[1].options.E = True
     with spec.sections() as sections:
-        assert sections.prep[1] == "%patch0 -p2 -b .test2 -E"
+        assert sections.prep[1] == "%patch 0 -p2 -b .test2 -E"
 
 
 def test_prep_autosetup(spec_autosetup):

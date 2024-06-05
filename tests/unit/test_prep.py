@@ -17,7 +17,10 @@ from specfile.sections import Section
         ("%patch0028", "-p2", 28),
         ("%patch", "-p1", 0),
         ("%patch", "-P1", 1),
-        ("%patch3", "-P5", 5),
+        ("%patch3", "-P5", 3),
+        ("%patch0", "-P1 2", 0),
+        ("%patch", "-P1 2", 1),
+        ("%patch", "2", 2),
     ],
 )
 def test_patch_macro_number(name, options, number):
@@ -40,48 +43,55 @@ def test_prep_macros_find():
 
 
 @pytest.mark.parametrize(
-    "lines_before, number, options, lines_after",
+    "lines_before, number, old_style_number, options, lines_after",
     [
         (
             ["%setup -q"],
             0,
+            True,
             dict(p=1),
             ["%setup -q", "%patch0 -p1"],
         ),
         (
             ["%setup -q", "%patch0 -p1"],
             0,
+            True,
             dict(p=2),
             ["%setup -q", "%patch0 -p1", "%patch0 -p2"],
         ),
         (
             ["%setup -q", "%patch999 -p1"],
             28,
+            False,
             dict(p=1),
-            ["%setup -q", "%patch28 -p1", "%patch999 -p1"],
+            ["%setup -q", "%patch 28 -p1", "%patch999 -p1"],
         ),
         (
             ["%setup -q", "%patch999 -p1"],
             1001,
+            False,
             dict(p=1),
-            ["%setup -q", "%patch999 -p1", "%patch1001 -p1"],
+            ["%setup -q", "%patch999 -p1", "%patch 1001 -p1"],
         ),
         (
             ["%setup -q", "%{!?skip_first_patch:%patch0 -p1}", "%patch999 -p1"],
             28,
+            False,
             dict(p=2, b=".patch28"),
             [
                 "%setup -q",
                 "%{!?skip_first_patch:%patch0 -p1}",
-                "%patch28 -p2 -b .patch28",
+                "%patch 28 -p2 -b .patch28",
                 "%patch999 -p1",
             ],
         ),
     ],
 )
-def test_prep_add_patch_macro(lines_before, number, options, lines_after):
+def test_prep_add_patch_macro(
+    lines_before, number, old_style_number, options, lines_after
+):
     prep = Prep.parse(Section("prep", data=lines_before))
-    prep.add_patch_macro(number, **options)
+    prep.add_patch_macro(number, old_style_number, **options)
     assert prep.get_raw_section_data() == lines_after
 
 
