@@ -1,3 +1,7 @@
+# 0.29.0
+
+- Improved compatibility with RPM 4.20 (alpha version is currently in Fedora Rawhide). (#380)
+
 # 0.28.3
 
 - Fixed several minor issues such as processing seemingly commented-out macro definitions (e.g. `#%global prerel rc1`) and treating `SourceLicense` tag as a source. (#374, #376)
