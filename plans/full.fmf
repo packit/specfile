@@ -2,3 +2,9 @@ summary:
   Unit & integration tests
 discover+:
   filter: tier:1
+adjust:
+  - when: "distro == rhel-8"
+    because: "only platform-python is installed on RHEL 8 by default"
+    prepare+:
+      - how: install
+        package: python3

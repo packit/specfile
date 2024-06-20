@@ -136,8 +136,19 @@ jobs:
     trigger: pull_request
     packages: [specfile-epel8]
     tmt_plan: "smoke|full"
+    use_internal_tf: true
     targets:
-      - epel-8
+      epel-8:
+        distros: [RHEL-8]
+    # enable EPEL
+    tf_extra_params:
+      environments:
+        - kickstart:
+            post-install: |
+              %post --log=/dev/console
+              set -x
+              dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+              %end
 
   - job: tests
     trigger: pull_request
