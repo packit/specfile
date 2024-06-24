@@ -12,7 +12,11 @@ import rpm
 
 from specfile.changelog import Changelog, ChangelogEntry, guess_packager
 from specfile.context_management import ContextManager
-from specfile.exceptions import SourceNumberException, SpecfileException
+from specfile.exceptions import (
+    SourceNumberException,
+    SpecfileException,
+    UnterminatedMacroException,
+)
 from specfile.formatter import formatted
 from specfile.macro_definitions import (
     CommentOutStyle,
@@ -433,12 +437,16 @@ class Specfile:
             if line.lstrip().startswith("#"):
                 # skip comments
                 continue
-            for node in ValueParser.flatten(ValueParser.parse(line)):
-                if (
-                    isinstance(node, (MacroSubstitution, EnclosedMacroSubstitution))
-                    and node.name == "autochangelog"
-                ):
-                    return True
+            try:
+                for node in ValueParser.flatten(ValueParser.parse(line)):
+                    if (
+                        isinstance(node, (MacroSubstitution, EnclosedMacroSubstitution))
+                        and node.name == "autochangelog"
+                    ):
+                        return True
+            except UnterminatedMacroException:
+                # ignore unparseable lines
+                continue
         return False
 
     @property
