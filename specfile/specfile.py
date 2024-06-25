@@ -32,6 +32,7 @@ from specfile.spec_parser import SpecParser
 from specfile.tags import Tag, Tags
 from specfile.value_parser import (
     SUBSTITUTION_GROUP_PREFIX,
+    ConditionalMacroExpansion,
     EnclosedMacroSubstitution,
     MacroSubstitution,
     ValueParser,
@@ -774,7 +775,35 @@ class Specfile:
             )
         entities.sort(key=lambda e: e.position)
 
+        def find_reference(entity, value):
+            def traverse(nodes):
+                for node in nodes:
+                    if isinstance(
+                        node,
+                        (
+                            MacroSubstitution,
+                            EnclosedMacroSubstitution,
+                            ConditionalMacroExpansion,
+                        ),
+                    ):
+                        if (
+                            entity.type == Tag
+                            and entity.name == node.name.lower()
+                            or entity.name == node.name
+                        ):
+                            return True
+                    if isinstance(node, ConditionalMacroExpansion):
+                        if traverse(node.body):
+                            return True
+                return False
+
+            return traverse(ValueParser.parse(value))
+
         def update(value, requested_value, position):
+            if value == requested_value:
+                # nothing to do
+                return requested_value
+
             modifiable_entities = {
                 e.name
                 for e in entities
@@ -821,6 +850,9 @@ class Specfile:
                     ][-1]
                     if entity.locked:
                         # avoid infinite recursion
+                        return requested_value
+                    if find_reference(entity, val):
+                        # avoid updating entity value if the entity is referenced from the new value
                         return requested_value
                     entity.locked = True
                     try:

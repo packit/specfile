@@ -407,6 +407,10 @@ def test_update_tag(spec_macros):
     assert spec.raw_release == "%{release}"
     with spec.macro_definitions() as md:
         assert md.release.body == "2%{?dist}"
+    spec.update_tag("Release", "%release")
+    assert spec.raw_release == "%release"
+    with spec.macro_definitions() as md:
+        assert md.release.body == "2%{?dist}"
     spec.update_tag(
         "Source0",
         "https://example.com/archived_releases/test/v6.0.0/test-v6.0.0.tar.xz",
