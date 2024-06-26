@@ -1,3 +1,7 @@
+# 0.30.0
+
+- Fixed an exception that occured when accessing the `Specfile.has_autochangelog` property while having unparseable lines (e.g. lines ending with unescaped `%`) in `%changelog`. (#387)
+
 # 0.29.0
 
 - Improved compatibility with RPM 4.20 (alpha version is currently in Fedora Rawhide). (#380)
