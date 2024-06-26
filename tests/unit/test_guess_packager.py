@@ -45,19 +45,16 @@ def set_packager_git(monkeypatch: MonkeyPatch, tmp_path: Path) -> str:
 
     monkeypatch.chdir(tmp_path)
     subprocess.run(
-        ["git", "init", "."], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
+        ["git", "init", "."], check=True, capture_output=True)
     subprocess.run(
         ["git", "config", "user.name", "Packager, Patty"],
         check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
     )
     subprocess.run(
         ["git", "config", "user.email", "packager@patty.dev"],
         check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
     )
     return packager
 

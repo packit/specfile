@@ -400,15 +400,13 @@ def guess_packager() -> str:
     if shutil.which("git"):
         email = subprocess.run(
             ["git", "config", "user.email"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
+            capture_output=True,
+            text=True,
         ).stdout.strip()
         fullname = subprocess.run(
             ["git", "config", "user.name"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
+            capture_output=True,
+            text=True,
         ).stdout.strip()
     if not fullname:
         fullname = _getent_name()
