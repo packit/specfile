@@ -44,8 +44,7 @@ def set_packager_git(monkeypatch: MonkeyPatch, tmp_path: Path) -> str:
     packager = "Packager, Patty <packager@patty.dev>"
 
     monkeypatch.chdir(tmp_path)
-    subprocess.run(
-        ["git", "init", "."], check=True, capture_output=True)
+    subprocess.run(["git", "init", "."], check=True, capture_output=True)
     subprocess.run(
         ["git", "config", "user.name", "Packager, Patty"],
         check=True,
