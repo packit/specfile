@@ -4,23 +4,31 @@
 import pytest
 from flexmock import flexmock
 
-import specfile.conditions
 from specfile.conditions import process_conditions
 from specfile.macro_definitions import MacroDefinitions
+from specfile.macros import Macros
 
 
 @pytest.mark.parametrize(
-    "lines, validity, resolve_func",
+    "lines, validity, expand_func",
     [
         (
             ["%ifarch %{power64}", "export ARCH=PPC64", "%endif"],
             [True, True, True],
-            lambda kwd, exp: True,
+            lambda expr: (
+                "ppc64"
+                if expr == "%{_target_cpu}"
+                else "ppc64 ppc64p7 ppc64le" if expr == "%{power64}" else expr
+            ),
         ),
         (
             ["%ifarch %{power64}", "export ARCH=PPC64", "%endif"],
             [True, False, True],
-            lambda kwd, exp: False,
+            lambda expr: (
+                "x86_64"
+                if expr == "%{_target_cpu}"
+                else "ppc64 ppc64p7 ppc64le" if expr == "%{power64}" else expr
+            ),
         ),
         (
             [
@@ -33,7 +41,11 @@ from specfile.macro_definitions import MacroDefinitions
                 "%endif",
             ],
             [True, False, True, True, True, False, True],
-            lambda kwd, exp: "rhel" in exp,
+            lambda expr: (
+                "0"
+                if expr == "%{expr:0%{?fedora} > 38}"
+                else "1" if expr == "%{expr:0%{?rhel} > 8}" else expr
+            ),
         ),
         (
             [
@@ -64,17 +76,19 @@ from specfile.macro_definitions import MacroDefinitions
                 True,
                 True,
             ],
-            lambda kwd, exp: "fedora" in exp,
+            lambda expr: (
+                "0"
+                if expr.startswith("%{expr:%{with_")
+                else "1" if expr == "%{expr:0%{?fedora}}" else expr
+            ),
         ),
     ],
 )
-def test_process_conditions(lines, validity, resolve_func):
-    def resolve_expression(kwd, exp, *_, **__):
-        return resolve_func(kwd, exp)
+def test_process_conditions(lines, validity, expand_func):
+    def expand(expr):
+        return expand_func(expr)
 
-    flexmock(specfile.conditions).should_receive("resolve_expression").replace_with(
-        resolve_expression
-    )
+    flexmock(Macros).should_receive("expand").replace_with(expand)
     processed_lines, processed_validity = zip(*process_conditions(lines))
     assert list(processed_lines) == lines
     assert list(processed_validity) == validity
