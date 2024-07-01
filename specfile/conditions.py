@@ -50,11 +50,11 @@ def resolve_expression(
             return True
     elif keyword.endswith("arch"):
         target_cpu = expand("%{_target_cpu}")
-        match = any(t for t in expression.split() if t == target_cpu)
+        match = any(t for t in expand(expression).split() if t == target_cpu)
         return not match if keyword == "%ifnarch" else match
     elif keyword.endswith("os"):
         target_os = expand("%{_target_os}")
-        match = any(t for t in expression.split() if t == target_os)
+        match = any(t for t in expand(expression).split() if t == target_os)
         return not match if keyword == "%ifnos" else match
     return False
 
