@@ -499,6 +499,10 @@ class Tags(UserList[Tag]):
         data = []
         buffer: List[str] = []
         for line, valid in lines:
+            ws = ""
+            tokens = re.split(r"([^\S\n]+)$", line, maxsplit=1)
+            if len(tokens) > 1:
+                line, ws, _ = tokens
             line, prefix, suffix = split_conditional_macro_expansion(line)
             # find out if there is a match for one of the tag regexes
             m = next((m for m in (r.match(line) for r in tag_regexes) if m), None)
@@ -511,13 +515,13 @@ class Tags(UserList[Tag]):
                         Comments.parse(buffer),
                         valid,
                         prefix,
-                        suffix,
+                        suffix + ws,
                         context,
                     )
                 )
                 buffer = []
             else:
-                buffer.append(prefix + line + suffix)
+                buffer.append(prefix + line + suffix + ws)
         return cls(data, buffer)
 
     def get_raw_section_data(self) -> List[str]:
