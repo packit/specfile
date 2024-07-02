@@ -50,11 +50,11 @@ def resolve_expression(
             return True
     elif keyword.endswith("arch"):
         target_cpu = expand("%{_target_cpu}")
-        match = any(t for t in expression.split() if t == target_cpu)
+        match = any(t for t in expand(expression).split() if t == target_cpu)
         return not match if keyword == "%ifnarch" else match
     elif keyword.endswith("os"):
         target_os = expand("%{_target_os}")
-        match = any(t for t in expression.split() if t == target_os)
+        match = any(t for t in expand(expression).split() if t == target_os)
         return not match if keyword == "%ifnos" else match
     return False
 
@@ -78,6 +78,15 @@ def process_conditions(
     Returns:
         List of tuples in the form of (line, validity).
     """
+
+    def expand(s):
+        if not context:
+            return Macros.expand(s)
+        result = context.expand(s, skip_parsing=getattr(expand, "skip_parsing", False))
+        # parse only once
+        expand.skip_parsing = True
+        return result
+
     excluded_lines = []
     if macro_definitions:
         for md in macro_definitions:
@@ -110,7 +119,12 @@ def process_conditions(
         if any(index in r for r in excluded_lines):
             result.append((line, branches[-1]))
             continue
-        m = condition_regex.match(line)
+        try:
+            expanded_line = expand(line)
+        except RPMException:
+            # ignore failed expansion and use the original line
+            expanded_line = line
+        m = condition_regex.match(expanded_line)
         if not m:
             result.append((line, branches[-1]))
             continue
