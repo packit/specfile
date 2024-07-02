@@ -112,7 +112,7 @@ class PatchMacro(PrepMacro):
     @property
     def number(self) -> int:
         """Number of the %patch macro."""
-        tokens = re.split(r"(\d+)", self.name, maxsplit=1)
+        tokens = re.split(r"(\d+)$", self.name, maxsplit=1)
         if len(tokens) > 1:
             return int(tokens[1])
         if self.options.P is not None:
@@ -123,7 +123,7 @@ class PatchMacro(PrepMacro):
 
     @number.setter
     def number(self, value: int) -> None:
-        tokens = re.split(r"(\d+)", self.name, maxsplit=1)
+        tokens = re.split(r"(\d+)$", self.name, maxsplit=1)
         if len(tokens) > 1:
             self.name = f"{tokens[0]}{value}"
         elif self.options.P is not None:
