@@ -104,7 +104,7 @@ class TagSource(Source):
         Returns:
             Extracted number or `None` if there isn't one.
         """
-        tokens = re.split(r"(\d+)", self._tag.name, maxsplit=1)
+        tokens = re.split(r"(\d+)$", self._tag.name, maxsplit=1)
         if len(tokens) > 1:
             return tokens[1]
         return None
