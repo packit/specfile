@@ -1,3 +1,8 @@
+# 0.31.0
+
+- Value of a `Tag` no longer includes trailing whitespace (if any). (#393)
+- specfile now tries to expand macros before processing conditions to be able to resolve conditional expressions defined by macros, for example OpenSUSE Tumbleweed defines `%ifpython3` macro as `%if "%{python_flavor}" == "python3"`. (#394)
+
 # 0.30.0
 
 - Fixed an exception that occured when accessing the `Specfile.has_autochangelog` property while having unparseable lines (e.g. lines ending with unescaped `%`) in `%changelog`. (#387)
