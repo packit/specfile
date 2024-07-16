@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import datetime
+import logging
 import re
 import types
 from dataclasses import dataclass
@@ -37,6 +38,8 @@ from specfile.value_parser import (
     MacroSubstitution,
     ValueParser,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class Specfile:
@@ -75,6 +78,7 @@ class Specfile:
             Path(sourcedir or self.path.parent), macros, force_parse
         )
         self._parser.parse(str(self))
+        self._dump_debug_info("After initial parsing")
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Specfile):
@@ -106,6 +110,14 @@ class Specfile:
         traceback: Optional[types.TracebackType],
     ) -> None:
         self.save()
+
+    def _dump_debug_info(self, message) -> None:
+        logger.debug(
+            f"DBG: {message}:\n"
+            f"  {self!r} @ 0x{id(self):012x}\n"
+            f"  {self._parser!r} @ 0x{id(self._parser):012x}\n"
+            f"  {self._parser.spec!r} @ 0x{id(self._parser.spec):012x}"
+        )
 
     @staticmethod
     def _read_lines(path: Path) -> Tuple[List[str], bool]:
@@ -160,7 +172,9 @@ class Specfile:
     @property
     def rpm_spec(self) -> rpm.spec:
         """Underlying `rpm.spec` instance."""
+        self._dump_debug_info("`rpm_spec` property, before parsing")
         self._parser.parse(str(self))
+        self._dump_debug_info("`rpm_spec` property, after parsing")
         return self._parser.spec
 
     def reload(self) -> None:
