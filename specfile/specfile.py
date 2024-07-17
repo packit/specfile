@@ -989,3 +989,50 @@ class Specfile:
             return version[:base_end] + "~" + version[suffix_start:]
 
         self.update_tag("Version", handle_prerelease(version))
+
+    @staticmethod
+    def _bump_release_string(release_string: str) -> str:
+        """
+        Bumps release string. Follows the logic of `rpmdev-bumpspec`.
+
+        Args:
+            release_string: Release string to be bumped.
+
+        Returns:
+            Bumped release string.
+        """
+        m = re.match(
+            r"^(?P<func>%release_func\s+)?(?P<pre>0\.)?(?P<rel>\d+)(?P<post>.*)$",
+            release_string,
+        )
+        if m and (
+            m.group("pre")
+            or all(x not in m.group("post") for x in ["alpha", "beta", "rc"])
+        ):
+            return (
+                (m.group("func") or "")
+                + (m.group("pre") or "")
+                + str(int(m.group("rel")) + 1)
+                + m.group("post")
+            )
+        m = re.match(r"^(?P<pre>.+\.)(?P<rel>\d+)$", release_string)
+        if m:
+            return m.group("pre") + str(int(m.group("rel")) + 1)
+        return release_string + ".1"
+
+    def bump_release(self) -> None:
+        """
+        Tries to bump release. Follows the logic of `rpmdev-bumpspec`, first trying to update
+        macro definitions that seem to define a release, then trying to update value
+        of the Release tag.
+        """
+        if self.has_autorelease:
+            return
+
+        with self.macro_definitions() as macro_definitions:
+            for md in macro_definitions:
+                if md.name.lower() in ["release", "baserelease"]:
+                    md.body = self._bump_release_string(md.body)
+                    return
+
+        self.raw_release = self._bump_release_string(self.raw_release)
