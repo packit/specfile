@@ -1,3 +1,7 @@
+# 0.32.0
+
+- It is now possible to bump a release in a manner similar to `rpmdev-bumpspec` using `Specfile.bump_release()` method. (#399)
+
 # 0.31.0
 
 - Value of a `Tag` no longer includes trailing whitespace (if any). (#393)
