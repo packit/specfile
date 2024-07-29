@@ -53,6 +53,8 @@ from specfile.macros import Macros
                 "BuildRequires: libX11-devel",
                 "%if 0%{?fedora}",
                 "Requires: desktop-file-utils",
+                "%else",
+                "Requires: gnome-desktop",
                 "%endif",
                 "BuildRequires: libXext-devel",
                 "%else",
@@ -69,6 +71,8 @@ from specfile.macros import Macros
                 False,
                 False,
                 False,
+                False,
+                False,
                 True,
                 True,
                 False,
@@ -80,6 +84,27 @@ from specfile.macros import Macros
                 "0"
                 if expr.startswith("%{expr:%{with_")
                 else "1" if expr == "%{expr:0%{?fedora}}" else expr
+            ),
+        ),
+        (
+            [
+                "%if %{bcond_default_lto}",
+                "%bcond_without lto",
+                "%else",
+                "%bcond_with lto",
+                "%endif",
+            ],
+            [
+                True,
+                False,
+                True,
+                True,
+                True,
+            ],
+            lambda expr: (
+                ""
+                if expr == "%{bcond_default_lto}"
+                else "0" if expr == "%{expr:0}" else expr
             ),
         ),
     ],
