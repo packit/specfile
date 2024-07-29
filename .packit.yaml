@@ -187,17 +187,24 @@ jobs:
     packages: [specfile]
     packit_instances: ["stg"]
     allowed_pr_authors: ["packit-stg", "packit"]
+    sidetag_group: packit-specfile-ogr-releases
+    dependents:
+      - packit
     dist_git_branches:
       - fedora-all
       - epel-9
+  - job: koji_build
+    trigger: commit
+    packages: [specfile-epel8]
+    packit_instances: ["stg"]
+    allowed_pr_authors: ["packit-stg", "packit"]
+    dist_git_branches:
       - epel-8
 
   - job: bodhi_update
     trigger: commit
-    packages: [specfile]
+    packages: [specfile-epel8]
     packit_instances: ["stg"]
     allowed_builders: ["packit-stg", "packit"]
     dist_git_branches:
-      - fedora-branched # rawhide updates are created automatically
-      - epel-9
       - epel-8
