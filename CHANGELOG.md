@@ -1,3 +1,7 @@
+# 0.32.1
+
+- Fixed two issues related to condition parsing. (#405)
+
 # 0.32.0
 
 - It is now possible to bump a release in a manner similar to `rpmdev-bumpspec` using `Specfile.bump_release()` method. (#399)
