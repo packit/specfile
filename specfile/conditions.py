@@ -134,7 +134,8 @@ def process_conditions(
             branches.pop()
         elif keyword.startswith("%el"):
             result.append((line, branches[-2]))
-            branches[-1] = not branches[-1]
+            if branches[-2]:
+                branches[-1] = not branches[-1]
         else:
             result.append((line, branches[-1]))
         if keyword.startswith("%if") or keyword.startswith("%elif"):
