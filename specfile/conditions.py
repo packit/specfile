@@ -137,18 +137,19 @@ def process_conditions(
             branches[-1] = not branches[-1]
         else:
             result.append((line, branches[-1]))
-        expression = m.group("expr")
-        if expression:
-            if m.group("end") == "\\":
-                expression += "\\"
-            while expression.endswith("\\") and indexed_lines:
-                _, line = indexed_lines.pop(0)
-                result.append((line, branches[-1]))
-                expression = expression[:-1] + line
+        if keyword.startswith("%if") or keyword.startswith("%elif"):
+            expression = m.group("expr")
+            if expression:
+                if m.group("end") == "\\":
+                    expression += "\\"
+                while expression.endswith("\\") and indexed_lines:
+                    _, line = indexed_lines.pop(0)
+                    result.append((line, branches[-1]))
+                    expression = expression[:-1] + line
             branch = (
                 False
                 if not branches[-1]
-                else resolve_expression(keyword, expression, context)
+                else resolve_expression(keyword, expression or "0", context)
             )
             if keyword.startswith("%el"):
                 branches[-1] = branch

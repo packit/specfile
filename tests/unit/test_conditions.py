@@ -82,6 +82,27 @@ from specfile.macros import Macros
                 else "1" if expr == "%{expr:0%{?fedora}}" else expr
             ),
         ),
+        (
+            [
+                "%if %{bcond_default_lto}",
+                "%bcond_without lto",
+                "%else",
+                "%bcond_with lto",
+                "%endif",
+            ],
+            [
+                True,
+                False,
+                True,
+                True,
+                True,
+            ],
+            lambda expr: (
+                ""
+                if expr == "%{bcond_default_lto}"
+                else "0" if expr == "%{expr:0}" else expr
+            ),
+        ),
     ],
 )
 def test_process_conditions(lines, validity, expand_func):
