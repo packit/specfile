@@ -50,7 +50,7 @@ repos:
       - id: mypy
         args: [--show-error-codes, --ignore-missing-imports]
         additional_dependencies:
-          [types-pkg_resources, types-requests, types-python-dateutil]
+          [types-setuptools, types-requests, types-python-dateutil]
   - repo: https://github.com/teemtee/tmt.git
     rev: 1.31.0
     hooks:
