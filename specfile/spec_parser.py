@@ -57,6 +57,10 @@ class SpecParser:
         self.force_parse = force_parse
         self.spec = None
         self.tainted = False
+        # explicitly invalidate the global parse hash, this `SpecParser` instance could have
+        # been assigned the same id as a previously deleted one and parsing could be
+        # improperly skipped
+        SpecParser._last_parse_hash = None
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, SpecParser):
@@ -71,9 +75,12 @@ class SpecParser:
     def __repr__(self) -> str:
         return f"SpecParser({self.sourcedir!r}, {self.macros!r}, {self.force_parse!r})"
 
+    def id(self) -> int:
+        return id(self)
+
     def __deepcopy__(self, memo: Dict[int, Any]) -> "SpecParser":
         result = self.__class__.__new__(self.__class__)
-        memo[id(self)] = result
+        memo[self.id()] = result
         for k, v in self.__dict__.items():
             if k in ["spec", "tainted"]:
                 continue
@@ -359,7 +366,7 @@ class SpecParser:
         """
         # calculate hash of all input parameters
         payload = (
-            id(self),
+            self.id(),
             self.sourcedir,
             self.macros,
             self.force_parse,
