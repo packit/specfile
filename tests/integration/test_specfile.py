@@ -580,6 +580,16 @@ def test_parse_if_necessary(spec_macros):
     flexmock(SpecParser).should_call("_do_parse").once()
     assert spec1.expanded_name == "test"
     assert spec1.expanded_version == "28.1.2~rc2"
+    flexmock(SpecParser).should_receive("id").and_return(12345)
+    flexmock(SpecParser).should_call("_do_parse").once()
+    spec = Specfile(spec_macros)
+    flexmock(SpecParser).should_call("_do_parse").never()
+    assert spec.expanded_name == "test"
+    spec = None
+    flexmock(SpecParser).should_call("_do_parse").once()
+    spec = Specfile(spec_macros)
+    flexmock(SpecParser).should_call("_do_parse").never()
+    assert spec.expanded_name == "test"
 
 
 @pytest.mark.skipif(
