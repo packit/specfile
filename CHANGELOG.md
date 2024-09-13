@@ -1,3 +1,6 @@
+# 0.32.2
+
+
 # 0.32.1
 
 - Fixed two issues related to condition parsing. (#405)
