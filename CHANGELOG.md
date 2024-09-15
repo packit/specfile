@@ -1,3 +1,7 @@
+# 0.32.2
+
+- Explicitly invalidate the global parse hash when a SpecParser instance is created to prevent this issue. (#409)
+
 # 0.32.1
 
 - Fixed two issues related to condition parsing. (#405)
