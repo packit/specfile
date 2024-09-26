@@ -162,8 +162,10 @@ jobs:
     trigger: release
     packages: [specfile]
     dist_git_branches:
-      - fedora-all
-      - epel-9
+      rawhide:
+        fast_forward_merge_into:
+          - fedora-branched
+      epel-9: {}
   - job: propose_downstream
     trigger: release
     packages: [specfile-epel8]
@@ -174,8 +176,10 @@ jobs:
     trigger: release
     packages: [specfile]
     dist_git_branches:
-      - fedora-all
-      - epel-9
+      rawhide:
+        fast_forward_merge_into:
+          - fedora-branched
+      epel-9: {}
   - job: pull_from_upstream
     trigger: release
     packages: [specfile-epel8]
