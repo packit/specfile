@@ -254,6 +254,45 @@ def get_filename_from_location(location: str) -> str:
     return location[slash + 1 :].split("=")[-1]
 
 
+def count_brackets(string: str) -> Tuple[int, int]:
+    """
+    Counts non-pair brackets in %{...} and %(...) expressions appearing in the given string.
+
+    Args:
+        string: Input string.
+
+    Returns:
+        The count of non-pair curly braces and the count of non-pair parentheses.
+    """
+    bc = pc = 0
+    chars = list(string)
+    while chars:
+        c = chars.pop(0)
+        if c == "\\" and chars:
+            chars.pop(0)
+            continue
+        if c == "%" and chars:
+            c = chars.pop(0)
+            if c == "{":
+                bc += 1
+            elif c == "(":
+                pc += 1
+            continue
+        if c == "{" and bc > 0:
+            bc += 1
+            continue
+        if c == "}" and bc > 0:
+            bc -= 1
+            continue
+        if c == "(" and pc > 0:
+            pc += 1
+            continue
+        if c == ")" and pc > 0:
+            pc -= 1
+            continue
+    return bc, pc
+
+
 def split_conditional_macro_expansion(value: str) -> Tuple[str, str, str]:
     """
     Splits conditional macro expansion into its body and prefix and suffix of it.
