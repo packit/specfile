@@ -43,6 +43,11 @@ def test_parse():
                 "Epoch:   1",
                 "%endif",
                 "",
+                "License: %{shrink:",
+                "             MIT AND",
+                "             (MIT OR Apache-2.0)",
+                "          }",
+                "",
                 "Requires:          make ",
                 "Requires(post):    bash",
                 "",
@@ -62,6 +67,13 @@ def test_parse():
     assert not tags[1].comments
     assert tags.release.comments[0].prefix == "  # "
     assert tags.epoch.name == "Epoch"
+    assert tags[-6].name == "License"
+    assert (
+        tags[-6].value == "%{shrink:\n"
+        "             MIT AND\n"
+        "             (MIT OR Apache-2.0)\n"
+        "          }"
+    )
     assert tags.requires.value == "make"
     assert "requires(post)" in tags
     assert tags[-4].name == "Requires(post)"
@@ -103,10 +115,19 @@ def test_get_raw_section_data():
             ),
             Tag("Epoch", "1", ":   ", Comments([], ["", "%if 0"])),
             Tag(
+                "License",
+                "%{shrink:\n"
+                "             MIT AND\n"
+                "             (MIT OR Apache-2.0)\n"
+                "          }",
+                ": ",
+                Comments([], ["%endif", ""]),
+            ),
+            Tag(
                 "Requires",
                 "make",
                 ":          ",
-                Comments([], ["%endif", ""]),
+                Comments([], [""]),
                 True,
                 "",
                 " ",
@@ -140,6 +161,11 @@ def test_get_raw_section_data():
         "%if 0",
         "Epoch:   1",
         "%endif",
+        "",
+        "License: %{shrink:",
+        "             MIT AND",
+        "             (MIT OR Apache-2.0)",
+        "          }",
         "",
         "Requires:          make ",
         "Requires(post):    bash",

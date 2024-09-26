@@ -3,7 +3,7 @@
 
 import pytest
 
-from specfile.utils import EVR, NEVR, NEVRA, get_filename_from_location
+from specfile.utils import EVR, NEVR, NEVRA, count_brackets, get_filename_from_location
 
 
 @pytest.mark.parametrize(
@@ -30,6 +30,23 @@ from specfile.utils import EVR, NEVR, NEVRA, get_filename_from_location
 )
 def test_get_filename_from_location(location, filename):
     assert get_filename_from_location(location) == filename
+
+
+@pytest.mark.parametrize(
+    "string, count",
+    [
+        ("", (0, 0)),
+        ("%macro", (0, 0)),
+        ("%{macro}", (0, 0)),
+        ("%{{macro}}", (0, 0)),
+        ("%{{macro}", (1, 0)),
+        ("%{macro:", (1, 0)),
+        ("%(echo %{v}", (0, 1)),
+        ("%(echo %{v} | cut -d. -f3)", (0, 0)),
+    ],
+)
+def test_count_brackets(string, count):
+    assert count_brackets(string) == count
 
 
 def test_EVR_compare():

@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, List, Optional, Tuple, Union, overload
 from specfile.conditions import process_conditions
 from specfile.formatter import formatted
 from specfile.types import SupportsIndex
-from specfile.utils import UserList
+from specfile.utils import UserList, count_brackets
 
 if TYPE_CHECKING:
     from specfile.specfile import Specfile
@@ -302,35 +302,6 @@ class MacroDefinitions(UserList[MacroDefinition]):
                 return line, True
             else:
                 return line
-
-        def count_brackets(s):
-            bc = pc = 0
-            chars = list(s)
-            while chars:
-                c = chars.pop(0)
-                if c == "\\" and chars:
-                    chars.pop(0)
-                    continue
-                if c == "%" and chars:
-                    c = chars.pop(0)
-                    if c == "{":
-                        bc += 1
-                    elif c == "(":
-                        pc += 1
-                    continue
-                if c == "{" and bc > 0:
-                    bc += 1
-                    continue
-                if c == "}" and bc > 0:
-                    bc -= 1
-                    continue
-                if c == "(" and pc > 0:
-                    pc += 1
-                    continue
-                if c == ")" and pc > 0:
-                    pc -= 1
-                    continue
-            return bc, pc
 
         md_regex = re.compile(
             r"""
