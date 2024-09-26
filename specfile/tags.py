@@ -23,7 +23,7 @@ from specfile.macro_definitions import MacroDefinitions
 from specfile.macros import Macros
 from specfile.sections import Section
 from specfile.types import SupportsIndex
-from specfile.utils import UserList, split_conditional_macro_expansion
+from specfile.utils import UserList, count_brackets, split_conditional_macro_expansion
 
 if TYPE_CHECKING:
     from specfile.specfile import Specfile
@@ -489,6 +489,13 @@ class Tags(UserList[Tag]):
             New instance of `Tags` class.
         """
 
+        def pop(lines):
+            line = lines.pop(0)
+            if isinstance(line, str):
+                return line, True
+            else:
+                return line
+
         def regex_pattern(tag):
             name_regex = get_tag_name_regex(tag)
             return rf"^(?P<n>{name_regex})(?P<s>\s*:\s*)(?P<v>.+)"
@@ -498,7 +505,8 @@ class Tags(UserList[Tag]):
         tag_regexes = [re.compile(regex_pattern(t), re.IGNORECASE) for t in TAG_NAMES]
         data = []
         buffer: List[str] = []
-        for line, valid in lines:
+        while lines:
+            line, valid = pop(lines)
             ws = ""
             tokens = re.split(r"([^\S\n]+)$", line, maxsplit=1)
             if len(tokens) > 1:
@@ -507,10 +515,21 @@ class Tags(UserList[Tag]):
             # find out if there is a match for one of the tag regexes
             m = next((m for m in (r.match(line) for r in tag_regexes) if m), None)
             if m:
+                value = m.group("v")
+                if not suffix:
+                    bc, pc = count_brackets(value)
+                    while (bc > 0 or pc > 0) and lines:
+                        value += ws
+                        line, _ = pop(lines)
+                        tokens = re.split(r"([^\S\n]+)$", line, maxsplit=1)
+                        if len(tokens) > 1:
+                            line, ws, _ = tokens
+                        value += "\n" + line
+                        bc, pc = count_brackets(value)
                 data.append(
                     Tag(
                         m.group("n"),
-                        m.group("v"),
+                        value,
                         m.group("s"),
                         Comments.parse(buffer),
                         valid,
@@ -534,8 +553,10 @@ class Tags(UserList[Tag]):
         result = []
         for tag in self.data:
             result.extend(tag.comments.get_raw_data())
-            result.append(
-                f"{tag._prefix}{tag.name}{tag._separator}{tag.value}{tag._suffix}"
+            result.extend(
+                f"{tag._prefix}{tag.name}{tag._separator}{tag.value}{tag._suffix}".split(
+                    "\n"
+                )
             )
         result.extend(self._remainder)
         return result
