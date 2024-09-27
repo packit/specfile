@@ -1,3 +1,7 @@
+# 0.32.3
+
+- specfile can now handle multi-line tag values (enclosed in a macro body, e.g. `%shrink`). (#412)
+
 # 0.32.2
 
 - Explicitly invalidate the global parse hash when a SpecParser instance is created to prevent this issue. (#409)
