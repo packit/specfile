@@ -98,6 +98,9 @@ class NEVR(EVR):
     def _key(self) -> tuple:
         return self.name, self.epoch, self.version, self.release
 
+    def __hash__(self) -> int:
+        return hash(self._key())
+
     def __lt__(self, other: object) -> bool:
         if type(other) is not self.__class__:
             return NotImplemented
@@ -171,6 +174,9 @@ class NEVRA(NEVR):
 
     def _key(self) -> tuple:
         return self.name, self.epoch, self.version, self.release, self.arch
+
+    def __hash__(self) -> int:
+        return hash(self._key())
 
     def __lt__(self, other: object) -> bool:
         if type(other) is not self.__class__:
