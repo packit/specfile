@@ -1,3 +1,7 @@
+# 0.32.4
+
+- NEVR and NEVRA classes are now hashable (#416)
+
 # 0.32.3
 
 - specfile can now handle multi-line tag values (enclosed in a macro body, e.g. `%shrink`). (#412)
