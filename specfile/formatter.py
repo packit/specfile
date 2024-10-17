@@ -3,6 +3,7 @@
 
 import ast
 import functools
+import sys
 from typing import Callable
 
 from specfile.exceptions import SpecfileException
@@ -29,12 +30,14 @@ def format_expression(expression: str, line_length_threshold: int = 80) -> str:
 
     def fmt(node, indent=0, prefix="", multiline=False):
         result = " " * indent + prefix
-        if isinstance(node, (ast.Constant, ast.NameConstant)):
+        if sys.version_info < (3, 8) and isinstance(node, ast.NameConstant):
             result += repr(node.value)
-        elif isinstance(node, ast.Str):
+        elif sys.version_info < (3, 8) and isinstance(node, ast.Str):
             result += repr(node.s)
-        elif isinstance(node, ast.Num):
+        elif sys.version_info < (3, 8) and isinstance(node, ast.Num):
             result += repr(node.n)
+        elif isinstance(node, ast.Constant):
+            result += repr(node.value)
         elif isinstance(node, (ast.Tuple, ast.List, ast.Dict, ast.Call)):
             if isinstance(node, ast.Tuple):
                 start, end = "(", ")" if multiline or len(node.elts) != 1 else ",)"
