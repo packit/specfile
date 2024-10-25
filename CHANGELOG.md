@@ -1,3 +1,7 @@
+# 0.32.5
+
+- We have fixed our parser to take in account the deprecations introduced in Python 3.8 (#420)
+
 # 0.32.4
 
 - NEVR and NEVRA classes are now hashable (#416)
