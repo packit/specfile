@@ -23,6 +23,7 @@ def capture_stderr() -> Generator[List[bytes], None, None]:
     Yields:
         List of captured lines.
     """
+    assert sys.__stderr__, "stderr should exist"
     fileno = sys.__stderr__.fileno()
     with tempfile.TemporaryFile() as stderr, os.fdopen(os.dup(fileno)) as backup:
         sys.stderr.flush()
