@@ -3,10 +3,12 @@
 
 import abc
 
-from typing_extensions import Protocol
+try:
+    from typing import SupportsIndex
+except ImportError:
+    # define our own SupportsIndex type for older version of typing (Python 3.7 and older)
+    from typing_extensions import Protocol
 
-
-# define our own SupportsIndex type for older version of typing_extensions (EL 8)
-class SupportsIndex(Protocol, metaclass=abc.ABCMeta):
-    @abc.abstractmethod
-    def __index__(self) -> int: ...
+    class SupportsIndex(Protocol, metaclass=abc.ABCMeta):  # type: ignore [no-redef]
+        @abc.abstractmethod
+        def __index__(self) -> int: ...
