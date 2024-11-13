@@ -59,8 +59,10 @@ jobs:
     trigger: pull_request
     packages: [specfile]
     targets:
-      - fedora-all
-      - epel-9
+      fedora-all:
+        without_opts:
+          - tests
+      epel-9: {}
   - job: copr_build
     trigger: pull_request
     packages: [specfile-epel8]
