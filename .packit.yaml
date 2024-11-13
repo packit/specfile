@@ -27,11 +27,15 @@ packages:
       - python3-setuptools_scm
     actions:
       pre-sync:
+        - bash -c "cat /etc/os-release"
         - python3 plans/git_reference.py
       create-archive:
+        - bash -c "cat /etc/os-release"
         - python3 -m build --sdist --outdir ./fedora/
         - bash -c "ls -1t ./fedora/*.tar.gz | head -n 1"
-      get-current-version: python3 -m setuptools_scm
+      get-current-version:
+        - bash -c "cat /etc/os-release"
+        - python3 -m setuptools_scm
 
   specfile-epel8:
     upstream_package_name: specfile
