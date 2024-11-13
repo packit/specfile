@@ -4,7 +4,7 @@ Main focus is on modifying existing spec files, any change should result
 in a minimal diff.}
 
 
-%global base_version 0.32.5
+%global base_version 0.32.6
 #global prerelease   rc1
 
 %global package_version %{base_version}%{?prerelease:~%{prerelease}}
@@ -68,6 +68,9 @@ rm -rf specfile.egg-info
 
 
 %changelog
+* Wed Nov 13 2024 Packit Team <hello@packit.dev> - 0.32.6-1
+- New upstream release 0.32.6
+
 * Fri Oct 25 2024 Packit Team <hello@packit.dev> - 0.32.5-1
 - New upstream release 0.32.5
 
