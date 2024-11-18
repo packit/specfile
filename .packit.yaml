@@ -33,6 +33,33 @@ packages:
         - bash -c "ls -1t ./fedora/*.tar.gz | head -n 1"
       get-current-version: python3 -m setuptools_scm
 
+  # docs: https://gitlab.com/CentOS/Integration/packit-cbs/docs
+  specfile-centos-integration-sig:
+    upstream_package_name: specfile
+    downstream_package_name: python-specfile
+    specfile_path: &specfile_path_centos centos-integration-sig/python-specfile.spec
+    files_to_sync:
+      - *specfile_path_centos
+      - .packit.yaml
+      - src: plans/
+        dest: plans/
+      - src: .fmf/
+        dest: .fmf/
+    srpm_build_deps:
+      - python3-build
+      - python3-setuptools_scm
+    actions:
+      pre-sync:
+        - python3 plans/git_reference.py
+      create-archive:
+        - python3 -m build --sdist --outdir ./fedora/
+        - bash -c "ls -1t ./centos-integration-sig/*.tar.gz | head -n 1"
+      get-current-version: python3 -m setuptools_scm
+    dist_git_base_url: https://gitlab.com # this is not taken into account by centpkg-sig yet!
+    dist_git_namespace: CentOS/Integration/packit-cbs/rpms # this is not taken into account by centpkg-sig yet!
+    #sig: Integration/packit-cbs # this is not taken into account by centpkg-sig yet!
+    pkg_tool: centpkg-sig
+
   specfile-epel8:
     upstream_package_name: specfile
     downstream_package_name: python-specfile
@@ -171,6 +198,11 @@ jobs:
     packages: [specfile-epel8]
     dist_git_branches:
       - epel-8
+  - job: propose_downstream
+    trigger: release
+    packages: [specfile-centos-integration-sig]
+    dist_git_branches:
+      - c9-sig-integration
 
   - job: pull_from_upstream
     trigger: release
@@ -185,6 +217,11 @@ jobs:
     packages: [specfile-epel8]
     dist_git_branches:
       - epel-8
+  - job: pull_from_upstream
+    trigger: release
+    packages: [specfile-centos-integration-sig]
+    dist_git_branches:
+      - c9-sig-integration
 
   - job: koji_build
     trigger: commit
@@ -204,6 +241,13 @@ jobs:
     allowed_pr_authors: ["packit-stg", "packit"]
     dist_git_branches:
       - epel-8
+  - job: koji_build
+    trigger: commit
+    packages: [specfile-centos-integration-sig]
+    packit_instances: ["stg"]
+    allowed_pr_authors: ["packit-stg", "packit"]
+    dist_git_branches:
+      - c9-sig-integration
 
   - job: bodhi_update
     trigger: commit
