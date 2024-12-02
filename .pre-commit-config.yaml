@@ -52,7 +52,7 @@ repos:
         additional_dependencies:
           [types-setuptools, types-requests, types-python-dateutil]
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.38.0
+    rev: 1.39.0
     hooks:
       - id: tmt-lint
         # linting of the reverse-dependency tests requires internet access
@@ -65,7 +65,7 @@ repos:
           - https://github.com/packit/specfile.git
         stages: [manual, pre-push]
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.29.4
+    rev: 0.30.0
     hooks:
       - id: check-github-workflows
         args: ["--verbose"]
