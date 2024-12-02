@@ -32,6 +32,8 @@ packages:
         - python3 -m build --sdist --outdir ./fedora/
         - bash -c "ls -1t ./fedora/*.tar.gz | head -n 1"
       get-current-version: python3 -m setuptools_scm
+      post-modifications:
+        - bash -c "head -n30 fedora/python-specfile.spec"
 
   # docs: https://gitlab.com/CentOS/Integration/packit-cbs/docs
   specfile-centos-integration-sig:
