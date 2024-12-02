@@ -85,6 +85,7 @@ jobs:
   - job: copr_build
     trigger: pull_request
     packages: [specfile]
+    preserve_project: true
     targets:
       - fedora-all
       - epel-9
