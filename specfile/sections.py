@@ -214,6 +214,38 @@ class Sections(UserList[Section]):
                 return i
         raise ValueError
 
+    def get_or_create(self, id: str) -> Section:
+        """
+        Gets an existing section by ID or creates a new section with the given ID.
+        New section will be appended to the end.
+
+        Args:
+            id: ID of the section (name and options, without the leading '%').
+
+        Returns:
+            Existing or newly created section as an instance of `Section` class.
+        """
+
+        def split_id(id):
+            separator = "\n"
+            tokens = re.split(r"(\s+)", id)
+            if len(tokens) > 2:
+                name = tokens[0]
+                delimiter = tokens[1]
+                options = Options(
+                    Options.tokenize("".join(tokens[2:])),
+                    SECTION_OPTIONS.get(name.lower()),
+                )
+                return name, options, delimiter, separator
+            return tokens[0], None, "", separator
+
+        try:
+            section = self.get(id)
+        except (ValueError, KeyError):
+            section = Section(*split_id(id))
+            self.data.append(section)
+        return section
+
     @classmethod
     def parse(
         cls, lines: List[str], context: Optional["Specfile"] = None

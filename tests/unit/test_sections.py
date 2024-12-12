@@ -39,6 +39,47 @@ def test_get():
         sections.get("package foo")
 
 
+@pytest.mark.parametrize(
+    "id, existing, name, options, content",
+    [
+        (
+            "package",
+            True,
+            "package",
+            "",
+            ["Name: test", "Version: 0.1", "Release: 1%{?dist}", ""],
+        ),
+        ("prep", True, "prep", "", ["%autosetup", ""]),
+        ("package -n subpkg1", True, "package", "-n subpkg1", [""]),
+        ("package -n subpkg2", False, "package", "-n subpkg2", []),
+    ],
+)
+def test_get_or_create(id, existing, name, options, content):
+    sections = Sections.parse(
+        [
+            "Name: test",
+            "Version: 0.1",
+            "Release: 1%{?dist}",
+            "",
+            "%description",
+            "Test package",
+            "",
+            "%prep",
+            "%autosetup",
+            "",
+            "%package -n subpkg1",
+            "",
+            "%changelog",
+        ]
+    )
+    section = sections.get_or_create(id)
+    assert section.name == name
+    assert str(section.options) == options
+    assert list(section) == content
+    if not existing:
+        assert section == sections[-1]
+
+
 def test_parse():
     sections = Sections.parse(
         [
