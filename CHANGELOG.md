@@ -1,3 +1,13 @@
+# 0.33.0
+
+- There is a new convenience method `Sections.get_or_create()` that allows you to manipulate a section
+  without checking if it exists first. If a section doesn't exist, it will be appended to the end. (#441)
+  For example, this will work properly even on spec files without `%changelog`:
+
+        with spec.sections() as sections:
+            changelog = sections.get_or_create("changelog")
+            changelog[:] = ["%autochangelog"]
+
 # 0.32.6
 
 - New minor release for testing in CBS Koji
