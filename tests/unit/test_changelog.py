@@ -7,7 +7,12 @@ from typing import List, Union
 
 import pytest
 
-from specfile.changelog import Changelog, ChangelogEntry, SUSEChangeLogEntry
+from specfile.changelog import (
+    Changelog,
+    ChangelogEntry,
+    DetachedChangelog,
+    SUSEChangeLogEntry,
+)
 from specfile.sections import Section
 
 
@@ -283,6 +288,45 @@ def test_parse():
         "* this is also a valid entry",
     ]
     assert not changelog[6].extended_timestamp
+
+
+def test_detached_changelog_parse() -> None:
+    dc = DetachedChangelog.parse(
+        Section(
+            "changelog",
+            data="""-------------------------------------------------------------------
+Fri Dec  6 11:50:30 UTC 2024 - Alexandre Vicenzi <alexandre.vicenzi@suse.com>
+
+- Re-add iptables temporarily
+    * See https://github.com/containers/crun/pull/1613
+
+-------------------------------------------------------------------
+Tue Nov 26 05:59:43 UTC 2024 - madhankumar.chellamuthu@suse.com
+
+- Update to version 5.3.1:
+""".splitlines(),
+        )
+    )
+
+    assert len(dc) == 2
+
+    assert (
+        dc[0].header
+        == """-------------------------------------------------------------------
+Tue Nov 26 05:59:43 UTC 2024 - madhankumar.chellamuthu@suse.com"""
+    )
+
+    assert (
+        dc[1].header
+        == """-------------------------------------------------------------------
+Fri Dec  6 11:50:30 UTC 2024 - Alexandre Vicenzi <alexandre.vicenzi@suse.com>"""
+    )
+    assert dc[1].content == [
+        "",
+        "- Re-add iptables temporarily",
+        "    * See https://github.com/containers/crun/pull/1613",
+        "",
+    ]
 
 
 def test_get_raw_section_data():

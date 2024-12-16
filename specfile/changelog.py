@@ -10,7 +10,7 @@ import re
 import shutil
 import subprocess
 from abc import ABC, abstractmethod
-from typing import List, Optional, Union, overload
+from typing import Generic, List, Optional, Self, TypeVar, Union, overload
 
 from specfile.exceptions import SpecfileException
 from specfile.formatter import formatted
@@ -330,7 +330,10 @@ class ChangelogEntry(ChangelogEntryBase):
         return cls(header, content, [""] if append_newline else None)
 
 
-class Changelog(UserList[ChangelogEntry]):
+T = TypeVar("T")
+
+
+class ChangelogBase(UserList, Generic[T], ABC):
     """
     Class that represents a changelog. It behaves like a list of changelog entries,
     ordered from bottom to top - the top (newest) entry has index _-1_, the bottom
@@ -342,7 +345,7 @@ class Changelog(UserList[ChangelogEntry]):
 
     def __init__(
         self,
-        data: Optional[List[ChangelogEntry]] = None,
+        data: Optional[List[T]] = None,
         predecessor: Optional[List[str]] = None,
     ) -> None:
         """
@@ -366,16 +369,16 @@ class Changelog(UserList[ChangelogEntry]):
         return f"Changelog({self.data!r}, {self._predecessor!r})"
 
     @overload
-    def __getitem__(self, i: SupportsIndex) -> ChangelogEntry:
+    def __getitem__(self, i: SupportsIndex) -> T:
         pass
 
     @overload
-    def __getitem__(self, i: slice) -> "Changelog":
+    def __getitem__(self, i: slice) -> Self:
         pass
 
     def __getitem__(self, i):
         if isinstance(i, slice):
-            return Changelog(self.data[i], self._predecessor)
+            return type(self)(self.data[i], self._predecessor)
         else:
             return self.data[i]
 
@@ -394,8 +397,45 @@ class Changelog(UserList[ChangelogEntry]):
         else:
             delete(i)
 
-    def copy(self) -> "Changelog":
+    def copy(self) -> Self:
         return copy.copy(self)
+
+    def get_raw_section_data(self) -> List[str]:
+        """
+        Reconstructs section data from changelog.
+
+        Returns:
+            List of lines forming the reconstructed section data.
+        """
+        result = self._predecessor.copy()
+        for entry in reversed(self.data):
+            result.append(entry.header)
+            result.extend(entry.content)
+            result.extend(entry._following_lines)
+        return result
+
+    @abstractmethod
+    def filter(self, since: Optional[str] = None, until: Optional[str] = None) -> Self:
+        """
+        Filters changelog entries with EVR between since and until.
+
+        Args:
+            since: Optional lower bound. If specified, entries with EVR higher
+                than or equal to this will be included.
+            until: Optional upper bound. If specified, entries with EVR lower
+                than or equal to this will be included.
+
+        Returns:
+            Filtered changelog.
+        """
+
+    @classmethod
+    @abstractmethod
+    def parse(cls, section: Section) -> Self:
+        pass
+
+
+class Changelog(ChangelogBase[ChangelogEntry]):
 
     def filter(
         self, since: Optional[str] = None, until: Optional[str] = None
@@ -484,19 +524,66 @@ class Changelog(UserList[ChangelogEntry]):
             data.insert(0, ChangelogEntry(header, content, following_lines))
         return cls(data, predecessor)
 
-    def get_raw_section_data(self) -> List[str]:
-        """
-        Reconstructs section data from changelog.
+
+class DetachedChangelog(ChangelogBase[SUSEChangeLogEntry]):
+
+    def filter(
+        self, since: Optional[str] = None, until: Optional[str] = None
+    ) -> "DetachedChangelog":
+        """Filters changelog entries with EVR between since and until.
+
+        As (open)SUSE style changelogs do not carry an EVR, this function only
+        returns if ``since`` and ``until`` are ``None``, otherwise it raises a
+        ``NotImplementedError``.
+
+        Args:
+            since: Optional lower bound. If specified, entries with EVR higher
+                than or equal to this will be included.
+            until: Optional upper bound. If specified, entries with EVR lower
+                than or equal to this will be included.
 
         Returns:
-            List of lines forming the reconstructed section data.
+            Filtered changelog.
+
         """
-        result = self._predecessor.copy()
-        for entry in reversed(self.data):
-            result.append(entry.header)
-            result.extend(entry.content)
-            result.extend(entry._following_lines)
-        return result
+
+        if since or until:
+            raise NotImplementedError(
+                "Filtering by EVR is not possible for SUSE-style changelogs"
+            )
+
+        return self
+
+    @classmethod
+    def parse(cls, section: Section) -> "DetachedChangelog":
+        """
+        Parses a detached changelog section.
+
+        Args:
+            section: Section to parse.
+
+        Returns:
+            New instance of `DetachedChangelog` class.
+        """
+
+        data: List[SUSEChangeLogEntry] = []
+
+        entries = ("\n".join(section.data)).split(SUSEChangeLogEntry._SEPARATOR + "\n")
+
+        for entry in reversed(entries):
+            if not entry:
+                continue
+
+            lines = entry.splitlines()
+
+            data.append(
+                SUSEChangeLogEntry(
+                    header=SUSEChangeLogEntry._SEPARATOR + "\n" + lines[0],
+                    content=lines[1:] if len(lines) > 1 else [],
+                ),
+            )
+
+        return cls(data, [])
 
 
 def _getent_name() -> str:
