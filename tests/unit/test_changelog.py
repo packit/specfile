@@ -3,10 +3,11 @@
 
 import copy
 import datetime
+from typing import List, Union
 
 import pytest
 
-from specfile.changelog import Changelog, ChangelogEntry
+from specfile.changelog import Changelog, ChangelogEntry, SUSEChangeLogEntry
 from specfile.sections import Section
 
 
@@ -80,6 +81,64 @@ def test_entry_has_extended_timestamp(header, extended):
 )
 def test_entry_day_of_month_padding(header, padding):
     assert ChangelogEntry(header, [""]).day_of_month_padding == padding
+
+
+def test_suse_changelog_entry_fail_on_missing_separator() -> None:
+    with pytest.raises(ValueError) as val_err_ctx:
+        SUSEChangeLogEntry("there's a lot of -- missing", ["irrelevant"])
+
+    assert SUSEChangeLogEntry._SEPARATOR in str(val_err_ctx.value)
+
+
+@pytest.mark.parametrize(
+    "timestamp, author, content, entry",
+    [
+        (
+            datetime.datetime(
+                year=2024,
+                month=12,
+                day=6,
+                hour=12,
+                minute=50,
+                second=30,
+                tzinfo=(CET := datetime.timezone(datetime.timedelta(hours=1))),
+            ),
+            "Alexandre Vicenzi <alexandre.vicenzi@suse.com>",
+            c := (
+                """- Re-add iptables temporarily
+    * See https://github.com/containers/crun/pull/1613
+""".splitlines()
+            ),
+            SUSEChangeLogEntry(
+                """-------------------------------------------------------------------
+Fri Dec  6 11:50:30 UTC 2024 - Alexandre Vicenzi <alexandre.vicenzi@suse.com>
+""",
+                c,
+            ),
+        ),
+        (
+            datetime.date(year=2024, month=11, day=26),
+            "madhankumar.chellamuthu@suse.com",
+            c := ["- Update to version 5.3.1"],
+            SUSEChangeLogEntry(
+                """-------------------------------------------------------------------
+Tue Nov 26 12:00:00 UTC 2024 - madhankumar.chellamuthu@suse.com
+""",
+                c,
+            ),
+        ),
+    ],
+)
+def test_suse_changelogentry_assemble(
+    timestamp: Union[datetime.datetime, datetime.date],
+    author: str,
+    content: List[str],
+    entry: SUSEChangeLogEntry,
+) -> None:
+    assert (
+        SUSEChangeLogEntry.assemble(timestamp, author, content, append_newline=False)
+        == entry
+    )
 
 
 @pytest.mark.parametrize(

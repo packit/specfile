@@ -9,6 +9,7 @@ import pwd
 import re
 import shutil
 import subprocess
+from abc import ABC, abstractmethod
 from typing import List, Optional, Union, overload
 
 from specfile.exceptions import SpecfileException
@@ -35,17 +36,7 @@ MONTHS = (
 )
 
 
-class ChangelogEntry:
-    """
-    Class that represents a changelog entry. Changelog entry consists of
-    a header line starting with _*_, followed by timestamp, author and optional
-    extra text (usually EVR), and one or more content lines.
-
-    Attributes:
-        header: Header of the entry.
-        content: List of lines forming the content of the entry.
-    """
-
+class ChangelogEntryBase(ABC):
     def __init__(
         self,
         header: str,
@@ -67,7 +58,7 @@ class ChangelogEntry:
         )
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, ChangelogEntry):
+        if not isinstance(other, ChangelogEntryBase):
             return NotImplemented
         return (
             self.header == other.header
@@ -81,6 +72,150 @@ class ChangelogEntry:
     @formatted
     def __repr__(self) -> str:
         return f"ChangelogEntry({self.header!r}, {self.content!r}, {self._following_lines!r})"
+
+    @property
+    @abstractmethod
+    def evr(self) -> Optional[str]:
+        pass
+
+    @property
+    @abstractmethod
+    def extended_timestamp(self) -> bool:
+        """Whether the timestamp present in the entry header is extended (date and time)."""
+
+    @classmethod
+    @abstractmethod
+    def assemble(
+        cls,
+        timestamp: Union[datetime.date, datetime.datetime],
+        author: str,
+        content: List[str],
+        evr: Optional[str] = None,
+        day_of_month_padding: str = "0",
+        append_newline: bool = True,
+    ) -> "ChangelogEntryBase":
+        """
+        Assembles a changelog entry.
+
+        Args:
+            timestamp: Timestamp of the entry.
+                Supply `datetime` rather than `date` for extended format.
+            author: Author of the entry.
+            content: List of lines forming the content of the entry.
+            evr: EVR (epoch, version, release) of the entry.
+            day_of_month_padding: Padding to apply to day of month in the timestamp.
+            append_newline: Whether the entry should be followed by an empty line.
+
+        Returns:
+            New instance of `ChangelogEntryBase` class.
+        """
+
+    @property
+    @abstractmethod
+    def day_of_month_padding(self) -> str:
+        """Padding of day of month in the entry header timestamp"""
+
+
+class SUSEChangeLogEntry(ChangelogEntryBase):
+    """
+    Class that represents a (open)SUSE-style changelog entry.
+    """
+
+    _SEPARATOR = "-------------------------------------------------------------------"
+
+    def __init__(
+        self,
+        header: str,
+        content: List[str],
+        following_lines: Optional[List[str]] = None,
+    ) -> None:
+        if not header.startswith(SUSEChangeLogEntry._SEPARATOR):
+            raise ValueError(
+                f"Invalid header, must start with {SUSEChangeLogEntry._SEPARATOR}, "
+                f"but got {header=}"
+            )
+        super().__init__(header, content, following_lines)
+
+    @property
+    def evr(self) -> Optional[str]:
+        """SUSE-style changelog entries contain no EVR, returns always
+        ``None``.
+
+        """
+        return None
+
+    @property
+    def extended_timestamp(self) -> bool:
+        """Returns ``True`` as SUSE style changelogs only support extended
+        timestamps.
+
+        """
+        return True
+
+    @property
+    def day_of_month_padding(self) -> str:
+        """Returns an empty string as no padding is used in SUSE changelog
+        entries.
+
+        """
+        return ""
+
+    @classmethod
+    def assemble(
+        cls,
+        timestamp: Union[datetime.date, datetime.datetime],
+        author: str,
+        content: List[str],
+        evr: Optional[str] = None,
+        day_of_month_padding: str = "0",
+        append_newline: bool = True,
+    ) -> "ChangelogEntryBase":
+        """
+        Assembles a changelog entry.
+
+        Args:
+            timestamp: Timestamp of the entry.
+                Supply a `datetime` rather than `date`, otherwise 12:00 UTC is assumed as the time.
+            author: Author of the entry.
+            content: List of lines forming the content of the entry.
+            evr: ignored
+            day_of_month_padding: ignored
+            append_newline: Whether the entry should be followed by an empty line.
+
+        Returns:
+            New instance of `ChangelogEntryBase` class.
+        """
+        if not isinstance(timestamp, datetime.datetime):
+            timestamp = datetime.datetime.combine(
+                timestamp, datetime.time(hour=12), tzinfo=datetime.timezone.utc
+            )
+
+        if timestamp.tzinfo is None:
+            timestamp = timestamp.astimezone()
+
+        utc_timestamp = timestamp.astimezone(datetime.timezone.utc)
+        header = (
+            SUSEChangeLogEntry._SEPARATOR
+            + "\n"
+            + f"{utc_timestamp.strftime('%a %b %e %H:%M:%S %Z %Y')} - {author}\n"
+        )
+        return cls(
+            header=header,
+            content=content,
+            following_lines=[""] if append_newline else None,
+        )
+
+
+class ChangelogEntry(ChangelogEntryBase):
+    """
+    Class that represents a changelog entry. Changelog entry consists of
+    a header line starting with _*_, followed by timestamp, author and optional
+    extra text (usually EVR), and one or more content lines.
+
+    Attributes:
+        header: Header of the entry.
+        content: List of lines forming the content of the entry.
+    """
 
     @property
     def evr(self) -> Optional[str]:
