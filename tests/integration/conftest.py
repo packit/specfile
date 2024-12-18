@@ -22,6 +22,7 @@ from tests.constants import (
     SPEC_RPMAUTOSPEC,
     SPEC_SHELL_EXPANSIONS,
     SPEC_TRADITIONAL,
+    SPEC_TRADITIONAL_SUSE,
     SPECFILE,
 )
 
@@ -44,6 +45,13 @@ def spec_rpmautospec(tmp_path):
 def spec_traditional(tmp_path):
     destination = tmp_path / "spec_traditional"
     shutil.copytree(SPEC_TRADITIONAL, destination)
+    return destination / SPECFILE
+
+
+@pytest.fixture(scope="function")
+def spec_traditional_suse(tmp_path):
+    destination = tmp_path / "spec_traditional_suse"
+    shutil.copytree(SPEC_TRADITIONAL_SUSE, destination)
     return destination / SPECFILE
 
 

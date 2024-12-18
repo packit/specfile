@@ -3,12 +3,14 @@
 
 import copy
 import datetime
+from pathlib import Path
 
 import pytest
 import rpm
 from flexmock import flexmock
 
 import specfile.specfile
+from specfile.changelog import SUSEChangeLogEntry
 from specfile.exceptions import RPMException, SpecfileException
 from specfile.prep import AutopatchMacro, AutosetupMacro, PatchMacro, SetupMacro
 from specfile.sections import Section
@@ -689,3 +691,51 @@ def test_trailing_newline(spec_autosetup, spec_no_trailing_newline):
     assert str(spec)[-1] == "\n"
     spec = Specfile(spec_no_trailing_newline)
     assert str(spec)[-1] != "\n"
+
+
+def test_detached_changelog(spec_traditional_suse: Path) -> None:
+    spec = Specfile(spec_traditional_suse)
+    assert spec.has_detached_changelog
+    assert spec._changes_file_path
+
+    with spec.changelog() as changelog:
+        assert changelog
+
+    assert len(changelog) == 1
+    assert str(changelog[0]) == str(
+        SUSEChangeLogEntry.assemble(
+            timestamp=(
+                first_entry := datetime.datetime(
+                    year=2024,
+                    month=12,
+                    day=17,
+                    hour=14,
+                    minute=21,
+                    second=37,
+                    tzinfo=datetime.timezone.utc,
+                )
+            ),
+            author="Dan Čermák <dan.cermak@cgc-instruments.com>",
+            content=["- First version"],
+            append_newline=False,
+        )
+    )
+
+    assert "- First version" in str(spec)
+
+    assert spec._changes_file_path.read_text() == str(changelog)
+
+    spec.add_changelog_entry(
+        entry="Second version",
+        author="Me",
+        timestamp=first_entry + datetime.timedelta(hours=1),
+        email="me@foo.bar",
+    )
+
+    assert "Second version" in str(spec)
+
+    with spec.changelog() as new_changelog:
+        assert len(new_changelog) == 2
+
+    spec.save()
+    assert spec._changes_file_path.read_text() == str(new_changelog)

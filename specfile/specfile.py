@@ -11,7 +11,13 @@ from typing import Generator, List, Optional, Tuple, Type, Union, cast
 
 import rpm
 
-from specfile.changelog import Changelog, ChangelogEntry, guess_packager
+from specfile.changelog import (
+    Changelog,
+    ChangelogEntry,
+    DetachedChangelog,
+    SUSEChangeLogEntry,
+    guess_packager,
+)
 from specfile.context_management import ContextManager
 from specfile.exceptions import (
     SourceNumberException,
@@ -73,7 +79,25 @@ class Specfile:
         """
         self.autosave = autosave
         self._path = Path(path)
+
         self._lines, self._trailing_newline = self._read_lines(self._path)
+
+        self._changes_file_path: Optional[Path] = None
+        if (
+            changes_file_path := (
+                self._path.parent / f"{self._path.name.removesuffix('.spec')}.changes"
+            )
+        ).exists():
+            self._changes_file_path = changes_file_path
+
+        if self._changes_file_path:
+            changelog, self._changes_file_trailing_newline = self._read_lines(
+                self._changes_file_path
+            )
+            self._lines.extend(changelog)
+        else:
+            self._changes_file_trailing_newline = False
+
         self._parser = SpecParser(
             Path(sourcedir or self.path.parent), macros, force_parse
         )
@@ -98,7 +122,11 @@ class Specfile:
         )
 
     def __str__(self) -> str:
-        return "\n".join(self._lines) + ("\n" if self._trailing_newline else "")
+        if self.has_detached_changelog:
+            end = "\n" if self._changes_file_trailing_newline else ""
+        else:
+            end = "\n" if self._trailing_newline else ""
+        return "\n".join(self._lines) + end
 
     def __enter__(self) -> "Specfile":
         return self
@@ -180,10 +208,51 @@ class Specfile:
     def reload(self) -> None:
         """Reloads the spec file content."""
         self._lines, self._trailing_newline = self._read_lines(self.path)
+        if self._changes_file_path:
+            changelog, self._changes_file_trailing_newline = self._read_lines(
+                self._changes_file_path
+            )
+            self._lines.extend(changelog)
+
+    @property
+    def _detached_changelog_lines(self) -> Optional[List[str]]:
+        if not self.has_detached_changelog:
+            return None
+
+        if "%changelog" not in self._lines:
+            raise ValueError("No %changelog section in the spec!")
+
+        changelog_start = self._lines.index("%changelog")
+        return self._lines[changelog_start + 1 :]
+
+    @_detached_changelog_lines.setter
+    def _detached_changelog_lines(self, new_changelog: List[str]) -> None:
+        if not self.has_detached_changelog:
+            raise ValueError("Spec does not have a detached changelog!")
+
+        if "%changelog" not in self._lines:
+            raise ValueError("No %changelog section in the spec!")
+
+        changelog_start = self._lines.index("%changelog")
+        self._lines = self._lines[: changelog_start + 1]
+        self._lines.extend(new_changelog)
 
     def save(self) -> None:
         """Saves the spec file content."""
-        self.path.write_text(str(self), encoding="utf8", errors="surrogateescape")
+        if not self._changes_file_path:
+            self.path.write_text(str(self), encoding="utf8", errors="surrogateescape")
+            return
+
+        if "%changelog" not in self._lines:
+            raise ValueError("No %changelog section in the spec!")
+
+        self.path.write_text(
+            "\n".join(self._lines[: self._lines.index("%changelog") + 1])
+            + ("\n" if self._trailing_newline else "")
+        )
+
+        assert self._detached_changelog_lines
+        self._changes_file_path.write_text("\n".join(self._detached_changelog_lines))
 
     def expand(
         self,
@@ -298,7 +367,7 @@ class Specfile:
     @ContextManager
     def changelog(
         self, section: Optional[Section] = None
-    ) -> Generator[Optional[Changelog], None, None]:
+    ) -> Generator[Optional[Union[Changelog, DetachedChangelog]], None, None]:
         """
         Context manager for accessing changelog.
 
@@ -309,6 +378,18 @@ class Specfile:
         Yields:
             Spec file changelog as `Changelog` object or `None` if there is no _%changelog_ section.
         """
+        if self.has_detached_changelog:
+            section = section or Section(
+                "changelog", data=self._detached_changelog_lines
+            )
+            detached_changelog = DetachedChangelog.parse(section)
+            try:
+                yield detached_changelog
+            finally:
+                section.data = detached_changelog.get_raw_section_data()
+                self._detached_changelog_lines = section.data
+            return
+
         with self.sections() as sections:
             if section is None:
                 try:
@@ -476,6 +557,15 @@ class Specfile:
                     return True
             return False
 
+    @property
+    def has_detached_changelog(self) -> bool:
+        """Whether the package stores the changelog in a detached
+        :file:`changes` file. This is common practice on (open)SUSE
+        distributions.
+
+        """
+        return self._changes_file_path is not None
+
     def add_changelog_entry(
         self,
         entry: Union[str, List[str]],
@@ -502,6 +592,33 @@ class Specfile:
                 determines the appropriate value based on the spec file current
                 _%{epoch}_, _%{version}_, and _%{release}_ values.
         """
+        if author is None:
+            author = guess_packager()
+            if not author:
+                raise SpecfileException("Failed to auto-detect author")
+        elif email is not None:
+            author += f" <{email}>"
+
+        if isinstance(entry, str):
+            entry = [entry]
+
+        if self.has_detached_changelog:
+            if timestamp is None:
+                timestamp = datetime.datetime.now(datetime.timezone.utc)
+
+            section = Section("changelog", data=self._detached_changelog_lines)
+            with self.changelog(section) as changelog:
+                changelog.append(
+                    SUSEChangeLogEntry.assemble(
+                        content=entry,
+                        author=author,
+                        timestamp=timestamp,
+                        # append_newline=False,
+                    )
+                )
+
+            return
+
         with self.sections() as sections:
             # there could be multiple changelog sections, update all of them
             for section in sections:
@@ -515,8 +632,6 @@ class Specfile:
                     if changelog is None:
                         return
                     evr = self.expand(evr, extra_macros=[("dist", "")])
-                    if isinstance(entry, str):
-                        entry = [entry]
                     if timestamp is None:
                         # honor the timestamp format, but default to date-only
                         if changelog and changelog[-1].extended_timestamp:
@@ -525,12 +640,6 @@ class Specfile:
                             timestamp = datetime.datetime.now(
                                 datetime.timezone.utc
                             ).date()
-                    if author is None:
-                        author = guess_packager()
-                        if not author:
-                            raise SpecfileException("Failed to auto-detect author")
-                    elif email is not None:
-                        author += f" <{email}>"
                     if changelog:
                         # try to preserve padding of day of month
                         padding = max(

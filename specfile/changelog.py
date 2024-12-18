@@ -9,7 +9,8 @@ import pwd
 import re
 import shutil
 import subprocess
-from typing import List, Optional, Union, overload
+from abc import ABC, abstractmethod
+from typing import Generic, List, Optional, Self, TypeVar, Union, overload
 
 from specfile.exceptions import SpecfileException
 from specfile.formatter import formatted
@@ -35,17 +36,7 @@ MONTHS = (
 )
 
 
-class ChangelogEntry:
-    """
-    Class that represents a changelog entry. Changelog entry consists of
-    a header line starting with _*_, followed by timestamp, author and optional
-    extra text (usually EVR), and one or more content lines.
-
-    Attributes:
-        header: Header of the entry.
-        content: List of lines forming the content of the entry.
-    """
-
+class ChangelogEntryBase(ABC):
     def __init__(
         self,
         header: str,
@@ -67,7 +58,7 @@ class ChangelogEntry:
         )
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, ChangelogEntry):
+        if not isinstance(other, ChangelogEntryBase):
             return NotImplemented
         return (
             self.header == other.header
@@ -81,6 +72,150 @@ class ChangelogEntry:
     @formatted
     def __repr__(self) -> str:
         return f"ChangelogEntry({self.header!r}, {self.content!r}, {self._following_lines!r})"
+
+    @property
+    @abstractmethod
+    def evr(self) -> Optional[str]:
+        pass
+
+    @property
+    @abstractmethod
+    def extended_timestamp(self) -> bool:
+        """Whether the timestamp present in the entry header is extended (date and time)."""
+
+    @classmethod
+    @abstractmethod
+    def assemble(
+        cls,
+        timestamp: Union[datetime.date, datetime.datetime],
+        author: str,
+        content: List[str],
+        evr: Optional[str] = None,
+        day_of_month_padding: str = "0",
+        append_newline: bool = True,
+    ) -> "ChangelogEntryBase":
+        """
+        Assembles a changelog entry.
+
+        Args:
+            timestamp: Timestamp of the entry.
+                Supply `datetime` rather than `date` for extended format.
+            author: Author of the entry.
+            content: List of lines forming the content of the entry.
+            evr: EVR (epoch, version, release) of the entry.
+            day_of_month_padding: Padding to apply to day of month in the timestamp.
+            append_newline: Whether the entry should be followed by an empty line.
+
+        Returns:
+            New instance of `ChangelogEntryBase` class.
+        """
+
+    @property
+    @abstractmethod
+    def day_of_month_padding(self) -> str:
+        """Padding of day of month in the entry header timestamp"""
+
+
+class SUSEChangeLogEntry(ChangelogEntryBase):
+    """
+    Class that represents a (open)SUSE-style changelog entry.
+    """
+
+    _SEPARATOR = "-------------------------------------------------------------------"
+
+    def __init__(
+        self,
+        header: str,
+        content: List[str],
+        following_lines: Optional[List[str]] = None,
+    ) -> None:
+        if not header.startswith(SUSEChangeLogEntry._SEPARATOR):
+            raise ValueError(
+                f"Invalid header, must start with {SUSEChangeLogEntry._SEPARATOR}, "
+                f"but got {header=}"
+            )
+        super().__init__(header, content, following_lines)
+
+    @property
+    def evr(self) -> Optional[str]:
+        """SUSE-style changelog entries contain no EVR, returns always
+        ``None``.
+
+        """
+        return None
+
+    @property
+    def extended_timestamp(self) -> bool:
+        """Returns ``True`` as SUSE style changelogs only support extended
+        timestamps.
+
+        """
+        return True
+
+    @property
+    def day_of_month_padding(self) -> str:
+        """Returns an empty string as no padding is used in SUSE changelog
+        entries.
+
+        """
+        return ""
+
+    @classmethod
+    def assemble(
+        cls,
+        timestamp: Union[datetime.date, datetime.datetime],
+        author: str,
+        content: List[str],
+        evr: Optional[str] = None,
+        day_of_month_padding: str = "0",
+        append_newline: bool = True,
+    ) -> "ChangelogEntryBase":
+        """
+        Assembles a changelog entry.
+
+        Args:
+            timestamp: Timestamp of the entry.
+                Supply a `datetime` rather than `date`, otherwise 12:00 UTC is assumed as the time.
+            author: Author of the entry.
+            content: List of lines forming the content of the entry.
+            evr: ignored
+            day_of_month_padding: ignored
+            append_newline: Whether the entry should be followed by an empty line.
+
+        Returns:
+            New instance of `ChangelogEntryBase` class.
+        """
+        if not isinstance(timestamp, datetime.datetime):
+            timestamp = datetime.datetime.combine(
+                timestamp, datetime.time(hour=12), tzinfo=datetime.timezone.utc
+            )
+
+        if timestamp.tzinfo is None:
+            timestamp = timestamp.astimezone()
+
+        utc_timestamp = timestamp.astimezone(datetime.timezone.utc)
+        header = (
+            SUSEChangeLogEntry._SEPARATOR
+            + "\n"
+            + f"{utc_timestamp.strftime('%a %b %e %H:%M:%S %Z %Y')} - {author}\n"
+        )
+        return cls(
+            header=header,
+            content=content,
+            following_lines=[""] if append_newline else None,
+        )
+
+
+class ChangelogEntry(ChangelogEntryBase):
+    """
+    Class that represents a changelog entry. Changelog entry consists of
+    a header line starting with _*_, followed by timestamp, author and optional
+    extra text (usually EVR), and one or more content lines.
+
+    Attributes:
+        header: Header of the entry.
+        content: List of lines forming the content of the entry.
+    """
 
     @property
     def evr(self) -> Optional[str]:
@@ -195,7 +330,10 @@ class ChangelogEntry:
         return cls(header, content, [""] if append_newline else None)
 
 
-class Changelog(UserList[ChangelogEntry]):
+T = TypeVar("T")
+
+
+class ChangelogBase(UserList, Generic[T], ABC):
     """
     Class that represents a changelog. It behaves like a list of changelog entries,
     ordered from bottom to top - the top (newest) entry has index _-1_, the bottom
@@ -207,7 +345,7 @@ class Changelog(UserList[ChangelogEntry]):
 
     def __init__(
         self,
-        data: Optional[List[ChangelogEntry]] = None,
+        data: Optional[List[T]] = None,
         predecessor: Optional[List[str]] = None,
     ) -> None:
         """
@@ -231,16 +369,16 @@ class Changelog(UserList[ChangelogEntry]):
         return f"Changelog({self.data!r}, {self._predecessor!r})"
 
     @overload
-    def __getitem__(self, i: SupportsIndex) -> ChangelogEntry:
+    def __getitem__(self, i: SupportsIndex) -> T:
         pass
 
     @overload
-    def __getitem__(self, i: slice) -> "Changelog":
+    def __getitem__(self, i: slice) -> Self:
         pass
 
     def __getitem__(self, i):
         if isinstance(i, slice):
-            return Changelog(self.data[i], self._predecessor)
+            return type(self)(self.data[i], self._predecessor)
         else:
             return self.data[i]
 
@@ -259,8 +397,45 @@ class Changelog(UserList[ChangelogEntry]):
         else:
             delete(i)
 
-    def copy(self) -> "Changelog":
+    def copy(self) -> Self:
         return copy.copy(self)
+
+    def get_raw_section_data(self) -> List[str]:
+        """
+        Reconstructs section data from changelog.
+
+        Returns:
+            List of lines forming the reconstructed section data.
+        """
+        result = self._predecessor.copy()
+        for entry in reversed(self.data):
+            result.append(entry.header)
+            result.extend(entry.content)
+            result.extend(entry._following_lines)
+        return result
+
+    @abstractmethod
+    def filter(self, since: Optional[str] = None, until: Optional[str] = None) -> Self:
+        """
+        Filters changelog entries with EVR between since and until.
+
+        Args:
+            since: Optional lower bound. If specified, entries with EVR higher
+                than or equal to this will be included.
+            until: Optional upper bound. If specified, entries with EVR lower
+                than or equal to this will be included.
+
+        Returns:
+            Filtered changelog.
+        """
+
+    @classmethod
+    @abstractmethod
+    def parse(cls, section: Section) -> Self:
+        pass
+
+
+class Changelog(ChangelogBase[ChangelogEntry]):
 
     def filter(
         self, since: Optional[str] = None, until: Optional[str] = None
@@ -349,19 +524,66 @@ class Changelog(UserList[ChangelogEntry]):
             data.insert(0, ChangelogEntry(header, content, following_lines))
         return cls(data, predecessor)
 
-    def get_raw_section_data(self) -> List[str]:
-        """
-        Reconstructs section data from changelog.
+
+class DetachedChangelog(ChangelogBase[SUSEChangeLogEntry]):
+
+    def filter(
+        self, since: Optional[str] = None, until: Optional[str] = None
+    ) -> "DetachedChangelog":
+        """Filters changelog entries with EVR between since and until.
+
+        As (open)SUSE style changelogs do not carry an EVR, this function only
+        returns if ``since`` and ``until`` are ``None``, otherwise it raises a
+        ``NotImplementedError``.
+
+        Args:
+            since: Optional lower bound. If specified, entries with EVR higher
+                than or equal to this will be included.
+            until: Optional upper bound. If specified, entries with EVR lower
+                than or equal to this will be included.
 
         Returns:
-            List of lines forming the reconstructed section data.
+            Filtered changelog.
+
         """
-        result = self._predecessor.copy()
-        for entry in reversed(self.data):
-            result.append(entry.header)
-            result.extend(entry.content)
-            result.extend(entry._following_lines)
-        return result
+
+        if since or until:
+            raise NotImplementedError(
+                "Filtering by EVR is not possible for SUSE-style changelogs"
+            )
+
+        return self
+
+    @classmethod
+    def parse(cls, section: Section) -> "DetachedChangelog":
+        """
+        Parses a detached changelog section.
+
+        Args:
+            section: Section to parse.
+
+        Returns:
+            New instance of `DetachedChangelog` class.
+        """
+
+        data: List[SUSEChangeLogEntry] = []
+
+        entries = ("\n".join(section.data)).split(SUSEChangeLogEntry._SEPARATOR + "\n")
+
+        for entry in reversed(entries):
+            if not entry:
+                continue
+
+            lines = entry.splitlines()
+
+            data.append(
+                SUSEChangeLogEntry(
+                    header=SUSEChangeLogEntry._SEPARATOR + "\n" + lines[0],
+                    content=lines[1:] if len(lines) > 1 else [],
+                ),
+            )
+
+        return cls(data, [])
 
 
 def _getent_name() -> str:
