@@ -3,44 +3,57 @@
 
 import copy
 import datetime
+from typing import Optional
 
 import pytest
 
 from specfile.changelog import Changelog, ChangelogEntry
 from specfile.sections import Section
+from specfile.utils import EVR
 
 
 @pytest.mark.parametrize(
     "header, evr",
     [
         ("* Thu Jan 04 2007 Michael Schwendt <mschwendt@fedoraproject.org>", None),
+        ("* Thu Jan 04 2007 Michael Schwendt <mschwendt@fedora-project.org>", None),
+        (
+            "* Fri Jul 26 2024 Miroslav Suchý <msuchy@redhat.com> - ss981107-67",
+            EVR(version="ss981107", release="67"),
+        ),
         (
             "* Mon Jul 13 2020 Tom Stellard <tstellar@redhat.com> 4.0-0.4.pre2",
-            "4.0-0.4.pre2",
+            EVR(version="4.0", release="0.4.pre2"),
         ),
-        ("* Fri Jul 20 2018 Gwyn Ciesla <limburgher@gmail.com> - 0.52-6", "0.52-6"),
+        (
+            "* Fri Jul 20 2018 Gwyn Ciesla <limburgher@gmail.com> - 0.52-6",
+            EVR(version="0.52", release="6"),
+        ),
         (
             "* Mon Feb 23 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> "
             "- 1.23-3.20081106gitbe42b4",
-            "1.23-3.20081106gitbe42b4",
+            EVR(version="1.23", release="3.20081106gitbe42b4"),
         ),
         (
             "* Thu Feb 04 2016 Marcin Zajaczkowski <mszpak ATT wp DOTT pl> - 1:0.9.10-6",
-            "1:0.9.10-6",
+            EVR(epoch=1, version="0.9.10", release="6"),
         ),
         (
             "* Mon Jan 03 2022 Fedora Kernel Team <kernel-team@fedoraproject.org> [5.16-0.rc8.55]",
-            "5.16-0.rc8.55",
+            EVR(version="5.16", release="0.rc8.55"),
         ),
-        ("* Wed Jan 23 2002 Karsten Hopp <karsten@redhat.de> (4.6-1)", "4.6-1"),
+        (
+            "* Wed Jan 23 2002 Karsten Hopp <karsten@redhat.de> (4.6-1)",
+            EVR(version="4.6", release="1"),
+        ),
         (
             "* Thu Apr  9 2015 Jeffrey C. Ollie <jeff@ocjtech.us> - 13.3.2-1:",
-            "13.3.2-1",
+            EVR(version="13.3.2", release="1"),
         ),
     ],
 )
-def test_entry_evr(header, evr):
-    assert ChangelogEntry(header, [""]).evr == evr
+def test_entry_evr(header, evr: Optional[EVR]):
+    assert evr == ChangelogEntry(header, [""]).evr
 
 
 @pytest.mark.parametrize(
@@ -133,7 +146,9 @@ def test_filter(since, until, evrs):
             ),
         ]
     )
-    assert [e.evr for e in changelog.filter(since=since, until=until)] == evrs
+    assert [e.evr for e in changelog.filter(since=since, until=until)] == [
+        EVR.from_string(evr) for evr in evrs
+    ]
 
 
 def test_parse():

@@ -46,6 +46,23 @@ class ChangelogEntry:
         content: List of lines forming the content of the entry.
     """
 
+    _EVR_RE = re.compile(
+        r"""
+            ^.*
+            \d{4}                    # year
+            \s+                      # whitespace
+            .+                       # author
+            \s+                      # preceding whitespace
+            ((?P<sb>\[)|(?P<rb>\())? # optional opening bracket
+            (?P<evr>\S+?)            # EVR
+            (?(sb)\]|(?(rb)\)))      # matching closing bracket
+            :?                       # optional colon
+            \s*                      # optional following whitespace
+            $
+            """,
+        re.VERBOSE,
+    )
+
     def __init__(
         self,
         header: str,
@@ -83,25 +100,24 @@ class ChangelogEntry:
         return f"ChangelogEntry({self.header!r}, {self.content!r}, {self._following_lines!r})"
 
     @property
-    def evr(self) -> Optional[str]:
+    def evr(self) -> Optional[EVR]:
         """EVR (epoch, version, release) of the entry."""
-        m = re.match(
-            r"""
-            ^.*
-            \s+                       # preceding whitespace
-            ((?P<sb>\[)|(?P<rb>\())?  # optional opening bracket
-            (?P<evr>(\d+:)?\S+-\S+?)  # EVR
-            (?(sb)\]|(?(rb)\)))       # matching closing bracket
-            :?                        # optional colon
-            \s*                       # optional following whitespace
-            $
-            """,
-            self.header,
-            re.VERBOSE,
-        )
+        m = self._EVR_RE.match(self.header)
+
         if not m:
             return None
-        return m.group("evr")
+
+        evr_s = m.group("evr")
+        try:
+            evr = EVR.from_string(evr_s)
+        except SpecfileException:
+            return None
+
+        # looks like an email
+        if evr_s.startswith("<") and evr_s.endswith(">"):
+            return None
+
+        return evr
 
     @property
     def extended_timestamp(self) -> bool:
@@ -263,7 +279,9 @@ class Changelog(UserList[ChangelogEntry]):
         return copy.copy(self)
 
     def filter(
-        self, since: Optional[str] = None, until: Optional[str] = None
+        self,
+        since: Optional[Union[str, EVR]] = None,
+        until: Optional[Union[str, EVR]] = None,
     ) -> "Changelog":
         """
         Filters changelog entries with EVR between since and until.
@@ -278,9 +296,11 @@ class Changelog(UserList[ChangelogEntry]):
             Filtered changelog.
         """
 
-        def parse_evr(s):
+        def parse_evr(str_or_evr: Union[str, EVR]) -> EVR:
+            if isinstance(str_or_evr, EVR):
+                return str_or_evr
             try:
-                return EVR.from_string(s)
+                return EVR.from_string(str_or_evr)
             except SpecfileException:
                 return EVR(version="0")
 
@@ -290,8 +310,8 @@ class Changelog(UserList[ChangelogEntry]):
             start_index = next(
                 (
                     i
-                    for i, e in enumerate(self.data)
-                    if parse_evr(e.evr) >= parse_evr(since)
+                    for i, entry in enumerate(self.data)
+                    if entry.evr >= parse_evr(since)
                 ),
                 len(self.data) + 1,
             )
@@ -301,8 +321,8 @@ class Changelog(UserList[ChangelogEntry]):
             end_index = next(
                 (
                     i + 1
-                    for i, e in reversed(list(enumerate(self.data)))
-                    if parse_evr(e.evr) <= parse_evr(until)
+                    for i, entry in reversed(list(enumerate(self.data)))
+                    if entry.evr <= parse_evr(until)
                 ),
                 0,
             )
