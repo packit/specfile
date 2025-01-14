@@ -55,9 +55,9 @@ packages:
         - python3 -m build --sdist --outdir ./fedora/
         - bash -c "ls -1t ./centos-integration-sig/*.tar.gz | head -n 1"
       get-current-version: python3 -m setuptools_scm
-    dist_git_base_url: https://gitlab.com # this is not taken into account by centpkg-sig yet!
-    dist_git_namespace: CentOS/Integration/packit-cbs/rpms # this is not taken into account by centpkg-sig yet!
-    #sig: Integration/packit-cbs # this is not taken into account by centpkg-sig yet!
+    dist_git_base_url: https://gitlab.com
+    dist_git_namespace: CentOS/Integration/packit-cbs/rpms
+    sig: Integration/packit-cbs
     pkg_tool: centpkg-sig
 
   specfile-epel8:
