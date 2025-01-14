@@ -3,11 +3,16 @@
 
 import copy
 import datetime
-from typing import Optional
+from typing import List, Optional, Union
 
 import pytest
 
-from specfile.changelog import Changelog, ChangelogEntry
+from specfile.changelog import (
+    _OPENSUSE_CHANGELOG_SEPARATOR,
+    Changelog,
+    ChangelogEntry,
+    ChangelogStyle,
+)
 from specfile.sections import Section
 from specfile.utils import EVR
 
@@ -239,6 +244,140 @@ def test_parse():
         "* this is also a valid entry",
     ]
     assert not changelog[6].extended_timestamp
+
+    assert all(
+        changelog_entry.style == ChangelogStyle.standard
+        for changelog_entry in changelog
+    )
+
+
+def test_suse_style_changelog_parse():
+    changelog = Changelog.parse(
+        Section(
+            "changelog",
+            data=[
+                "-------------------------------------------------------------------",
+                (
+                    hdr1 := "Tue Dec 17 14:21:37 UTC 2024 - "
+                    + (dc := "Dan Čermák <dan.cermak@cgc-instruments.com>")
+                ),
+                "",
+                (content1 := "- First version"),
+                "",
+                "-------------------------------------------------------------------",
+                (hdr2 := f"Mon Nov  4 17:47:23 UTC 2024 - {dc}"),
+                "",
+                (content2 := "- # [0.9.37] - September 4th, 2024"),
+                "",
+                "-------------------------------------------------------------------",
+                (
+                    hdr3 := "Fri May 17 09:14:20 UTC 2024 - "
+                    + "Dominique Leuenberger <dimstar@opensuse.org>"
+                ),
+                "",
+                (content3 := "- Use %patch -P N instead of deprecated %patchN syntax."),
+                "",
+                "-------------------------------------------------------------------",
+                (
+                    hdr4 := "Mon Oct 10 13:27:24 UTC 2022 - Stephan Kulow <coolo@suse.com>"
+                ),
+                "",
+                (content4_1 := "updated to version 0.9.28"),
+                (content4_2 := " see installed CHANGELOG.md"),
+                "",
+                "",
+                "-------------------------------------------------------------------",
+                (
+                    hdr5 := "Fri Jun 25 07:31:34 UTC 2021 - Dan Čermák <dcermak@suse.com>"
+                ),
+                "",
+                (content5_1 := "- New upstream release 0.9.26"),
+                "",
+                (content5_2 := "  - Add support for Ruby 3.0 and fix tests"),
+                (
+                    content5_3 := "  - Fix support for `frozen_string_literal: false`"
+                    + " magic comments (#1363)"
+                ),
+                "",
+                "",
+            ],
+        )
+    )
+
+    assert isinstance(changelog, Changelog)
+    assert len(changelog) == 5
+
+    for changelog_entry, hdr, content in zip(
+        changelog,
+        reversed((hdr1, hdr2, hdr3, hdr4, hdr5)),
+        reversed(
+            (
+                [content1],
+                [content2],
+                [content3],
+                [content4_1, content4_2],
+                [content5_1, "", content5_2, content5_3],
+            )
+        ),
+    ):
+
+        assert isinstance(changelog_entry, ChangelogEntry)
+        assert changelog_entry.evr is None
+        assert changelog_entry.header == _OPENSUSE_CHANGELOG_SEPARATOR + "\n" + hdr
+        assert changelog_entry.content == [""] + content
+        assert changelog_entry.extended_timestamp
+        assert changelog_entry.style == ChangelogStyle.openSUSE
+
+
+@pytest.mark.parametrize(
+    "timestamp,author,content,entry",
+    (
+        [
+            (
+                datetime.datetime(2021, 6, 25, 7, 31, 34),
+                "Dan Čermák <dcermak@suse.com>",
+                content_1 := ["", "New upstream release 0.9.26"],
+                ChangelogEntry(
+                    header=_OPENSUSE_CHANGELOG_SEPARATOR
+                    + "\n"
+                    + "Fri Jun 25 07:31:34 UTC 2021 - Dan Čermák <dcermak@suse.com>",
+                    content=content_1,
+                ),
+            ),
+            (
+                datetime.date(2021, 6, 25),
+                "Dan Čermák <dcermak@suse.de>",
+                content_2 := [
+                    "",
+                    "New upstream release 0.26",
+                    "Fixed a major regression in Foo",
+                ],
+                ChangelogEntry(
+                    header=_OPENSUSE_CHANGELOG_SEPARATOR
+                    + "\n"
+                    + "Fri Jun 25 12:00:00 UTC 2021 - Dan Čermák <dcermak@suse.de>",
+                    content=content_2,
+                ),
+            ),
+        ]
+    ),
+)
+def test_create_opensuse_changelog_assemble(
+    timestamp: Union[datetime.datetime, datetime.date],
+    author: str,
+    content: List[str],
+    entry: ChangelogEntry,
+) -> None:
+    assert (
+        ChangelogEntry.assemble(
+            timestamp,
+            author,
+            content,
+            style=ChangelogStyle.openSUSE,
+            append_newline=False,
+        )
+        == entry
+    )
 
 
 def test_get_raw_section_data():
