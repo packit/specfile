@@ -9,6 +9,7 @@ import pwd
 import re
 import shutil
 import subprocess
+from enum import Enum, auto, unique
 from typing import List, Optional, Union, overload
 
 from specfile.exceptions import SpecfileException
@@ -33,6 +34,24 @@ MONTHS = (
     "Nov",
     "Dec",
 )
+
+_OPENSUSE_CHANGELOG_SEPARATOR = 67 * "-"
+
+
+@unique
+class ChangelogStyle(Enum):
+    """Style of changelog entries"""
+
+    #: standard changelog entries parseable by RPM (used in Fedora, RHEL, etc.):
+    #: * $DATE $AUTHOR <$EMAIL> - $EVR
+    #: $ENTRY
+    standard = auto()
+
+    #: openSUSE/SUSE style detached changelog:
+    #: -------------------------------------------------------------------
+    #: $DATE - $AUTHOR <$EMAIL>
+    #: $ENTRY
+    openSUSE = auto()
 
 
 class ChangelogEntry:
@@ -168,6 +187,13 @@ class ChangelogEntry:
             return ""
         return m.group("wsp") + (m.group("zp") or "")
 
+    @property
+    def style(self) -> ChangelogStyle:
+        """Style of this changelog entry (standard vs openSUSE)."""
+        if self.header.startswith(_OPENSUSE_CHANGELOG_SEPARATOR):
+            return ChangelogStyle.openSUSE
+        return ChangelogStyle.standard
+
     @classmethod
     def assemble(
         cls,
@@ -177,6 +203,7 @@ class ChangelogEntry:
         evr: Optional[str] = None,
         day_of_month_padding: str = "0",
         append_newline: bool = True,
+        style: ChangelogStyle = ChangelogStyle.standard,
     ) -> "ChangelogEntry":
         """
         Assembles a changelog entry.
@@ -184,30 +211,55 @@ class ChangelogEntry:
         Args:
             timestamp: Timestamp of the entry.
                 Supply `datetime` rather than `date` for extended format.
+                openSUSE-style changelog entries mandate extended format, so if a `date`
+                is supplied, the timestamp will be set to noon of that day.
             author: Author of the entry.
             content: List of lines forming the content of the entry.
             evr: EVR (epoch, version, release) of the entry.
+                Ignored if `style` is `ChangelogStyle.openSUSE`.
             day_of_month_padding: Padding to apply to day of month in the timestamp.
             append_newline: Whether the entry should be followed by an empty line.
+            style: Which style of changelog should be created.
 
         Returns:
             New instance of `ChangelogEntry` class.
         """
         weekday = WEEKDAYS[timestamp.weekday()]
         month = MONTHS[timestamp.month - 1]
-        header = f"* {weekday} {month}"
+
+        if style == ChangelogStyle.standard:
+            header = "* "
+        else:
+            header = _OPENSUSE_CHANGELOG_SEPARATOR + "\n"
+        header += f"{weekday} {month}"
+
         if day_of_month_padding.endswith("0"):
             header += f" {day_of_month_padding[:-1]}{timestamp.day:02}"
         else:
             header += f" {day_of_month_padding}{timestamp.day}"
+
+        # convert to extended format for openSUSE style changelogs
+        if style == ChangelogStyle.openSUSE and not isinstance(
+            timestamp, datetime.datetime
+        ):
+            timestamp = datetime.datetime(
+                year=timestamp.year, month=timestamp.month, day=timestamp.day, hour=12
+            )
+
         if isinstance(timestamp, datetime.datetime):
             # extended format
             if not timestamp.tzinfo:
                 timestamp = timestamp.replace(tzinfo=datetime.timezone.utc)
             header += f" {timestamp:%H:%M:%S %Z}"
-        header += f" {timestamp:%Y} {author}"
-        if evr is not None:
+        header += f" {timestamp:%Y} "
+
+        if style == ChangelogStyle.openSUSE:
+            header += "- "
+        header += author
+
+        if evr is not None and style == ChangelogStyle.standard:
             header += f" - {evr}"
+
         return cls(header, content, [""] if append_newline else None)
 
 
@@ -350,13 +402,25 @@ class Changelog(UserList[ChangelogEntry]):
         predecessor = []
         header = None
         content: List[str] = []
-        for line in section:
-            if line.startswith("*"):
+
+        for i, line in enumerate(section):
+            if line == _OPENSUSE_CHANGELOG_SEPARATOR:
+                continue
+
+            prev_line_is_opensuse_separator = (
+                i >= 1 and section[i - 1] == _OPENSUSE_CHANGELOG_SEPARATOR
+            )
+            if line.startswith("*") or prev_line_is_opensuse_separator:
                 if header is None or "".join(content).strip():
                     if header:
                         following_lines = extract_following_lines(content)
                         data.insert(0, ChangelogEntry(header, content, following_lines))
-                    header = line
+
+                    if prev_line_is_opensuse_separator:
+                        header = _OPENSUSE_CHANGELOG_SEPARATOR + "\n"
+                    else:
+                        header = ""
+                    header += line
                     content = []
                 else:
                     content.append(line)
