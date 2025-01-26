@@ -1,3 +1,7 @@
+# 0.34.0
+
+- Added support for detached (open)SUSE style changelogs (#444)
+
 # 0.33.0
 
 - There is a new convenience method `Sections.get_or_create()` that allows you to manipulate a section
