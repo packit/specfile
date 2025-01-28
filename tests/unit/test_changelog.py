@@ -257,47 +257,35 @@ def test_suse_style_changelog_parse():
             "changelog",
             data=[
                 "-------------------------------------------------------------------",
-                (
-                    hdr1 := "Tue Dec 17 14:21:37 UTC 2024 - "
-                    + (dc := "Dan Čermák <dan.cermak@cgc-instruments.com>")
-                ),
+                "Tue Dec 17 14:21:37 UTC 2024 - Dan Čermák <dan.cermak@cgc-instruments.com>",
                 "",
-                (content1 := "- First version"),
+                "- First version",
                 "",
                 "-------------------------------------------------------------------",
-                (hdr2 := f"Mon Nov  4 17:47:23 UTC 2024 - {dc}"),
+                "Mon Nov  4 17:47:23 UTC 2024 - Dan Čermák <dan.cermak@cgc-instruments.com>",
                 "",
-                (content2 := "- # [0.9.37] - September 4th, 2024"),
-                "",
-                "-------------------------------------------------------------------",
-                (
-                    hdr3 := "Fri May 17 09:14:20 UTC 2024 - "
-                    + "Dominique Leuenberger <dimstar@opensuse.org>"
-                ),
-                "",
-                (content3 := "- Use %patch -P N instead of deprecated %patchN syntax."),
+                "- # [0.9.37] - September 4th, 2024",
                 "",
                 "-------------------------------------------------------------------",
-                (
-                    hdr4 := "Mon Oct 10 13:27:24 UTC 2022 - Stephan Kulow <coolo@suse.com>"
-                ),
+                "Fri May 17 09:14:20 UTC 2024 - Dominique Leuenberger <dimstar@opensuse.org>",
                 "",
-                (content4_1 := "updated to version 0.9.28"),
-                (content4_2 := " see installed CHANGELOG.md"),
+                "- Use %patch -P N instead of deprecated %patchN syntax.",
+                "",
+                "-------------------------------------------------------------------",
+                "Mon Oct 10 13:27:24 UTC 2022 - Stephan Kulow <coolo@suse.com>",
+                "",
+                "updated to version 0.9.28",
+                " see installed CHANGELOG.md",
                 "",
                 "",
                 "-------------------------------------------------------------------",
-                (
-                    hdr5 := "Fri Jun 25 07:31:34 UTC 2021 - Dan Čermák <dcermak@suse.com>"
-                ),
+                "Fri Jun 25 07:31:34 UTC 2021 - Dan Čermák <dcermak@suse.com>",
                 "",
-                (content5_1 := "- New upstream release 0.9.26"),
+                "- New upstream release 0.9.26",
                 "",
-                (content5_2 := "  - Add support for Ruby 3.0 and fix tests"),
-                (
-                    content5_3 := "  - Fix support for `frozen_string_literal: false`"
-                    + " magic comments (#1363)"
-                ),
+                "  - Add support for Ruby 3.0 and fix tests",
+                "  - Fix support for `frozen_string_literal: false`"
+                " magic comments (#1363)",
                 "",
                 "",
             ],
@@ -309,14 +297,28 @@ def test_suse_style_changelog_parse():
 
     for changelog_entry, hdr, content in zip(
         changelog,
-        reversed((hdr1, hdr2, hdr3, hdr4, hdr5)),
         reversed(
             (
-                [content1],
-                [content2],
-                [content3],
-                [content4_1, content4_2],
-                [content5_1, "", content5_2, content5_3],
+                "Tue Dec 17 14:21:37 UTC 2024 - Dan Čermák <dan.cermak@cgc-instruments.com>",
+                "Mon Nov  4 17:47:23 UTC 2024 - Dan Čermák <dan.cermak@cgc-instruments.com>",
+                "Fri May 17 09:14:20 UTC 2024 - Dominique Leuenberger <dimstar@opensuse.org>",
+                "Mon Oct 10 13:27:24 UTC 2022 - Stephan Kulow <coolo@suse.com>",
+                "Fri Jun 25 07:31:34 UTC 2021 - Dan Čermák <dcermak@suse.com>",
+            )
+        ),
+        reversed(
+            (
+                ["- First version"],
+                ["- # [0.9.37] - September 4th, 2024"],
+                ["- Use %patch -P N instead of deprecated %patchN syntax."],
+                ["updated to version 0.9.28", " see installed CHANGELOG.md"],
+                [
+                    "- New upstream release 0.9.26",
+                    "",
+                    "  - Add support for Ruby 3.0 and fix tests",
+                    "  - Fix support for `frozen_string_literal: false`"
+                    " magic comments (#1363)",
+                ],
             )
         ),
     ):
@@ -336,27 +338,35 @@ def test_suse_style_changelog_parse():
             (
                 datetime.datetime(2021, 6, 25, 7, 31, 34),
                 "Dan Čermák <dcermak@suse.com>",
-                content_1 := ["", "New upstream release 0.9.26"],
+                ["", "New upstream release 0.9.26"],
                 ChangelogEntry(
-                    header=_OPENSUSE_CHANGELOG_SEPARATOR
-                    + "\n"
-                    + "Fri Jun 25 07:31:34 UTC 2021 - Dan Čermák <dcermak@suse.com>",
-                    content=content_1,
+                    header=(
+                        _OPENSUSE_CHANGELOG_SEPARATOR
+                        + "\n"
+                        + "Fri Jun 25 07:31:34 UTC 2021 - Dan Čermák <dcermak@suse.com>"
+                    ),
+                    content=["", "New upstream release 0.9.26"],
                 ),
             ),
             (
                 datetime.date(2021, 6, 25),
                 "Dan Čermák <dcermak@suse.de>",
-                content_2 := [
+                [
                     "",
                     "New upstream release 0.26",
                     "Fixed a major regression in Foo",
                 ],
                 ChangelogEntry(
-                    header=_OPENSUSE_CHANGELOG_SEPARATOR
-                    + "\n"
-                    + "Fri Jun 25 12:00:00 UTC 2021 - Dan Čermák <dcermak@suse.de>",
-                    content=content_2,
+                    header=(
+                        _OPENSUSE_CHANGELOG_SEPARATOR
+                        + "\n"
+                        + "Fri Jun 25 12:00:00 UTC 2021 - Dan Čermák <dcermak@suse.de>"
+                    ),
+                    content=[
+                        "",
+                        "New upstream release 0.26",
+                        "Fixed a major regression in Foo",
+                    ],
                 ),
             ),
         ]
