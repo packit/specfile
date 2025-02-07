@@ -1,3 +1,6 @@
+# 0.34.1
+
+
 # 0.34.0
 
 - Added support for detached (open)SUSE style changelogs (#444)
