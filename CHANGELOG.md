@@ -1,5 +1,7 @@
 # 0.34.1
 
+- Removed the usage of a walrus operator for Python 3.6 compatibility. (#450)
+
 # 0.34.0
 
 - Added support for detached (open)SUSE style changelogs (#444)
