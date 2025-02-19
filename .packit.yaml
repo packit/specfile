@@ -26,12 +26,16 @@ packages:
       - python3-build
       - python3-setuptools_scm
     actions:
+      post-upstream-clone:
+        - echo AHOJ
       pre-sync:
         - python3 plans/git_reference.py
       create-archive:
         - python3 -m build --sdist --outdir ./fedora/
+        - bash -c 'sed -i "s/_BASEVER_/$PACKIT_PROJECT_VERSION/" fedora/python-specfile.spec'
         - bash -c "ls -1t ./fedora/*.tar.gz | head -n 1"
       get-current-version: python3 -m setuptools_scm
+      fix-spec-file: []
 
   # docs: https://gitlab.com/CentOS/Integration/packit-cbs/docs
   specfile-centos-integration-sig:
