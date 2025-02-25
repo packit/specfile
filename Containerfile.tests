@@ -1,4 +1,4 @@
-FROM quay.io/packit/base:c9s
+FROM quay.io/packit/base:fedora
 
 COPY files/tasks/*.yaml /files/tasks/
 COPY files/*.yaml /files/
