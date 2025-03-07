@@ -60,6 +60,27 @@ packages:
     sig: Integration/packit-cbs
     pkg_tool: centpkg-sig
 
+  specfile-epel10:
+    upstream_package_name: specfile
+    downstream_package_name: python-specfile
+    specfile_path: &specfile_path_epel10 epel10/python-specfile.spec
+    files_to_sync:
+      - *specfile_path_epel10
+      - .packit.yaml
+      - src: plans/
+        dest: plans/
+      - src: .fmf/
+        dest: .fmf/
+    srpm_build_deps:
+      - python3-setuptools_scm
+    actions:
+      pre-sync:
+        - python3 plans/git_reference.py
+      create-archive:
+        - python3 setup.py sdist --dist-dir ./epel10/
+        - bash -c "ls -1t ./epel10/*.tar.gz | head -n 1"
+      get-current-version: python3 setup.py --version
+
   specfile-epel8:
     upstream_package_name: specfile
     downstream_package_name: python-specfile
@@ -91,6 +112,11 @@ jobs:
       - epel-9
   - job: copr_build
     trigger: pull_request
+    packages: [specfile-epel10]
+    targets:
+      - epel-10-all
+  - job: copr_build
+    trigger: pull_request
     packages: [specfile-epel8]
     targets:
       - epel-8
@@ -103,6 +129,15 @@ jobs:
       - fedora-all
       - fedora-all-aarch64
       - epel-9
+    project: packit-dev
+    list_on_homepage: True
+    preserve_project: True
+  - job: copr_build
+    trigger: commit
+    branch: main
+    packages: [specfile-epel10]
+    targets:
+      - epel-10-all
     project: packit-dev
     list_on_homepage: True
     preserve_project: True
@@ -130,6 +165,15 @@ jobs:
   - job: copr_build
     trigger: commit
     branch: stable
+    packages: [specfile-epel10]
+    targets:
+      - epel-10-all
+    project: packit-stable
+    list_on_homepage: True
+    preserve_project: True
+  - job: copr_build
+    trigger: commit
+    branch: stable
     packages: [specfile-epel8]
     targets:
       - epel-8
@@ -149,6 +193,14 @@ jobs:
     preserve_project: True
   - job: copr_build
     trigger: release
+    packages: [specfile-epel10]
+    targets:
+      - epel-10-all
+    project: packit-releases
+    list_on_homepage: True
+    preserve_project: True
+  - job: copr_build
+    trigger: release
     packages: [specfile-epel8]
     targets:
       - epel-8
@@ -163,6 +215,12 @@ jobs:
     targets:
       - fedora-all
       - epel-9
+  - job: tests
+    trigger: pull_request
+    packages: [specfile-epel10]
+    tmt_plan: "smoke|full"
+    targets:
+      - epel-10-all
   - job: tests
     trigger: pull_request
     packages: [specfile-epel8]
@@ -199,6 +257,13 @@ jobs:
       epel-9: {}
   - job: propose_downstream
     trigger: release
+    packages: [specfile-epel10]
+    dist_git_branches:
+      epel-10:
+        fast_forward_merge_into:
+          - epel-10-branched
+  - job: propose_downstream
+    trigger: release
     packages: [specfile-epel8]
     dist_git_branches:
       - epel-8
@@ -216,6 +281,13 @@ jobs:
         fast_forward_merge_into:
           - fedora-branched
       epel-9: {}
+  - job: pull_from_upstream
+    trigger: release
+    packages: [specfile-epel10]
+    dist_git_branches:
+      epel-10:
+        fast_forward_merge_into:
+          - epel-10-branched
   - job: pull_from_upstream
     trigger: release
     packages: [specfile-epel8]
@@ -240,6 +312,13 @@ jobs:
       - epel-9
   - job: koji_build
     trigger: commit
+    packages: [specfile-epel10]
+    packit_instances: ["stg"]
+    allowed_pr_authors: ["packit-stg", "packit"]
+    dist_git_branches:
+      - epel-10-all
+  - job: koji_build
+    trigger: commit
     packages: [specfile-epel8]
     packit_instances: ["stg"]
     allowed_pr_authors: ["packit-stg", "packit"]
@@ -253,6 +332,13 @@ jobs:
     dist_git_branches:
       - c9-sig-integration
 
+  - job: bodhi_update
+    trigger: commit
+    packages: [specfile-epel10]
+    packit_instances: ["stg"]
+    allowed_builders: ["packit-stg", "packit"]
+    dist_git_branches:
+      - epel-10-all
   - job: bodhi_update
     trigger: commit
     packages: [specfile-epel8]
