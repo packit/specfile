@@ -208,8 +208,8 @@ jobs:
     tmt_plan: "smoke|full"
     use_internal_tf: true
     targets:
-      epel-8:
-        distros: [RHEL-8]
+      epel-8-x86_64:
+        distros: [RHEL-8.10.0-Nightly]
     # enable EPEL
     tf_extra_params:
       environments:
