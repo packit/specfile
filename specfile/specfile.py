@@ -94,14 +94,15 @@ class Specfile:
         )
 
     @classmethod
-    def from_str(cls,
-                 string: str,
-                 save_to: Optional[str] = None,
-                 sourcedir: Optional[Union[Path, str]] = None,
-                 autosave: bool = False,
-                 macros: Optional[List[Tuple[str, Optional[str]]]] = None,
-                 force_parse: bool = False,
-                 ):
+    def from_str(
+        cls,
+        string: str,
+        save_to: Optional[str] = None,
+        sourcedir: Optional[Union[Path, str]] = None,
+        autosave: bool = False,
+        macros: Optional[List[Tuple[str, Optional[str]]]] = None,
+        force_parse: bool = False,
+    ):
         """
         Creates a specfile instance from a string containing the spec file content.
 
