@@ -4,6 +4,8 @@
 import datetime
 import logging
 import re
+import shutil
+import tempfile
 import types
 from dataclasses import dataclass
 from pathlib import Path
@@ -73,6 +75,7 @@ class Specfile:
         """
         self.autosave = autosave
         self._path = Path(path)
+        self._temp_path = None
         self._lines, self._trailing_newline = self._read_lines(self._path)
         self._parser = SpecParser(
             Path(sourcedir or self.path.parent), macros, force_parse
@@ -90,6 +93,63 @@ class Specfile:
             and self._parser == other._parser
         )
 
+    @classmethod
+    def from_str(cls,
+                 string: str,
+                 save_to: Optional[str] = None,
+                 sourcedir: Optional[Union[Path, str]] = None,
+                 autosave: bool = False,
+                 macros: Optional[List[Tuple[str, Optional[str]]]] = None,
+                 force_parse: bool = False,
+                 ):
+        """
+        Creates a specfile instance from a string containing the spec file content.
+
+        This method writes the provided string to a temporary file and then initializes
+        a specfile instance from that file.
+        The temporary file is deleted when the specfile instance is destroyed.
+        Optionally, if a save_to path is defined, the temporary file is copied to that path
+        on save.
+        Args:
+            string: String containing the spec file content.
+            save_to: Path to save the spec file to.
+            sourcedir: Path to sources and patches.
+            autosave: Whether to automatically save any changes made.
+            macros: List of extra macro definitions.
+            force_parse: Whether to attempt to parse the spec file even if one or more
+                sources required to be present at parsing time are not available.
+                Such sources include sources referenced from shell expansions
+                in tag values and sources included using the _%include_ directive.
+
+        Returns:
+            Specfile instance.
+        """
+        temp_file = tempfile.NamedTemporaryFile(
+            mode="w+", delete=False, suffix=".spec", dir=tempfile.gettempdir()
+        )
+        temp_file.write(string)
+        temp_file.flush()
+
+        specfile = cls(
+            path=temp_file.name,
+            sourcedir=sourcedir,
+            autosave=autosave,
+            macros=macros,
+            force_parse=force_parse,
+        )
+
+        specfile._temp_path = Path(temp_file.name)
+        specfile._save_path = Path(save_to) if save_to else None
+
+        return specfile
+
+    def cleanup(self) -> None:
+        if getattr(self, "_temp_path", None) and self._temp_path.exists():
+            if getattr(self, "_save_path", None):
+                shutil.copy(self._temp_path, self._save_path)
+            else:
+                self._temp_path.unlink(missing_ok=True)
+
     @formatted
     def __repr__(self) -> str:
         return (
@@ -103,6 +163,10 @@ class Specfile:
     def __enter__(self) -> "Specfile":
         return self
 
+    def __del__(self):
+        if self._temp_path is not None:
+            self.cleanup()
+
     def __exit__(
         self,
         exc_type: Optional[Type[BaseException]],
@@ -110,6 +174,8 @@ class Specfile:
         traceback: Optional[types.TracebackType],
     ) -> None:
         self.save()
+        if self._temp_path is not None:
+            self.cleanup()
 
     def _dump_debug_info(self, message) -> None:
         logger.debug(
