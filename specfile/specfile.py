@@ -75,7 +75,8 @@ class Specfile:
         """
         self.autosave = autosave
         self._path = Path(path)
-        self._temp_path = None
+        self._temp_path: Optional[Path] = None
+        self._save_path: Optional[Path] = None
         self._lines, self._trailing_newline = self._read_lines(self._path)
         self._parser = SpecParser(
             Path(sourcedir or self.path.parent), macros, force_parse
@@ -144,8 +145,8 @@ class Specfile:
         return specfile
 
     def cleanup(self) -> None:
-        if getattr(self, "_temp_path", None) and self._temp_path.exists():
-            if getattr(self, "_save_path", None):
+        if self._temp_path is not None and self._temp_path.exists():
+            if self._save_path is not None:
                 shutil.copy(self._temp_path, self._save_path)
             else:
                 self._temp_path.unlink(missing_ok=True)
