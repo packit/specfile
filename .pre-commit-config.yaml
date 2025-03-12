@@ -51,6 +51,8 @@ repos:
         args: [--show-error-codes, --ignore-missing-imports]
         additional_dependencies:
           [types-setuptools, types-requests, types-python-dateutil]
+          # This file is overridden by a type stub
+        exclude: "specfile/context_management.py"
   - repo: https://github.com/teemtee/tmt.git
     rev: 1.41.0
     hooks:
