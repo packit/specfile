@@ -690,6 +690,7 @@ def test_trailing_newline(spec_autosetup, spec_no_trailing_newline):
     spec = Specfile(spec_no_trailing_newline)
     assert str(spec)[-1] != "\n"
 
+
 def test_temp_file_cleanup(spec_minimal):
     spec_text = spec_minimal.read_text()
     print(spec_text)
