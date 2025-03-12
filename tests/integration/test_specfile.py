@@ -689,3 +689,12 @@ def test_trailing_newline(spec_autosetup, spec_no_trailing_newline):
     assert str(spec)[-1] == "\n"
     spec = Specfile(spec_no_trailing_newline)
     assert str(spec)[-1] != "\n"
+
+def test_temp_file_cleanup(spec_minimal):
+    spec_text = spec_minimal.read_text()
+    print(spec_text)
+    spec = Specfile.from_str(spec_text)
+    temp_path = spec._temp_path
+    assert temp_path.exists(), "Temp file not created"
+    del spec
+    assert not temp_path.exists(), "Temp file was not cleaned up"
