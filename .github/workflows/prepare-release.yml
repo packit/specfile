@@ -23,7 +23,11 @@ jobs:
         uses: packit/prepare-release@v3
         with:
           version: ${{ inputs.version }}
-          specfiles: fedora/python-specfile.spec,epel8/python-specfile.spec
+          specfiles: >
+            fedora/python-specfile.spec,
+            epel8/python-specfile.spec,
+            epel10/python-specfile.spec,
+            centos-integration-sig/python-specfile.spec
           prerelease_suffix_pattern: "([.\\-_]?)(a(lpha)?|b(eta)?|r?c|pre(view)?)([.\\-_]?\\d+)?"
           prerelease_suffix_macro: prerelease
       - name: Create Pull Request

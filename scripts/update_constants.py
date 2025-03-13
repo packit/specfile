@@ -10,8 +10,8 @@ from pathlib import Path
 import click
 from extract import extract_arches, extract_sections, extract_tags
 
-SECTIONS_SOURCE = Path("build/parseSpec.c")
-TAGS_SOURCE = Path("build/parsePreamble.c")
+SECTIONS_SOURCE = Path("build/parseSpec.cc")
+TAGS_SOURCE = Path("build/parsePreamble.cc")
 ARCHES_SOURCE = Path("rpmrc.in")
 
 

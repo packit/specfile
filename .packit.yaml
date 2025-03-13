@@ -11,7 +11,7 @@ prerelease_suffix_macro: prerelease
 copy_upstream_release_description: true
 
 packages:
-  specfile:
+  specfile: &specfile
     upstream_package_name: specfile
     downstream_package_name: python-specfile
     specfile_path: &specfile_path fedora/python-specfile.spec
@@ -25,7 +25,7 @@ packages:
     srpm_build_deps:
       - python3-build
       - python3-setuptools_scm
-    actions:
+    actions: &actions
       pre-sync:
         - python3 plans/git_reference.py
       create-archive:
@@ -33,36 +33,8 @@ packages:
         - bash -c "ls -1t ./fedora/*.tar.gz | head -n 1"
       get-current-version: python3 -m setuptools_scm
 
-  # docs: https://gitlab.com/CentOS/Integration/packit-cbs/docs
-  specfile-centos-integration-sig:
-    upstream_package_name: specfile
-    downstream_package_name: python-specfile
-    specfile_path: &specfile_path_centos centos-integration-sig/python-specfile.spec
-    files_to_sync:
-      - *specfile_path_centos
-      - .packit.yaml
-      - src: plans/
-        dest: plans/
-      - src: .fmf/
-        dest: .fmf/
-    srpm_build_deps:
-      - python3-build
-      - python3-setuptools_scm
-    actions:
-      pre-sync:
-        - python3 plans/git_reference.py
-      create-archive:
-        - python3 -m build --sdist --outdir ./fedora/
-        - bash -c "ls -1t ./centos-integration-sig/*.tar.gz | head -n 1"
-      get-current-version: python3 -m setuptools_scm
-    dist_git_base_url: https://gitlab.com
-    dist_git_namespace: CentOS/Integration/packit-cbs/rpms
-    sig: Integration/packit-cbs
-    pkg_tool: centpkg-sig
-
   specfile-epel8:
-    upstream_package_name: specfile
-    downstream_package_name: python-specfile
+    <<: *specfile
     specfile_path: &specfile_path_epel8 epel8/python-specfile.spec
     files_to_sync:
       - *specfile_path_epel8
@@ -71,31 +43,69 @@ packages:
         dest: plans/
       - src: .fmf/
         dest: .fmf/
-    srpm_build_deps:
-      - python3-setuptools_scm
     actions:
-      pre-sync:
-        - python3 plans/git_reference.py
+      <<: *actions
       create-archive:
         - python3 setup.py sdist --dist-dir ./epel8/
         - bash -c "ls -1t ./epel8/*.tar.gz | head -n 1"
-      get-current-version: python3 setup.py --version
+
+  specfile-epel10:
+    <<: *specfile
+    specfile_path: &specfile_path_epel10 epel10/python-specfile.spec
+    files_to_sync:
+      - *specfile_path_epel10
+      - .packit.yaml
+      - src: plans/
+        dest: plans/
+      - src: .fmf/
+        dest: .fmf/
+    actions:
+      <<: *actions
+      create-archive:
+        - python3 setup.py sdist --dist-dir ./epel10/
+        - bash -c "ls -1t ./epel10/*.tar.gz | head -n 1"
+
+  # docs: https://gitlab.com/CentOS/Integration/packit-cbs/docs
+  specfile-centos-integration-sig:
+    <<: *specfile
+    specfile_path: &specfile_path_centos_sig centos-integration-sig/python-specfile.spec
+    files_to_sync:
+      - *specfile_path_centos_sig
+      - .packit.yaml
+      - src: plans/
+        dest: plans/
+      - src: .fmf/
+        dest: .fmf/
+    actions:
+      <<: *actions
+      create-archive:
+        - python3 -m build --sdist --outdir ./centos-integration-sig/
+        - bash -c "ls -1t ./centos-integration-sig/*.tar.gz | head -n 1"
+    dist_git_base_url: https://gitlab.com
+    dist_git_namespace: CentOS/Integration/packit-cbs/rpms
+    sig: Integration/packit-cbs
+    pkg_tool: centpkg-sig
 
 jobs:
-  - job: copr_build
+  - &copr_build_pr
+    job: copr_build
     trigger: pull_request
     packages: [specfile]
     targets:
       - fedora-all
       - fedora-all-aarch64
       - epel-9
-  - job: copr_build
-    trigger: pull_request
+  - <<: *copr_build_pr
     packages: [specfile-epel8]
     targets:
       - epel-8
+  - <<: *copr_build_pr
+    packages: [specfile-epel10]
+    targets:
+      - epel-10-all
 
-  - job: copr_build
+  - &copr_build_commit_main
+    job: copr_build
     trigger: commit
     branch: main
     packages: [specfile]
@@ -106,38 +116,29 @@ jobs:
     project: packit-dev
     list_on_homepage: True
     preserve_project: True
-  - job: copr_build
-    trigger: commit
-    branch: main
+  - <<: *copr_build_commit_main
     packages: [specfile-epel8]
     targets:
       - epel-8
-    project: packit-dev
-    list_on_homepage: True
-    preserve_project: True
+  - <<: *copr_build_commit_main
+    packages: [specfile-epel10]
+    targets:
+      - epel-10-all
 
-  - job: copr_build
+  - &copr_build_commit_stable
+    job: copr_build
     trigger: commit
     branch: stable
     packages: [specfile]
     targets:
-      - fedora-stable
-      - fedora-stable-aarch64
-      - epel-9
-    project: packit-stable
-    list_on_homepage: True
-    preserve_project: True
-  - job: copr_build
-    trigger: commit
-    branch: stable
-    packages: [specfile-epel8]
-    targets:
-      - epel-8
+      - fedora-latest-stable
+      - fedora-latest-stable-aarch64
     project: packit-stable
     list_on_homepage: True
     preserve_project: True
 
-  - job: copr_build
+  - &copr_build_release
+    job: copr_build
     trigger: release
     packages: [specfile]
     targets:
@@ -147,30 +148,35 @@ jobs:
     project: packit-releases
     list_on_homepage: True
     preserve_project: True
-  - job: copr_build
-    trigger: release
+  - <<: *copr_build_release
     packages: [specfile-epel8]
     targets:
       - epel-8
-    project: packit-releases
-    list_on_homepage: True
-    preserve_project: True
+  - <<: *copr_build_release
+    packages: [specfile-epel10]
+    targets:
+      - epel-10-all
 
-  - job: tests
+  - &tests
+    job: tests
     trigger: pull_request
     packages: [specfile]
     tmt_plan: "smoke|full|packit-integration"
     targets:
       - fedora-all
       - epel-9
-  - job: tests
-    trigger: pull_request
+  - <<: *tests
+    identifier: performance
+    tmt_plan: performance
+    targets:
+      - fedora-rawhide
+  - <<: *tests
     packages: [specfile-epel8]
     tmt_plan: "smoke|full"
     use_internal_tf: true
     targets:
-      epel-8:
-        distros: [RHEL-8]
+      epel-8-x86_64:
+        distros: [RHEL-8.10.0-Nightly]
     # enable EPEL
     tf_extra_params:
       environments:
@@ -180,16 +186,14 @@ jobs:
               set -x
               dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
               %end
-
-  - job: tests
-    trigger: pull_request
-    packages: [specfile]
-    identifier: performance
-    tmt_plan: performance
+  - <<: *tests
+    packages: [specfile-epel10]
+    tmt_plan: "smoke|full"
     targets:
-      - fedora-rawhide
+      - epel-10-all
 
-  - job: propose_downstream
+  - &propose_downstream
+    job: propose_downstream
     trigger: release
     packages: [specfile]
     dist_git_branches:
@@ -197,18 +201,23 @@ jobs:
         fast_forward_merge_into:
           - fedora-branched
       epel-9: {}
-  - job: propose_downstream
-    trigger: release
+  - <<: *propose_downstream
     packages: [specfile-epel8]
     dist_git_branches:
       - epel-8
-  - job: propose_downstream
-    trigger: release
+  - <<: *propose_downstream
+    packages: [specfile-epel10]
+    dist_git_branches:
+      epel-10:
+        fast_forward_merge_into:
+          - epel-10-branched
+  - <<: *propose_downstream
     packages: [specfile-centos-integration-sig]
     dist_git_branches:
       - c9-sig-integration
 
-  - job: pull_from_upstream
+  - &pull_from_upstream
+    job: pull_from_upstream
     trigger: release
     packages: [specfile]
     dist_git_branches:
@@ -216,47 +225,61 @@ jobs:
         fast_forward_merge_into:
           - fedora-branched
       epel-9: {}
-  - job: pull_from_upstream
-    trigger: release
+  - <<: *pull_from_upstream
     packages: [specfile-epel8]
     dist_git_branches:
       - epel-8
-  - job: pull_from_upstream
-    trigger: release
+  - <<: *pull_from_upstream
+    packages: [specfile-epel10]
+    dist_git_branches:
+      epel-10:
+        fast_forward_merge_into:
+          - epel-10-branched
+  - <<: *pull_from_upstream
     packages: [specfile-centos-integration-sig]
     dist_git_branches:
       - c9-sig-integration
 
-  - job: koji_build
+  - &koji_build
+    job: koji_build
     trigger: commit
     packages: [specfile]
     packit_instances: ["stg"]
     allowed_pr_authors: ["packit-stg", "packit"]
+    dist_git_branches:
+      - epel-9
+  - <<: *koji_build
+    packages: [specfile-epel8]
+    dist_git_branches:
+      - epel-8
+  - <<: *koji_build
+    packages: [specfile-epel10]
+    dist_git_branches:
+      - epel-10-all
+  - <<: *koji_build
+    packages: [specfile-centos-integration-sig]
+    dist_git_branches:
+      - c9-sig-integration
+  - <<: *koji_build
     sidetag_group: packit-specfile-ogr-releases
     dependents:
       - packit
     dist_git_branches:
       - fedora-all
-      - epel-9
-  - job: koji_build
-    trigger: commit
-    packages: [specfile-epel8]
-    packit_instances: ["stg"]
-    allowed_pr_authors: ["packit-stg", "packit"]
-    dist_git_branches:
-      - epel-8
-  - job: koji_build
-    trigger: commit
-    packages: [specfile-centos-integration-sig]
-    packit_instances: ["stg"]
-    allowed_pr_authors: ["packit-stg", "packit"]
-    dist_git_branches:
-      - c9-sig-integration
 
-  - job: bodhi_update
+  - &bodhi_update
+    job: bodhi_update
     trigger: commit
-    packages: [specfile-epel8]
+    packages: [specfile]
     packit_instances: ["stg"]
     allowed_builders: ["packit-stg", "packit"]
     dist_git_branches:
+      - epel-9
+  - <<: *bodhi_update
+    packages: [specfile-epel8]
+    dist_git_branches:
       - epel-8
+  - <<: *bodhi_update
+    packages: [specfile-epel10]
+    dist_git_branches:
+      - epel-10-all
