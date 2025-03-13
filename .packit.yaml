@@ -156,27 +156,8 @@ jobs:
     branch: stable
     packages: [specfile]
     targets:
-      - fedora-stable
-      - fedora-stable-aarch64
-      - epel-9
-    project: packit-stable
-    list_on_homepage: True
-    preserve_project: True
-  - job: copr_build
-    trigger: commit
-    branch: stable
-    packages: [specfile-epel10]
-    targets:
-      - epel-10-all
-    project: packit-stable
-    list_on_homepage: True
-    preserve_project: True
-  - job: copr_build
-    trigger: commit
-    branch: stable
-    packages: [specfile-epel8]
-    targets:
-      - epel-8
+      - fedora-latest-stable
+      - fedora-latest-stable-aarch64
     project: packit-stable
     list_on_homepage: True
     preserve_project: True
