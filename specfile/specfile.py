@@ -8,7 +8,18 @@ import types
 from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
-from typing import Generator, List, Optional, TextIO, Tuple, Type, Union, cast, Dict, Any
+from typing import (
+    Any,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    TextIO,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 
 import rpm
 
@@ -83,11 +94,15 @@ class Specfile:
                 self._path = Path(stream.name)
         elif path is not None and stream is None:
             self._path = Path(path)
-            self._stream = self._path.open("r+", encoding="utf8", errors="surrogateescape")
+            self._stream = self._path.open(
+                "r+", encoding="utf8", errors="surrogateescape"
+            )
         else:
             raise ValueError("Either 'stream' or 'path' must be provided")
 
-        self._is_writable = hasattr(self._stream, "write") and callable(getattr(self._stream, "write", None))
+        self._is_writable = hasattr(self._stream, "write") and callable(
+            getattr(self._stream, "write", None)
+        )
         self.autosave = autosave
         self._lines, self._trailing_newline = self._read_lines(self._stream)
         self._parser = SpecParser(
@@ -141,7 +156,9 @@ class Specfile:
         if isinstance(self._stream, StringIO):
             specfile._stream = StringIO(self._stream.getvalue())
         elif isinstance(self._path, Path):
-            specfile._stream = self._path.open("r+", encoding="utf8", errors="surrogateescape")
+            specfile._stream = self._path.open(
+                "r+", encoding="utf8", errors="surrogateescape"
+            )
         else:
             raise TypeError("Deepcopy is not supported for arbitrary file-like objects")
 
@@ -221,7 +238,7 @@ class Specfile:
     def save(self) -> None:
         """Saves the spec file content."""
         if not self._is_writable:
-            raise IOError("This stream is read-only")
+            raise OSError("This stream is read-only")
         self._stream.seek(0)
         self._stream.truncate(0)
         self._stream.write(str(self))
