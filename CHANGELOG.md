@@ -1,3 +1,7 @@
+# 0.34.2
+
+- context_management: add a type stub override to fix typing. Type checkers like mypy and pyright can now correctly determine the types for `.sources()`, `.sections()`, and the other `Specfile` methods that return context managers. (#457)
+
 # 0.34.1
 
 - Removed the usage of a walrus operator for Python 3.6 compatibility. (#450)
