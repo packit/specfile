@@ -32,7 +32,7 @@ repos:
       - id: mixed-line-ending
       - id: trailing-whitespace
   - repo: https://github.com/PyCQA/flake8
-    rev: 7.1.1
+    rev: 7.1.2
     hooks:
       - id: flake8
         args:
@@ -40,12 +40,12 @@ repos:
           # https://github.com/PyCQA/pycodestyle/issues/373
           - --extend-ignore=E203
   - repo: https://github.com/PyCQA/isort
-    rev: 6.0.0
+    rev: 6.0.1
     hooks:
       - id: isort
         args: [--profile, black]
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.14.1
+    rev: v1.15.0
     hooks:
       - id: mypy
         args: [--show-error-codes, --ignore-missing-imports]
@@ -54,7 +54,7 @@ repos:
           # This file is overridden by a type stub
         exclude: "specfile/context_management.py"
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.41.0
+    rev: 1.43.0
     hooks:
       - id: tmt-lint
         # linting of the reverse-dependency tests requires internet access
@@ -67,7 +67,7 @@ repos:
           - https://github.com/packit/specfile.git
         stages: [manual, pre-push]
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.31.1
+    rev: 0.31.3
     hooks:
       - id: check-github-workflows
         args: ["--verbose"]
