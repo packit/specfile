@@ -1,10 +1,11 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
-
+import io
 import shutil
 
 import pytest
 
+from specfile import Specfile
 from tests.constants import (
     SPEC_AUTOPATCH,
     SPEC_AUTOSETUP,
@@ -136,3 +137,46 @@ def spec_conditionalized_version(tmp_path):
     specfile_path = tmp_path / SPECFILE
     shutil.copyfile(SPEC_CONDITIONALIZED_VERSION / SPECFILE, specfile_path)
     return specfile_path
+
+
+@pytest.fixture(
+    params=[
+        "file_path",
+        "text_file",
+        "binary_file",
+        "text_io_stream",
+        "binary_io_stream",
+        "content_string",
+    ]
+)
+def specfile_factory(request):
+    """
+    pytest fixture to create a `Specfile` instance with different input modes.
+
+    Returns:
+        Function that creates a `Specfile` instance.
+    """
+    mode = request.param
+
+    def _create_specfile(input_path, **kwargs):
+        kwargs.setdefault("sourcedir", input_path.parent)
+
+        if mode == "file_path":
+            return Specfile(path=input_path, **kwargs)
+        elif mode == "text_file":
+            f = open(input_path, "r+", **Specfile.ENCODING_ARGS)
+            return Specfile(file=f, **kwargs)
+        elif mode == "binary_file":
+            f = open(input_path, "rb+")
+            return Specfile(file=f, **kwargs)
+        elif mode == "text_io_stream":
+            content = input_path.read_text(**Specfile.ENCODING_ARGS)
+            return Specfile(file=io.StringIO(content), **kwargs)
+        elif mode == "binary_io_stream":
+            content = input_path.read_bytes()
+            return Specfile(file=io.BytesIO(content), **kwargs)
+        elif mode == "content_string":
+            content = input_path.read_text(**Specfile.ENCODING_ARGS)
+            return Specfile(content=content, **kwargs)
+
+    return _create_specfile
