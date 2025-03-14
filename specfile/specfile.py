@@ -1,15 +1,14 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
-
+import copy
 import datetime
 import logging
 import re
-import shutil
-import tempfile
 import types
 from dataclasses import dataclass
+from io import StringIO
 from pathlib import Path
-from typing import Generator, List, Optional, Tuple, Type, Union, cast
+from typing import Generator, List, Optional, TextIO, Tuple, Type, Union, cast, Dict, Any
 
 import rpm
 
@@ -54,7 +53,8 @@ class Specfile:
 
     def __init__(
         self,
-        path: Union[Path, str],
+        path: Optional[Union[Path, str]] = None,
+        stream: Optional[StringIO] = None,
         sourcedir: Optional[Union[Path, str]] = None,
         autosave: bool = False,
         macros: Optional[List[Tuple[str, Optional[str]]]] = None,
@@ -73,11 +73,23 @@ class Specfile:
                 Such sources include sources referenced from shell expansions
                 in tag values and sources included using the _%include_ directive.
         """
+        if stream is not None:
+            self._stream = stream
+            if stream.name and sourcedir is None:
+                raise ValueError("'sourcedir' must be defined")
+            elif stream.name is None:
+                self._path = None
+            elif stream.name is not None:
+                self._path = Path(stream.name)
+        elif path is not None and stream is None:
+            self._path = Path(path)
+            self._stream = self._path.open("r+", encoding="utf8", errors="surrogateescape")
+        else:
+            raise ValueError("Either 'stream' or 'path' must be provided")
+
+        self._is_writable = hasattr(self._stream, "write") and callable(getattr(self._stream, "write", None))
         self.autosave = autosave
-        self._path = Path(path)
-        self._temp_path: Optional[Path] = None
-        self._save_path: Optional[Path] = None
-        self._lines, self._trailing_newline = self._read_lines(self._path)
+        self._lines, self._trailing_newline = self._read_lines(self._stream)
         self._parser = SpecParser(
             Path(sourcedir or self.path.parent), macros, force_parse
         )
@@ -94,64 +106,6 @@ class Specfile:
             and self._parser == other._parser
         )
 
-    @classmethod
-    def from_str(
-        cls,
-        string: str,
-        save_to: Optional[str] = None,
-        sourcedir: Optional[Union[Path, str]] = None,
-        autosave: bool = False,
-        macros: Optional[List[Tuple[str, Optional[str]]]] = None,
-        force_parse: bool = False,
-    ):
-        """
-        Creates a specfile instance from a string containing the spec file content.
-
-        This method writes the provided string to a temporary file and then initializes
-        a specfile instance from that file.
-        The temporary file is deleted when the specfile instance is destroyed.
-        Optionally, if a save_to path is defined, the temporary file is copied to that path
-        on save.
-        Args:
-            string: String containing the spec file content.
-            save_to: Path to save the spec file to.
-            sourcedir: Path to sources and patches.
-            autosave: Whether to automatically save any changes made.
-            macros: List of extra macro definitions.
-            force_parse: Whether to attempt to parse the spec file even if one or more
-                sources required to be present at parsing time are not available.
-                Such sources include sources referenced from shell expansions
-                in tag values and sources included using the _%include_ directive.
-
-        Returns:
-            Specfile instance.
-        """
-        temp_file = tempfile.NamedTemporaryFile(
-            mode="w+", delete=False, suffix=".spec", dir=tempfile.gettempdir()
-        )
-        temp_file.write(string)
-        temp_file.flush()
-
-        specfile = cls(
-            path=temp_file.name,
-            sourcedir=sourcedir,
-            autosave=autosave,
-            macros=macros,
-            force_parse=force_parse,
-        )
-
-        specfile._temp_path = Path(temp_file.name)
-        specfile._save_path = Path(save_to) if save_to else None
-
-        return specfile
-
-    def cleanup(self) -> None:
-        if self._temp_path is not None and self._temp_path.exists():
-            if self._save_path is not None:
-                shutil.copy(self._temp_path, self._save_path)
-            else:
-                self._temp_path.unlink(missing_ok=True)
-
     @formatted
     def __repr__(self) -> str:
         return (
@@ -165,10 +119,6 @@ class Specfile:
     def __enter__(self) -> "Specfile":
         return self
 
-    def __del__(self):
-        if self._temp_path is not None:
-            self.cleanup()
-
     def __exit__(
         self,
         exc_type: Optional[Type[BaseException]],
@@ -176,8 +126,26 @@ class Specfile:
         traceback: Optional[types.TracebackType],
     ) -> None:
         self.save()
-        if self._temp_path is not None:
-            self.cleanup()
+
+    def __deepcopy__(self, memodict: Dict[int, Any]):
+        """Creates a deep copy of the Specfile, Returns and reopens files instantiated from Path.
+        Returns a new StringIO instance for objects instantiated from StringIO."""
+        specfile = self.__class__.__new__(self.__class__)
+        memodict[id(self)] = specfile
+
+        for k, v in self.__dict__.items():
+            if k == "_stream":
+                continue
+            setattr(specfile, k, copy.deepcopy(v, memodict))
+
+        if isinstance(self._stream, StringIO):
+            specfile._stream = StringIO(self._stream.getvalue())
+        elif isinstance(self._path, Path):
+            specfile._stream = self._path.open("r+", encoding="utf8", errors="surrogateescape")
+        else:
+            raise TypeError("Deepcopy is not supported for arbitrary file-like objects")
+
+        return specfile
 
     def _dump_debug_info(self, message) -> None:
         logger.debug(
@@ -188,9 +156,10 @@ class Specfile:
         )
 
     @staticmethod
-    def _read_lines(path: Path) -> Tuple[List[str], bool]:
-        content = path.read_text(encoding="utf8", errors="surrogateescape")
-        return content.splitlines(), content[-1] == "\n"
+    def _read_lines(stream: TextIO) -> Tuple[List[str], bool]:
+        stream.seek(0)
+        content = stream.read()
+        return content.splitlines(), content.endswith("\n")
 
     @property
     def path(self) -> Path:
@@ -247,11 +216,16 @@ class Specfile:
 
     def reload(self) -> None:
         """Reloads the spec file content."""
-        self._lines, self._trailing_newline = self._read_lines(self.path)
+        self._lines, self._trailing_newline = self._read_lines(self._stream)
 
     def save(self) -> None:
         """Saves the spec file content."""
-        self.path.write_text(str(self), encoding="utf8", errors="surrogateescape")
+        if not self._is_writable:
+            raise IOError("This stream is read-only")
+        self._stream.seek(0)
+        self._stream.truncate(0)
+        self._stream.write(str(self))
+        self._stream.flush()
 
     def expand(
         self,
