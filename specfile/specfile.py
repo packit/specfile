@@ -194,6 +194,7 @@ class Specfile:
     def path(self, value: Union[Path, str]) -> None:
         self._file.close()
         self._file = Path(value).open("r+", encoding="utf8", errors="surrogateescape")
+        self.reload()
 
     @property
     def sourcedir(self) -> Path:
@@ -245,7 +246,7 @@ class Specfile:
 
     def save(self) -> None:
         """Saves the spec file content."""
-        if not self._is_writable:
+        if not self.is_writable:
             raise OSError("This stream is read-only")
         self._file.seek(0)
         self._file.truncate(0)
