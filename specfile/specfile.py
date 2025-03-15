@@ -109,14 +109,11 @@ class Specfile:
             raise ValueError(
                 "Either 'file', 'path', or 'string_input' must be provided"
             )
-
+        self.is_sourcedir_set = sourcedir is not None
         self.autosave = autosave
         self._lines, self._trailing_newline = self._read_lines(self._file)
-        self._parser = SpecParser(
-            Path(sourcedir or (self.path.parent if hasattr(self, "path") else None)),
-            macros,
-            force_parse,
-        )
+        parser_sourcedir = Path(sourcedir) if sourcedir is not None else (self.path.parent if self.path else None)
+        self._parser = SpecParser(parser_sourcedir, macros, force_parse)
         self._parser.parse(str(self))
         self._dump_debug_info("After initial parsing")
 
@@ -203,7 +200,10 @@ class Specfile:
     @path.setter
     def path(self, value: Union[Path, str]) -> None:
         self._file.close()
-        self._file = Path(value).open("r+", encoding="utf8", errors="surrogateescape")
+        new_path = Path(value)
+        self._file = new_path.open("r+", encoding="utf8", errors="surrogateescape")
+        if not self.is_sourcedir_set:
+            self._parser.sourcedir = new_path.parent
         self.reload()
 
     @property
