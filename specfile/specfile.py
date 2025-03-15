@@ -6,7 +6,7 @@ import logging
 import re
 import types
 from dataclasses import dataclass
-from io import StringIO, IOBase
+from io import IOBase, StringIO
 from pathlib import Path
 from typing import (
     Any,
@@ -63,14 +63,14 @@ class Specfile:
     """
 
     def __init__(
-            self,
-            path: Optional[Union[Path, str]] = None,
-            file: Optional[IOBase] = None,
-            raw_string: Optional[str] = None,
-            sourcedir: Optional[Union[Path, str]] = None,
-            autosave: bool = False,
-            macros: Optional[List[Tuple[str, Optional[str]]]] = None,
-            force_parse: bool = False,
+        self,
+        path: Optional[Union[Path, str]] = None,
+        file: Optional[IOBase] = None,
+        raw_string: Optional[str] = None,
+        sourcedir: Optional[Union[Path, str]] = None,
+        autosave: bool = False,
+        macros: Optional[List[Tuple[str, Optional[str]]]] = None,
+        force_parse: bool = False,
     ) -> None:
         """
         Initializes a specfile object.
@@ -89,23 +89,33 @@ class Specfile:
         """
         if file is not None:
             self._file = file
-            if hasattr(file, 'name') and file.name and sourcedir is None:
-                raise ValueError("'sourcedir' must be defined when providing a file with a name")
-            elif not hasattr(file, 'name') and sourcedir is None:
+            if hasattr(file, "name") and file.name and sourcedir is None:
+                raise ValueError(
+                    "'sourcedir' must be defined when providing a file with a name"
+                )
+            elif not hasattr(file, "name") and sourcedir is None:
                 raise ValueError("'sourcedir' must be defined for in-memory streams")
         elif path is not None:
-            self._file = Path(path).open("r+", encoding="utf8", errors="surrogateescape")
+            self._file = Path(path).open(
+                "r+", encoding="utf8", errors="surrogateescape"
+            )
         elif raw_string is not None:
             self._file = StringIO(raw_string)
             if sourcedir is None:
-                raise ValueError("'sourcedir' must be defined when providing string input")
+                raise ValueError(
+                    "'sourcedir' must be defined when providing string input"
+                )
         else:
-            raise ValueError("Either 'file', 'path', or 'string_input' must be provided")
+            raise ValueError(
+                "Either 'file', 'path', or 'string_input' must be provided"
+            )
 
         self.autosave = autosave
         self._lines, self._trailing_newline = self._read_lines(self._file)
         self._parser = SpecParser(
-            Path(sourcedir or (self.path.parent if hasattr(self, 'path') else None)), macros, force_parse
+            Path(sourcedir or (self.path.parent if hasattr(self, "path") else None)),
+            macros,
+            force_parse,
         )
         self._parser.parse(str(self))
         self._dump_debug_info("After initial parsing")
@@ -154,7 +164,7 @@ class Specfile:
 
         if isinstance(self._file, StringIO):
             specfile._file = StringIO(self._file.getvalue())
-        elif hasattr(self._file, 'name'):
+        elif hasattr(self._file, "name"):
             specfile._file = Path(self._file.name).open(
                 "r+", encoding="utf8", errors="surrogateescape"
             )
@@ -186,7 +196,7 @@ class Specfile:
     @property
     def path(self) -> Path:
         """Path to the spec file."""
-        if hasattr(self._file, 'name'):
+        if hasattr(self._file, "name"):
             return Path(self._file.name)
         return None
 
