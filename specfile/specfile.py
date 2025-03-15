@@ -112,7 +112,11 @@ class Specfile:
         self.is_sourcedir_set = sourcedir is not None
         self.autosave = autosave
         self._lines, self._trailing_newline = self._read_lines(self._file)
-        parser_sourcedir = Path(sourcedir) if sourcedir is not None else (self.path.parent if self.path else None)
+        parser_sourcedir = (
+            Path(sourcedir)
+            if sourcedir is not None
+            else (self.path.parent if self.path else None)
+        )
         self._parser = SpecParser(parser_sourcedir, macros, force_parse)
         self._parser.parse(str(self))
         self._dump_debug_info("After initial parsing")
