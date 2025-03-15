@@ -6,7 +6,7 @@ import logging
 import re
 import types
 from dataclasses import dataclass
-from io import StringIO
+from io import StringIO, IOBase
 from pathlib import Path
 from typing import (
     Any,
@@ -63,19 +63,22 @@ class Specfile:
     """
 
     def __init__(
-        self,
-        path: Optional[Union[Path, str]] = None,
-        stream: Optional[StringIO] = None,
-        sourcedir: Optional[Union[Path, str]] = None,
-        autosave: bool = False,
-        macros: Optional[List[Tuple[str, Optional[str]]]] = None,
-        force_parse: bool = False,
+            self,
+            path: Optional[Union[Path, str]] = None,
+            file: Optional[IOBase] = None,
+            raw_string: Optional[str] = None,
+            sourcedir: Optional[Union[Path, str]] = None,
+            autosave: bool = False,
+            macros: Optional[List[Tuple[str, Optional[str]]]] = None,
+            force_parse: bool = False,
     ) -> None:
         """
         Initializes a specfile object.
 
         Args:
             path: Path to the spec file.
+            file: File object representing the spec file.
+            raw_string: String containing the spec file content.
             sourcedir: Path to sources and patches.
             autosave: Whether to automatically save any changes made.
             macros: List of extra macro definitions.
@@ -84,29 +87,25 @@ class Specfile:
                 Such sources include sources referenced from shell expansions
                 in tag values and sources included using the _%include_ directive.
         """
-        if stream is not None:
-            self._stream = stream
-            if stream.name and sourcedir is None:
-                raise ValueError("'sourcedir' must be defined")
-            elif stream.name is None:
-                self._path = None
-            elif stream.name is not None:
-                self._path = Path(stream.name)
-        elif path is not None and stream is None:
-            self._path = Path(path)
-            self._stream = self._path.open(
-                "r+", encoding="utf8", errors="surrogateescape"
-            )
+        if file is not None:
+            self._file = file
+            if hasattr(file, 'name') and file.name and sourcedir is None:
+                raise ValueError("'sourcedir' must be defined when providing a file with a name")
+            elif not hasattr(file, 'name') and sourcedir is None:
+                raise ValueError("'sourcedir' must be defined for in-memory streams")
+        elif path is not None:
+            self._file = Path(path).open("r+", encoding="utf8", errors="surrogateescape")
+        elif raw_string is not None:
+            self._file = StringIO(raw_string)
+            if sourcedir is None:
+                raise ValueError("'sourcedir' must be defined when providing string input")
         else:
-            raise ValueError("Either 'stream' or 'path' must be provided")
+            raise ValueError("Either 'file', 'path', or 'string_input' must be provided")
 
-        self._is_writable = hasattr(self._stream, "write") and callable(
-            getattr(self._stream, "write", None)
-        )
         self.autosave = autosave
-        self._lines, self._trailing_newline = self._read_lines(self._stream)
+        self._lines, self._trailing_newline = self._read_lines(self._file)
         self._parser = SpecParser(
-            Path(sourcedir or self.path.parent), macros, force_parse
+            Path(sourcedir or (self.path.parent if hasattr(self, 'path') else None)), macros, force_parse
         )
         self._parser.parse(str(self))
         self._dump_debug_info("After initial parsing")
@@ -116,7 +115,7 @@ class Specfile:
             return NotImplemented
         return (
             self.autosave == other.autosave
-            and self._path == other._path
+            and self.path == other.path
             and self._lines == other._lines
             and self._parser == other._parser
         )
@@ -143,20 +142,20 @@ class Specfile:
         self.save()
 
     def __deepcopy__(self, memodict: Dict[int, Any]):
-        """Creates a deep copy of the Specfile, Returns and reopens files instantiated from Path.
-        Returns a new StringIO instance for objects instantiated from StringIO."""
+        """Creates a deep copy of the Specfile, reopens files instantiated from a path,
+        and returns a new StringIO instance for objects instantiated from StringIO."""
         specfile = self.__class__.__new__(self.__class__)
         memodict[id(self)] = specfile
 
         for k, v in self.__dict__.items():
-            if k == "_stream":
+            if k == "_file":
                 continue
             setattr(specfile, k, copy.deepcopy(v, memodict))
 
-        if isinstance(self._stream, StringIO):
-            specfile._stream = StringIO(self._stream.getvalue())
-        elif isinstance(self._path, Path):
-            specfile._stream = self._path.open(
+        if isinstance(self._file, StringIO):
+            specfile._file = StringIO(self._file.getvalue())
+        elif hasattr(self._file, 'name'):
+            specfile._file = Path(self._file.name).open(
                 "r+", encoding="utf8", errors="surrogateescape"
             )
         else:
@@ -179,13 +178,22 @@ class Specfile:
         return content.splitlines(), content.endswith("\n")
 
     @property
+    def is_writable(self) -> bool:
+        return hasattr(self._file, "write") and callable(
+            getattr(self._file, "write", None)
+        )
+
+    @property
     def path(self) -> Path:
         """Path to the spec file."""
-        return self._path
+        if hasattr(self._file, 'name'):
+            return Path(self._file.name)
+        return None
 
     @path.setter
     def path(self, value: Union[Path, str]) -> None:
-        self._path = Path(value)
+        self._file.close()
+        self._file = Path(value).open("r+", encoding="utf8", errors="surrogateescape")
 
     @property
     def sourcedir(self) -> Path:
@@ -233,16 +241,16 @@ class Specfile:
 
     def reload(self) -> None:
         """Reloads the spec file content."""
-        self._lines, self._trailing_newline = self._read_lines(self._stream)
+        self._lines, self._trailing_newline = self._read_lines(self._file)
 
     def save(self) -> None:
         """Saves the spec file content."""
         if not self._is_writable:
             raise OSError("This stream is read-only")
-        self._stream.seek(0)
-        self._stream.truncate(0)
-        self._stream.write(str(self))
-        self._stream.flush()
+        self._file.seek(0)
+        self._file.truncate(0)
+        self._file.write(str(self))
+        self._file.flush()
 
     def expand(
         self,
