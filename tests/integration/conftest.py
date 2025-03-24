@@ -5,6 +5,7 @@ import shutil
 
 import pytest
 
+from specfile import Specfile
 from tests.constants import (
     SPEC_AUTOPATCH,
     SPEC_AUTOSETUP,
@@ -136,3 +137,31 @@ def spec_conditionalized_version(tmp_path):
     specfile_path = tmp_path / SPECFILE
     shutil.copyfile(SPEC_CONDITIONALIZED_VERSION / SPECFILE, specfile_path)
     return specfile_path
+
+
+@pytest.fixture(params=["path", "file", "raw_string"])
+def specfile_factory(request):
+    """
+    Pytest fixture to create a Specfile instance with different input modes.
+
+    :return: A function that creates a Specfile instance.
+    """
+    mode = request.param
+
+    def _create_specfile(input_path, **kwargs):
+        kwargs.setdefault("sourcedir", input_path.parent)
+        if mode == "path":
+            return Specfile(input_path, **kwargs)
+        elif mode == "file":
+            with open(
+                input_path, "r+", encoding="utf-8", errors="surrogateescape"
+            ) as f:
+                return Specfile(file=f, **kwargs)
+        elif mode == "raw_string":
+            with open(input_path, encoding="utf-8", errors="surrogateescape") as f:
+                content = f.read()
+            return Specfile(content=content, **kwargs)
+        else:
+            raise ValueError(f"Unknown mode: {mode}")
+
+    return _create_specfile
