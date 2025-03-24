@@ -6,7 +6,7 @@ import logging
 import re
 import types
 from dataclasses import dataclass
-from io import IOBase, StringIO, BytesIO
+from io import BytesIO, IOBase, StringIO
 from pathlib import Path
 from typing import (
     Any,

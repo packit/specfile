@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: MIT
 
 import shutil
-from io import StringIO, BytesIO
+from io import BytesIO, StringIO
+
 import pytest
 
 from specfile import Specfile
