@@ -139,7 +139,9 @@ def spec_conditionalized_version(tmp_path):
     return specfile_path
 
 
-@pytest.fixture(params=["path", "file", "raw_string","stringio", "bytesio", "bufferedrandom"])
+@pytest.fixture(
+    params=["path", "file", "raw_string", "stringio", "bytesio", "bufferedrandom"]
+)
 def specfile_factory(request):
     """
     Pytest fixture to create a Specfile instance with different input modes.

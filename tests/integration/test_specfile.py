@@ -3,6 +3,7 @@
 
 import copy
 import datetime
+from io import StringIO
 
 import pytest
 import rpm
@@ -672,3 +673,16 @@ def test_trailing_newline(specfile_factory, spec_autosetup, spec_no_trailing_new
     assert str(spec)[-1] == "\n"
     spec = specfile_factory(spec_no_trailing_newline)
     assert str(spec)[-1] != "\n"
+
+
+def test_specfile_reload_stringio(specfile_factory, spec_minimal):
+    spec = specfile_factory(spec_minimal)
+    assert spec.version == "0.1"
+
+    # Simulate an external file change by replacing StringIO content
+    updated_content = StringIO(
+        "Name: test-package\nVersion: 2.0\nRelease: 2\nLicense: MIT\n"
+    )
+    spec._file = updated_content
+    spec.reload()
+    assert spec.version == "2.0"
