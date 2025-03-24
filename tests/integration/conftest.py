@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import shutil
-
+from io import StringIO, BytesIO
 import pytest
 
 from specfile import Specfile
@@ -139,7 +139,7 @@ def spec_conditionalized_version(tmp_path):
     return specfile_path
 
 
-@pytest.fixture(params=["path", "file", "raw_string"])
+@pytest.fixture(params=["path", "file", "raw_string","stringio", "bytesio", "bufferedrandom"])
 def specfile_factory(request):
     """
     Pytest fixture to create a Specfile instance with different input modes.
@@ -161,6 +161,17 @@ def specfile_factory(request):
             with open(input_path, encoding="utf-8", errors="surrogateescape") as f:
                 content = f.read()
             return Specfile(content=content, **kwargs)
+        elif mode == "stringio":
+            with open(input_path, encoding="utf-8", errors="surrogateescape") as f:
+                content = f.read()
+            return Specfile(file=StringIO(content), **kwargs)
+        elif mode == "bytesio":
+            with open(input_path, "rb") as f:
+                content = f.read()
+            return Specfile(file=BytesIO(content), **kwargs)
+        elif mode == "bufferedrandom":
+            with open(input_path, "rb+") as f:
+                return Specfile(file=f, **kwargs)
         else:
             raise ValueError(f"Unknown mode: {mode}")
 

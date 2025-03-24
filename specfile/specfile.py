@@ -6,7 +6,7 @@ import logging
 import re
 import types
 from dataclasses import dataclass
-from io import IOBase, StringIO
+from io import IOBase, StringIO, BytesIO
 from pathlib import Path
 from typing import (
     Any,
@@ -166,23 +166,28 @@ class Specfile:
             if k == "_file":
                 continue
             setattr(specfile, k, copy.deepcopy(v, memodict))
+
         try:
             data = self._file.getvalue()
         except AttributeError:
             try:
                 path = Path(self._file.name)
             except AttributeError:
-                raise TypeError(
-                    "Deepcopy is not supported for arbitrary file-like objects"
-                )
+                raise TypeError("Deepcopy is not supported for arbitrary file-like objects")
             else:
-                specfile._file = path.open(
-                    self._file.mode,
-                    encoding=self._file.encoding,
-                    errors=self._file.errors,
-                )
+                encoding = getattr(self._file, "encoding", None)
+                errors = getattr(self._file, "errors", None)
+
+                if encoding is None:
+                    specfile._file = path.open(self._file.mode)
+                else:
+                    specfile._file = path.open(self._file.mode, encoding=encoding, errors=errors)
         else:
-            specfile._file = type(self._file)(data)
+            if hasattr(self._file, "encoding"):
+                specfile._file = type(self._file)(data)
+            else:
+                specfile._file = BytesIO(data)
+
         return specfile
 
     def _dump_debug_info(self, message) -> None:
