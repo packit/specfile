@@ -675,7 +675,7 @@ def test_trailing_newline(specfile_factory, spec_autosetup, spec_no_trailing_new
     assert str(spec)[-1] != "\n"
 
 
-def test_specfile_reload_stringio(specfile_factory, spec_minimal):
+def test_specfile_reload(specfile_factory, spec_minimal):
     spec = specfile_factory(spec_minimal)
     assert spec.version == "0.1"
 
