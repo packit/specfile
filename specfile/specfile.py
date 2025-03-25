@@ -277,6 +277,7 @@ class Specfile:
         except AttributeError:
             pass
         else:
+            # reopen the path in case the original file has been deleted/replaced
             self._file.close()
             self._file = path.open("r+", **ENCODING_ARGS)
         self._lines, self._trailing_newline = self._read_lines(self._file)
