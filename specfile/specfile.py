@@ -167,7 +167,7 @@ class Specfile:
                 # handle named file objects
                 specfile._file = Path(self._file.name).open(
                     mode=self._file.mode,
-                    encoding=getattr(self._file, "encoding", None),
+                    encoding=getattr(self._file, "encoding", None), # Handle attr for BufferedRandom
                     errors=getattr(self._file, "errors", None),
                 )
             except AttributeError:
