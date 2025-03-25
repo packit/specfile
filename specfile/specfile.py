@@ -6,8 +6,9 @@ import datetime
 import logging
 import re
 import types
+from copy import deepcopy
 from dataclasses import dataclass
-from io import BytesIO, IOBase, StringIO
+from io import IOBase, StringIO
 from pathlib import Path
 from typing import (
     Any,
@@ -96,33 +97,24 @@ class Specfile:
             )
         if file is not None:
             self._file = file
-            try:
-                sourcedir = Path(self._file.name).parent
-            except AttributeError:
-                if sourcedir is None:
-                    raise ValueError(
-                        "'sourcedir' is required when providing a file object without a name"
-                    )
         elif path is not None:
             self._file = Path(path).open("r+", **ENCODING_ARGS)
         elif content is not None:
             self._file = StringIO(content)
-            if sourcedir is None:
-                raise ValueError(
-                    "'sourcedir' is required when providing a raw string input"
-                )
         else:
             raise ValueError(
                 "Either 'file', 'path', or 'string_input' must be provided"
             )
+        if sourcedir is None:
+            try:
+                sourcedir = Path(self._file.name).parent
+            except AttributeError:
+                raise ValueError(
+                    "'sourcedir' is required when providing a file object without a name"
+                )
         self.autosave = autosave
         self._lines, self._trailing_newline = self._read_lines(self._file)
-        parser_sourcedir = (
-            Path(sourcedir)
-            if sourcedir is not None
-            else (self.path.parent if self.path else None)
-        )
-        self._parser = SpecParser(parser_sourcedir, macros, force_parse)
+        self._parser = SpecParser(Path(sourcedir), macros, force_parse)
         self._parser.parse(str(self))
         self._dump_debug_info("After initial parsing")
 
@@ -167,26 +159,22 @@ class Specfile:
             if k == "_file":
                 continue
             setattr(specfile, k, copy.deepcopy(v, memodict))
-
         try:
-            data = self._file.getvalue()
+            specfile._file = deepcopy(self._file.getvalue())
         except AttributeError:
-            try:
+            if self._file.name:
                 path = Path(self._file.name)
-            except AttributeError:
-                raise TypeError(
-                    "Deepcopy is not supported for arbitrary file-like objects"
-                )
-            else:
-                try:
+                mode = self._file.mode
+                if getattr(self._file, "encoding", None):
                     specfile._file = path.open(
-                        self._file.mode,
-                        encoding=self._file.encoding,
-                        errors=self._file.errors,
+                        mode, encoding=self._file.encoding, errors=self._file.errors
                     )
-                except AttributeError:
-                    # binary mode
-                    specfile._file = path.open(self._file.mode)
+                else:
+                    specfile._file = path.open(mode)
+            else:
+                raise ValueError(
+                    "Deep copy not supported for arbitrary file-like objects"
+                )
 
         return specfile
 
