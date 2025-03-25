@@ -177,15 +177,15 @@ class Specfile:
                     "Deepcopy is not supported for arbitrary file-like objects"
                 )
             else:
-                encoding = getattr(self._file, "encoding", None)
-                errors = getattr(self._file, "errors", None)
-
-                if encoding is None:
-                    specfile._file = path.open(self._file.mode)
-                else:
+                try:
                     specfile._file = path.open(
-                        self._file.mode, encoding=encoding, errors=errors
+                        self._file.mode,
+                        encoding=self._file.encoding,
+                        errors=self._file.errors,
                     )
+                except AttributeError:
+                    # binary mode
+                    specfile._file = path.open(self._file.mode)
         else:
             if hasattr(self._file, "encoding"):
                 specfile._file = type(self._file)(data)
