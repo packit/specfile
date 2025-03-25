@@ -160,22 +160,21 @@ class Specfile:
                 continue
             setattr(specfile, k, copy.deepcopy(v, memodict))
         try:
-            specfile._file = deepcopy(self._file.getvalue())
+            # Try copying in-memory file-like objects (StringIO, BytesIO)
+            specfile._file = type(self._file)(self._file.getvalue())
         except AttributeError:
-            if self._file.name:
-                path = Path(self._file.name)
-                mode = self._file.mode
-                if getattr(self._file, "encoding", None):
-                    specfile._file = path.open(
-                        mode, encoding=self._file.encoding, errors=self._file.errors
-                    )
-                else:
-                    specfile._file = path.open(mode)
-            else:
-                raise ValueError(
-                    "Deep copy not supported for arbitrary file-like objects"
+            try:
+                # handle named file objects
+                specfile._file = Path(self._file.name).open(
+                    mode=self._file.mode,
+                    encoding=getattr(self._file, "encoding", None),
+                    errors=getattr(self._file, "errors", None),
                 )
-
+            except AttributeError:
+                # Handle BufferedRandom and other file-like objects without getvalue()
+                specfile._file = type(self._file)()
+                specfile._file.write(self._file.read())  # Copy contents
+                specfile._file.seek(0)
         return specfile
 
     def _dump_debug_info(self, message) -> None:
