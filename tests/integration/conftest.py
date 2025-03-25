@@ -141,7 +141,7 @@ def spec_conditionalized_version(tmp_path):
 
 
 @pytest.fixture(
-    params=["path", "file", "raw_string", "stringio", "bytesio", "bufferedrandom"]
+    params=["path", "file", "raw_string", "text_io", "binary_io", "bufferedrandom"]
 )
 def specfile_factory(request):
     """
@@ -164,11 +164,11 @@ def specfile_factory(request):
             with open(input_path, encoding="utf-8", errors="surrogateescape") as f:
                 content = f.read()
             return Specfile(content=content, **kwargs)
-        elif mode == "stringio":
+        elif mode == "text_io":
             with open(input_path, encoding="utf-8", errors="surrogateescape") as f:
                 content = f.read()
             return Specfile(file=StringIO(content), **kwargs)
-        elif mode == "bytesio":
+        elif mode == "binary_io":
             with open(input_path, "rb") as f:
                 content = f.read()
             return Specfile(file=BytesIO(content), **kwargs)

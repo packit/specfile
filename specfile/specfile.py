@@ -1,5 +1,6 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
+
 import copy
 import datetime
 import logging
@@ -186,11 +187,6 @@ class Specfile:
                 except AttributeError:
                     # binary mode
                     specfile._file = path.open(self._file.mode)
-        else:
-            if hasattr(self._file, "encoding"):
-                specfile._file = type(self._file)(data)
-            else:
-                specfile._file = BytesIO(data)
 
         return specfile
 
