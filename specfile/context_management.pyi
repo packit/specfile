@@ -3,7 +3,9 @@
 
 import contextlib
 from collections.abc import Iterator
-from typing import Callable, Generator, ParamSpec, TypeVar
+from typing import Callable, Generator, TypeVar
+
+from typing_extensions import ParamSpec
 
 _T_co = TypeVar("_T_co", covariant=True)
 _P = ParamSpec("_P")
