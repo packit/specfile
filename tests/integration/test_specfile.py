@@ -26,8 +26,8 @@ def test_parse(spec_multiple_sources):
     assert spec.rpm_spec.prep == prep
 
 
-def test_prep_traditional(spec_traditional):
-    spec = Specfile(spec_traditional)
+def test_prep_traditional(specfile_factory, spec_traditional):
+    spec = specfile_factory(spec_traditional)
     with spec.prep() as prep:
         assert AutosetupMacro not in prep.macros
         assert AutopatchMacro not in prep.macros
@@ -50,8 +50,8 @@ def test_prep_traditional(spec_traditional):
         assert sections.prep[1] == "%patch 0 -p2 -b .test2 -E"
 
 
-def test_prep_autosetup(spec_autosetup):
-    spec = Specfile(spec_autosetup)
+def test_prep_autosetup(specfile_factory, spec_autosetup):
+    spec = specfile_factory(spec_autosetup)
     with spec.prep() as prep:
         assert len(prep.macros) == 1
         assert AutosetupMacro in prep.macros
@@ -60,8 +60,8 @@ def test_prep_autosetup(spec_autosetup):
         assert prep.autosetup.options.p == 1
 
 
-def test_prep_autopatch(spec_autopatch):
-    spec = Specfile(spec_autopatch)
+def test_prep_autopatch(specfile_factory, spec_autopatch):
+    spec = specfile_factory(spec_autopatch)
     with spec.prep() as prep:
         assert len(prep.macros) == 4
         assert prep.macros[1].options.M == 2
@@ -75,8 +75,8 @@ def test_prep_autopatch(spec_autopatch):
         assert sections.prep[3] == "%autopatch -p1 0 1 2 3 4 5 6"
 
 
-def test_sources(spec_minimal):
-    spec = Specfile(spec_minimal)
+def test_sources(specfile_factory, spec_minimal):
+    spec = specfile_factory(spec_minimal)
     source = "test.tar.gz"
     with spec.sources() as sources:
         assert not sources
@@ -93,8 +93,8 @@ def test_sources(spec_minimal):
         assert not sources
 
 
-def test_patches(spec_patchlist):
-    spec = Specfile(spec_patchlist)
+def test_patches(specfile_factory, spec_patchlist):
+    spec = specfile_factory(spec_patchlist)
     patch = "test.patch"
     with spec.patches() as patches:
         patches.insert(0, patch)
@@ -214,19 +214,13 @@ def test_patches(spec_patchlist):
     ],
 )
 def test_add_changelog_entry(
-    spec_minimal,
-    entry,
-    author,
-    email,
-    timestamp,
-    evr,
-    result,
+    specfile_factory, spec_minimal, entry, author, email, timestamp, evr, result
 ):
     if author is None:
         flexmock(specfile.specfile).should_receive("guess_packager").and_return(
             "John Doe <john@doe.net>"
         ).once()
-    spec = Specfile(spec_minimal)
+    spec = specfile_factory(spec_minimal)
     spec.add_changelog_entry(entry, author, email, timestamp, evr)
     with spec.sections() as sections:
         assert sections.changelog[: len(result)] == result
@@ -240,8 +234,8 @@ def test_add_changelog_entry(
         ("1.4.6", "0.1rc5"),
     ],
 )
-def test_set_version_and_release(spec_minimal, version, release):
-    spec = Specfile(spec_minimal)
+def test_set_version_and_release(specfile_factory, spec_minimal, version, release):
+    spec = specfile_factory(spec_minimal)
     spec.set_version_and_release(version, release)
     assert spec.version == version
     assert spec.release == release
@@ -266,8 +260,8 @@ def test_set_version_and_release(spec_minimal, version, release):
         ("patch3.patch", 3, "patch3"),
     ],
 )
-def test_add_patch(spec_autosetup, location, number, comment):
-    spec = Specfile(spec_autosetup)
+def test_add_patch(specfile_factory, spec_autosetup, location, number, comment):
+    spec = specfile_factory(spec_autosetup)
     if number == 0 or location == "patch2.patch":
         with pytest.raises(SpecfileException):
             spec.add_patch(location, number, comment)
@@ -284,8 +278,8 @@ def test_add_patch(spec_autosetup, location, number, comment):
                 assert sections.package[-4] == f"# {comment}"
 
 
-def test_remove_patches(spec_commented_patches):
-    spec = Specfile(spec_commented_patches)
+def test_remove_patches(specfile_factory, spec_commented_patches):
+    spec = specfile_factory(spec_commented_patches)
     with spec.patches() as patches:
         del patches[1:3]
         patches.remove_numbered(5)
@@ -320,8 +314,8 @@ def test_remove_patches(spec_commented_patches):
         ("%{obsrel}.%{autorelease}", True),
     ],
 )
-def test_autorelease(spec_rpmautospec, raw_release, has_autorelease):
-    spec = Specfile(spec_rpmautospec)
+def test_autorelease(specfile_factory, spec_rpmautospec, raw_release, has_autorelease):
+    spec = specfile_factory(spec_rpmautospec)
     spec.raw_release = raw_release
     assert spec.has_autorelease == has_autorelease
 
@@ -330,9 +324,9 @@ def test_autorelease(spec_rpmautospec, raw_release, has_autorelease):
     rpm.__version__ < "4.16", reason="%autochangelog requires rpm 4.16 or higher"
 )
 def test_autochangelog(
-    spec_rpmautospec, spec_conditionalized_changelog, spec_autosetup
+    specfile_factory, spec_rpmautospec, spec_conditionalized_changelog, spec_autosetup
 ):
-    spec = Specfile(spec_rpmautospec)
+    spec = specfile_factory(spec_rpmautospec)
     assert spec.has_autochangelog
     with spec.changelog() as changelog:
         assert len(changelog) == 0
@@ -341,7 +335,7 @@ def test_autochangelog(
     spec.add_changelog_entry("test")
     with spec.sections() as sections:
         assert sections.changelog == changelog
-    spec = Specfile(spec_conditionalized_changelog)
+    spec = specfile_factory(spec_conditionalized_changelog)
     assert spec.has_autochangelog
     with spec.sections() as sections:
         changelog = sections.changelog.copy()
@@ -352,7 +346,7 @@ def test_autochangelog(
     assert changelogs[0] == changelog
     with spec.changelog(changelogs[1]) as changelog:
         assert changelog[-1].content == ["test"]
-    spec = Specfile(spec_autosetup)
+    spec = specfile_factory(spec_autosetup)
     with spec.changelog() as changelog:
         changelog[0].content += "%"
     assert not spec.has_autochangelog
@@ -362,8 +356,8 @@ def test_autochangelog(
     rpm.__version__ < "4.16",
     reason="condition expression evaluation requires rpm 4.16 or higher",
 )
-def test_update_tag(spec_macros):
-    spec = Specfile(spec_macros)
+def test_update_tag(specfile_factory, spec_macros):
+    spec = specfile_factory(spec_macros)
     spec.update_tag("Version", "1.2.3~beta4")
     with spec.macro_definitions() as md:
         assert md.majorver.body == "1"
@@ -439,7 +433,7 @@ def test_update_tag(spec_macros):
         assert md.minorver.body == "2"
     with spec.sources() as sources:
         assert sources[1].location == "tests-86.tar.xz"
-    spec = Specfile(spec_macros, macros=[("use_snapshot", "1")])
+    spec = specfile_factory(spec_macros, macros=[("use_snapshot", "1")])
     spec.update_tag("Version", "3.2.1")
     with spec.macro_definitions() as md:
         assert md.majorver.body == "0"
@@ -450,7 +444,7 @@ def test_update_tag(spec_macros):
         assert md.get("package_version", 13).body == "%{mainver}%{?prever:~%{prever}}"
         assert md.get("package_version", 15).body == "3.2.1"
     assert spec.version == "%{package_version}"
-    spec = Specfile(spec_macros)
+    spec = specfile_factory(spec_macros)
     spec.update_tag("Version", "1.2.3.4~rc5")
     with spec.macro_definitions() as md:
         assert md.majorver.body == "1.2"
@@ -459,7 +453,7 @@ def test_update_tag(spec_macros):
         assert md.mainver.body == "%{majorver}.%{minorver}.%{patchver}"
         assert md.prever.body == "rc5"
     assert spec.version == "%{package_version}"
-    spec = Specfile(spec_macros)
+    spec = specfile_factory(spec_macros)
     with spec.macro_definitions() as md:
         md.prever.commented_out = True
     assert spec.expanded_version == "0.1.2"
@@ -474,9 +468,9 @@ def test_update_tag(spec_macros):
     assert spec.version == "%{package_version}"
 
 
-def test_multiple_instances(spec_minimal, spec_autosetup):
+def test_multiple_instances(specfile_factory, spec_minimal, spec_autosetup):
     spec1 = Specfile(spec_minimal)
-    spec2 = Specfile(spec_autosetup)
+    spec2 = specfile_factory(spec_autosetup)
     spec1.version = "14.2"
     assert spec2.expanded_version == "0.1"
     with spec2.sources() as sources:
@@ -485,8 +479,8 @@ def test_multiple_instances(spec_minimal, spec_autosetup):
         assert sources[1].expanded_location == "tests-0.1.tar.xz"
 
 
-def test_includes(spec_includes):
-    spec = Specfile(spec_includes)
+def test_includes(specfile_factory, spec_includes):
+    spec = specfile_factory(spec_includes)
     assert not spec.tainted
     with spec.patches() as patches:
         assert not patches
@@ -503,8 +497,8 @@ def test_includes(spec_includes):
     for inc in ["patches.inc", "provides.inc", "description1.inc", "description2.inc"]:
         (spec.sourcedir / inc).unlink()
     with pytest.raises(RPMException):
-        spec = Specfile(spec_includes)
-    spec = Specfile(spec_includes, force_parse=True)
+        spec = specfile_factory(spec_includes)
+    spec = specfile_factory(spec_includes, force_parse=True)
     assert spec.tainted
     with spec.patches() as patches:
         assert not patches
@@ -518,18 +512,18 @@ def test_includes(spec_includes):
     for inc in ["macros1.inc", "macros2.inc"]:
         (spec.sourcedir / inc).unlink()
         with pytest.raises(RPMException):
-            spec = Specfile(spec_includes, force_parse=True)
+            spec = specfile_factory(spec_includes, force_parse=True)
         assert not (spec.sourcedir / inc).is_file()
 
 
-def test_shell_expansions(spec_shell_expansions):
-    spec = Specfile(spec_shell_expansions)
+def test_shell_expansions(specfile_factory, spec_shell_expansions):
+    spec = specfile_factory(spec_shell_expansions)
     assert spec.expanded_version == "1035.4200"
     assert "C.UTF-8" in spec.expand("%numeric_locale")
 
 
-def test_context_management(spec_autosetup, spec_traditional):
-    spec = Specfile(spec_autosetup)
+def test_context_management(specfile_factory, spec_autosetup, spec_traditional):
+    spec = specfile_factory(spec_autosetup)
     with spec.tags() as tags:
         tags.license.value = "BSD"
         assert spec.license == "BSD"
@@ -541,7 +535,7 @@ def test_context_management(spec_autosetup, spec_traditional):
     assert spec.license == "BSD-3-Clause"
     with spec.patches() as patches:
         assert patches[0].location == "patch_0.patch"
-    spec1 = Specfile(spec_autosetup)
+    spec1 = specfile_factory(spec_autosetup)
     spec2 = Specfile(spec_traditional)
     with spec1.sections() as sections1, spec2.sections() as sections2:
         assert sections1 is not sections2
@@ -550,8 +544,8 @@ def test_context_management(spec_autosetup, spec_traditional):
         assert tags1 == tags2
 
 
-def test_copy(spec_autosetup):
-    spec = Specfile(spec_autosetup)
+def test_copy(specfile_factory, spec_autosetup):
+    spec = specfile_factory(spec_autosetup)
     shallow_copy = copy.copy(spec)
     assert shallow_copy == spec
     assert shallow_copy is not spec
@@ -564,7 +558,7 @@ def test_copy(spec_autosetup):
     assert deep_copy._parser is not spec._parser
 
 
-def test_parse_if_necessary(spec_macros):
+def test_parse_if_necessary(specfile_factory, spec_macros):
     flexmock(SpecParser).should_call("_do_parse").once()
     spec1 = Specfile(spec_macros)
     spec2 = copy.deepcopy(spec1)
@@ -582,12 +576,12 @@ def test_parse_if_necessary(spec_macros):
     assert spec1.expanded_version == "28.1.2~rc2"
     flexmock(SpecParser).should_receive("id").and_return(12345)
     flexmock(SpecParser).should_call("_do_parse").once()
-    spec = Specfile(spec_macros)
+    spec = specfile_factory(spec_macros)
     flexmock(SpecParser).should_call("_do_parse").never()
     assert spec.expanded_name == "test"
     spec = None
     flexmock(SpecParser).should_call("_do_parse").once()
-    spec = Specfile(spec_macros)
+    spec = specfile_factory(spec_macros)
     flexmock(SpecParser).should_call("_do_parse").never()
     assert spec.expanded_name == "test"
 
@@ -597,9 +591,9 @@ def test_parse_if_necessary(spec_macros):
     reason="condition expression evaluation requires rpm 4.16 or higher",
 )
 def test_update_version(
-    spec_prerelease, spec_prerelease2, spec_conditionalized_version
+    specfile_factory, spec_prerelease, spec_prerelease2, spec_conditionalized_version
 ):
-    spec = Specfile(spec_prerelease)
+    spec = specfile_factory(spec_prerelease)
     prerelease_suffix_pattern = r"(-)rc\d+"
     prerelease_suffix_macro = "prerel"
     spec.update_version("0.1.2", prerelease_suffix_pattern, prerelease_suffix_macro)
@@ -620,7 +614,7 @@ def test_update_version(
         assert md.prerel.body == "rc1"
         assert not md.prerel.commented_out
     assert spec.version == "%{pkgver}"
-    spec = Specfile(spec_prerelease)
+    spec = specfile_factory(spec_prerelease)
     with spec.macro_definitions() as md:
         md.prerel.commented_out = True
     spec.update_version("0.1.3-rc1", prerelease_suffix_pattern)
@@ -632,7 +626,7 @@ def test_update_version(
         assert md.prerel.body == "rc2"
         assert md.prerel.commented_out
     assert spec.version == "%{pkgver}"
-    spec = Specfile(spec_prerelease2)
+    spec = specfile_factory(spec_prerelease2)
     prerelease_suffix_pattern = r"(-)rc\d+"
     prerelease_suffix_macro = "prerel"
     spec.update_version("0.1.2", prerelease_suffix_pattern, prerelease_suffix_macro)
@@ -653,7 +647,7 @@ def test_update_version(
         assert md.prerel.body == "rc1"
         assert not md.prerel.commented_out
     assert spec.version == "%{pkgver}"
-    spec = Specfile(spec_prerelease2)
+    spec = specfile_factory(spec_prerelease2)
     with spec.macro_definitions() as md:
         md.prerel.commented_out = True
     spec.update_version("0.1.3-rc1", prerelease_suffix_pattern)
@@ -665,7 +659,7 @@ def test_update_version(
         assert md.prerel.body == "rc1"
         assert not md.prerel.commented_out
     assert spec.version == "%{pkgver}"
-    spec = Specfile(spec_conditionalized_version)
+    spec = specfile_factory(spec_conditionalized_version)
     version = "0.1.3"
     assert spec.version == "%{upstream_version}"
     spec.update_version(version, prerelease_suffix_pattern)
@@ -673,7 +667,7 @@ def test_update_version(
         assert md.upstream_version.body == version
     assert spec.version == "%{upstream_version}"
     assert spec.expanded_version == version
-    spec = Specfile(spec_conditionalized_version)
+    spec = specfile_factory(spec_conditionalized_version)
     with spec.macro_definitions() as md:
         md.commit.commented_out = False
     assert spec.version == "%{upstream_version}^git%{shortcommit}"
@@ -684,8 +678,35 @@ def test_update_version(
     assert spec.expanded_version == version
 
 
-def test_trailing_newline(spec_autosetup, spec_no_trailing_newline):
-    spec = Specfile(spec_autosetup)
+def test_trailing_newline(specfile_factory, spec_autosetup, spec_no_trailing_newline):
+    spec = specfile_factory(spec_autosetup)
     assert str(spec)[-1] == "\n"
-    spec = Specfile(spec_no_trailing_newline)
+    spec = specfile_factory(spec_no_trailing_newline)
     assert str(spec)[-1] != "\n"
+
+
+@pytest.mark.parametrize("remove_spec", [False, True])
+def test_reload(specfile_factory, spec_minimal, spec_traditional, remove_spec):
+    spec = specfile_factory(spec_minimal)
+    before_reload = copy.deepcopy(spec)
+
+    if spec.path is not None:
+        if remove_spec:
+            spec_minimal.unlink()
+        spec_minimal.write_bytes(spec_traditional.read_bytes())
+        spec.reload()
+        after_reload = spec
+    else:
+        spec._file.seek(0)
+        spec._file.truncate()
+        content = spec_traditional.read_text(**Specfile.ENCODING_ARGS)
+        try:
+            spec._file.write(content)
+        except TypeError:
+            spec._file.write(content.encode(**Specfile.ENCODING_ARGS))
+        spec._file.flush()
+        spec._file.seek(0)
+        spec.reload()
+        after_reload = spec
+
+    assert str(before_reload) != str(after_reload)

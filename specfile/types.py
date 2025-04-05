@@ -12,3 +12,12 @@ except ImportError:
     class SupportsIndex(Protocol, metaclass=abc.ABCMeta):  # type: ignore [no-redef]
         @abc.abstractmethod
         def __index__(self) -> int: ...
+
+
+try:
+    from typing import TypedDict
+except ImportError:
+    from typing_extensions import TypedDict
+
+
+EncodingArgs = TypedDict("EncodingArgs", {"encoding": str, "errors": str})
