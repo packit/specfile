@@ -1,3 +1,8 @@
+# 0.35.0
+
+- Added support for creating Specfile instances from file objects and strings. (#458)
+- The `context_management` type stubs now use `ParamSpec` from `typing_extensions` to support Python < 3.10. (#466)
+
 # 0.34.2
 
 - context_management: add a type stub override to fix typing. Type checkers like mypy and pyright can now correctly determine the types for `.sources()`, `.sections()`, and the other `Specfile` methods that return context managers. (#457)
