@@ -710,3 +710,21 @@ def test_reload(specfile_factory, spec_minimal, spec_traditional, remove_spec):
         after_reload = spec
 
     assert str(before_reload) != str(after_reload)
+
+
+def test_save_after_inode_change(specfile_factory, spec_minimal):
+    spec = specfile_factory(spec_minimal)
+    if spec.path is None:
+        return
+    inode = spec_minimal.stat().st_ino
+    content = spec_minimal.read_bytes()
+    spec_minimal.unlink()
+    spec_minimal.write_bytes(content)
+    assert spec_minimal.stat().st_ino != inode
+    spec.version = "0.2"
+    spec.save()
+    assert all(
+        line.endswith("0.2")
+        for line in spec_minimal.read_text().splitlines()
+        if line.startswith("Version:")
+    )

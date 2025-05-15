@@ -202,6 +202,12 @@ class Specfile:
             content = raw_content.decode(**cls.ENCODING_ARGS)
         return content.splitlines(), content.endswith("\n")
 
+    def _reopen_named_file(self) -> None:
+        if not self.path:
+            return
+        self._file.close()
+        self._file = self.path.open("r+", **self.ENCODING_ARGS)
+
     @property
     def path(self) -> Optional[Path]:
         """Path to the spec file."""
@@ -263,21 +269,17 @@ class Specfile:
 
     def reload(self) -> None:
         """Reloads the spec file content."""
-        try:
-            path = Path(cast(FileIO, self._file).name)
-        except AttributeError:
-            pass
-        else:
-            # reopen the path in case the original file has been deleted/replaced
-            self._file.close()
-            self._file = path.open("r+", **self.ENCODING_ARGS)
+        # reopen the path in case the original file has been deleted/replaced
+        self._reopen_named_file()
         self._lines, self._trailing_newline = self._read_lines(self._file)
 
     def save(self) -> None:
         """Saves the spec file content."""
+        content = str(self)
+        # reopen the path in case the original file has been deleted/replaced
+        self._reopen_named_file()
         self._file.seek(0)
         self._file.truncate(0)
-        content = str(self)
         try:
             self._file.write(content)
         except TypeError:

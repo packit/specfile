@@ -26,6 +26,8 @@ adjust:
       - how: shell
         script: pip3 install build 'deepdiff < 8.0.0' # version 8.0.0 depends on numpy, avoid it
 
-  - when: "distro == rhel-8 or distro == centos-8 or distro == centos-stream-8"
+  - when: >
+      distro == rhel-8 or distro == centos-8 or distro == centos-stream-8 or
+      distro == rhel-9 or distro == centos-9 or distro == centos-stream-9
     because: "packit doesn't support EL 8"
     enabled: false
