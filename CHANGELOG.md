@@ -1,3 +1,7 @@
+# 0.35.1
+
+- We have fixed a bug that caused changes to get lost when a spec file passed as a path was replaced or deleted. (#470)
+
 # 0.35.0
 
 - Added support for creating Specfile instances from file objects and strings. (#458)
