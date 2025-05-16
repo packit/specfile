@@ -1,6 +1,5 @@
 # 0.35.2
 
-
 # 0.35.1
 
 - We have fixed a bug that caused changes to get lost when a spec file passed as a path was replaced or deleted. (#470)
