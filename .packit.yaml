@@ -131,8 +131,8 @@ jobs:
     branch: stable
     packages: [specfile]
     targets:
-      - fedora-latest-stable
-      - fedora-latest-stable-aarch64
+      - fedora-stable
+      - fedora-stable-aarch64
     project: packit-stable
     list_on_homepage: True
     preserve_project: True
