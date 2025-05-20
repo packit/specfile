@@ -47,8 +47,14 @@ class Token(collections.abc.Hashable):
             # escape double quotes
             value = self.value.replace('"', r"\"")
             return f'"{value}"'
-        # escape quotes and whitespace
-        return re.sub(r"['\"\s]", r"\\\g<0>", self.value)
+        # escape quotes and whitespace only in string literals
+        value = ""
+        for node in ValueParser.parse(self.value):
+            if isinstance(node, StringLiteral):
+                value += re.sub(r"['\"\s]", r"\\\g<0>", str(node))
+            else:
+                value += str(node)
+        return value
 
     def _key(self) -> tuple:
         return self.type, self.value

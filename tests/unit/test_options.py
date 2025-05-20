@@ -288,7 +288,119 @@ def test_options_find_option(optstring, tokens, option, result):
                 Token(TokenType.QUOTED, '%{name}-%{version}%[%{rc}?"-rc":""]'),
             ],
         ),
+        (
+            "-q %{?prever:-n %{name}-%{prever}}",
+            [
+                Token(TokenType.DEFAULT, "-q"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, "%{?prever:-n %{name}-%{prever}}"),
+            ],
+        ),
     ],
 )
 def test_options_tokenize(option_string, result):
     assert Options.tokenize(option_string) == result
+
+
+@pytest.mark.parametrize(
+    "tokens, result",
+    [
+        (
+            [
+                Token(TokenType.DEFAULT, "-p1"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, "-b"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, ".test"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, "-E"),
+            ],
+            "-p1 -b .test -E",
+        ),
+        (
+            [
+                Token(TokenType.DEFAULT, "-p"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, "28"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, "-b"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, ".test escape"),
+            ],
+            "-p 28 -b .test\\ escape",
+        ),
+        (
+            [
+                Token(TokenType.DEFAULT, "-b"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DOUBLE_QUOTED, '.test "double quotes"'),
+            ],
+            '-b ".test \\"double quotes\\""',
+        ),
+        (
+            [
+                Token(TokenType.DEFAULT, "-p1"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, "-b"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, ".test_whitespace_at_the_end"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, "-M"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, "2"),
+                Token(TokenType.WHITESPACE, "  "),
+            ],
+            "-p1 -b .test_whitespace_at_the_end -M 2  ",
+        ),
+        (
+            [
+                Token(TokenType.DEFAULT, "-q"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, "-n"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, '%{name}-%{version}%[%{rc}?"-rc":""]'),
+            ],
+            '-q -n %{name}-%{version}%[%{rc}?"-rc":""]',
+        ),
+        (
+            [
+                Token(TokenType.DEFAULT, "-q"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, "-n"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.QUOTED, "%{name}-%{version}"),
+            ],
+            "-q -n '%{name}-%{version}'",
+        ),
+        (
+            [
+                Token(TokenType.DEFAULT, "-q"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, "-n"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DOUBLE_QUOTED, "%{name}-%{version}"),
+            ],
+            '-q -n "%{name}-%{version}"',
+        ),
+        (
+            [
+                Token(TokenType.DEFAULT, "-q"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, "-n"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.QUOTED, '%{name}-%{version}%[%{rc}?"-rc":""]'),
+            ],
+            '-q -n \'%{name}-%{version}%[%{rc}?"-rc":""]\'',
+        ),
+        (
+            [
+                Token(TokenType.DEFAULT, "-q"),
+                Token(TokenType.WHITESPACE, " "),
+                Token(TokenType.DEFAULT, "%{?prever:-n %{name}-%{prever}}"),
+            ],
+            "-q %{?prever:-n %{name}-%{prever}}",
+        ),
+    ],
+)
+def test_options_stringify(tokens, result):
+    assert str(Options(tokens)) == result
