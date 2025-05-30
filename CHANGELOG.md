@@ -1,3 +1,7 @@
+# 0.36.0
+
+- We have fixed a bug that caused specfile to traceback when section names with conditional macro expansions containing spaces were present in the spec file. (#476)
+
 # 0.35.1
 
 - We have fixed a bug that caused changes to get lost when a spec file passed as a path was replaced or deleted. (#470)
