@@ -74,7 +74,7 @@ class MacroSubstitution(Node):
     """Node representing macro substitution, e.g. _%version_."""
 
     def __init__(self, body: str) -> None:
-        tokens = re.split(r"^([?!]*)", body, maxsplit=1)
+        tokens = re.split(r"^([?!]+)", body, maxsplit=1)
         if len(tokens) == 1:
             self.prefix, self.name = "", tokens[0]
         else:
@@ -97,7 +97,7 @@ class EnclosedMacroSubstitution(Node):
     """Node representing macro substitution enclosed in brackets, e.g. _%{?dist}_."""
 
     def __init__(self, body: str) -> None:
-        tokens = re.split(r"^([?!]*)", body, maxsplit=1)
+        tokens = re.split(r"^([?!]+)", body, maxsplit=1)
         if len(tokens) == 1:
             self.prefix, rest = "", tokens[0]
         else:
@@ -129,7 +129,7 @@ class ConditionalMacroExpansion(Node):
     """Node representing conditional macro expansion, e.g. _%{?prerel:0.}_."""
 
     def __init__(self, condition: str, body: List[Node]) -> None:
-        tokens = re.split(r"^([?!]*)", condition, maxsplit=1)
+        tokens = re.split(r"^([?!]+)", condition, maxsplit=1)
         if len(tokens) == 1:
             self.prefix, self.name = "", tokens[0]
         else:
@@ -271,8 +271,8 @@ class ValueParser:
             elif value[start + 1] == "{":
                 if ":" in value[start:end]:
                     condition, body = value[start + 2 : end - 1].split(":", maxsplit=1)
-                    tokens = re.split(r"^([?!]*)", condition, maxsplit=1)
-                    prefix = tokens[0 if len(tokens) == 1 else 1]
+                    tokens = re.split(r"^([?!]+)", condition, maxsplit=1)
+                    prefix = "" if len(tokens) == 1 else tokens[1]
                     if "?" in prefix:
                         result.append(
                             ConditionalMacroExpansion(condition, cls.parse(body))
