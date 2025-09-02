@@ -272,7 +272,7 @@ class ValueParser:
                 if ":" in value[start:end]:
                     condition, body = value[start + 2 : end - 1].split(":", maxsplit=1)
                     tokens = re.split(r"^([?!]+)", condition, maxsplit=1)
-                    prefix = tokens[0 if len(tokens) == 1 else 1]
+                    prefix = "" if len(tokens) == 1 else tokens[1]
                     if "?" in prefix:
                         result.append(
                             ConditionalMacroExpansion(condition, cls.parse(body))
