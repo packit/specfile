@@ -1,3 +1,7 @@
+# 0.37.0
+
+- Added support for Elbrus E2K CPU architectures. (#484)
+
 # 0.36.0
 
 - We have fixed a bug that caused specfile to traceback when section names with conditional macro expansions containing spaces were present in the spec file. (#476)
