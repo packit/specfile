@@ -174,9 +174,6 @@ specfile.release = '3'
 
 # setting both at the same time (release defaults to 1)
 specfile.set_version_and_release('2.1', release='3')
-
-# setting version while trying to preserve macros
-specfile.set_version_and_release('2.1', preserve_macros=True)
 ```
 
 #### Bumping release
