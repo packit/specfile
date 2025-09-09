@@ -5,7 +5,7 @@ Main focus is on modifying existing spec files, any change should result in a mi
 
 ## Installation
 
-The library is packaged for Fedora, EPEL 9 and EPEL 8 and you can simply instal it with dnf:
+The library is packaged for Fedora, EPEL 9 and EPEL 8 and you can simply install it with dnf:
 
 ```bash
 dnf install python3-specfile
