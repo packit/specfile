@@ -253,7 +253,7 @@ class MacroDefinitions(UserList[MacroDefinition]):
     def find(self, name: str, position: Optional[int] = None) -> int:
         """
         Finds a macro definition with the specified name. If position is not specified,
-        returns the first valid matching macro definiton. If there is no such macro
+        returns the first valid matching macro definition. If there is no such macro
         definition, returns the first match, if any. If position is specified and there is
         a matching macro definition at that position, it is returned, otherwise
         `ValueError` is raised.
@@ -287,7 +287,7 @@ class MacroDefinitions(UserList[MacroDefinition]):
         cls, lines: Union[List[str], List[Tuple[str, bool]]]
     ) -> "MacroDefinitions":
         """
-        Parses given lines into macro defintions.
+        Parses given lines into macro definitions.
 
         Args:
             lines: Lines to parse.
@@ -379,7 +379,7 @@ class MacroDefinitions(UserList[MacroDefinition]):
         context: Optional["Specfile"] = None,
     ) -> "MacroDefinitions":
         """
-        Parses given lines into macro defintions.
+        Parses given lines into macro definitions.
 
         Args:
             lines: Lines to parse.

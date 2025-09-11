@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 
 def get_tag_name_regex(name: str) -> str:
-    """Contructs regex corresponding to the specified tag name."""
+    """Constructs regex corresponding to the specified tag name."""
     regex = re.escape(name)
     if name in TAGS_WITH_ARG:
         regex += r"(?:\s*\(\s*[^\s)]*\s*\))?"

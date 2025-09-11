@@ -72,7 +72,7 @@
 
 # 0.30.0
 
-- Fixed an exception that occured when accessing the `Specfile.has_autochangelog` property while having unparseable lines (e.g. lines ending with unescaped `%`) in `%changelog`. (#387)
+- Fixed an exception that occurred when accessing the `Specfile.has_autochangelog` property while having unparsable lines (e.g. lines ending with unescaped `%`) in `%changelog`. (#387)
 
 # 0.29.0
 
@@ -85,7 +85,7 @@
 
 # 0.28.2
 
-- Handling of trailing newlines in the macro defintions has been improved. (#361)
+- Handling of trailing newlines in the macro definitions has been improved. (#361)
 
 # 0.28.1
 
@@ -184,7 +184,7 @@
 
 # 0.13.2
 
-- Fixed infinite loop that occured when section options were followed by whitespace. (#197)
+- Fixed infinite loop that occurred when section options were followed by whitespace. (#197)
 
 # 0.13.1
 

@@ -561,7 +561,7 @@ class Specfile:
                     ):
                         return True
             except UnterminatedMacroException:
-                # ignore unparseable lines
+                # ignore unparsable lines
                 continue
         return False
 

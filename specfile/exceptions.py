@@ -28,7 +28,7 @@ class MacroRemovalException(SpecfileException):
 
 
 class OptionsException(SpecfileException):
-    """Unparseable option string."""
+    """Unparsable option string."""
 
 
 class UnterminatedMacroException(SpecfileException):

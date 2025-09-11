@@ -108,7 +108,7 @@ def test_parse():
             "",
             "%define example() %{expand:",
             "This an example of a macro definition with body ",
-            "spawning across mutiple lines}",
+            "spawning across multiple lines}",
         ]
     )
     assert macro_definitions[0].name == "gitdate"
@@ -141,7 +141,7 @@ def test_parse():
     assert macro_definitions[-1].body == (
         "%{expand:\n"
         "This an example of a macro definition with body \n"
-        "spawning across mutiple lines}"
+        "spawning across multiple lines}"
     )
 
 
@@ -231,7 +231,7 @@ def test_get_raw_data():
                 "example()",
                 "%{expand:\n"
                 "This an example of a macro definition with body \n"
-                "spawning across mutiple lines}",
+                "spawning across multiple lines}",
                 False,
                 False,
                 CommentOutStyle.DNL,
@@ -269,7 +269,7 @@ def test_get_raw_data():
         "",
         "%define example() %{expand:",
         "This an example of a macro definition with body ",
-        "spawning across mutiple lines}",
+        "spawning across multiple lines}",
         "%global trailing_newline \\",
         "body with trailing newline \\",
         "",
