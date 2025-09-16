@@ -1,0 +1,7 @@
+[default]
+extend-ignore-re = [
+    "From:.*=\\?UTF-8\\?q\\?.*",  # Ignore encoded email headers
+]
+
+# Allow these as valid words
+extend-words = { SOURCEN = "SOURCEN" }
