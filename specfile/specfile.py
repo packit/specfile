@@ -615,7 +615,8 @@ class Specfile:
                 with self.changelog(section) as changelog:
                     if changelog is None:
                         return
-                    evr = self.expand(evr, extra_macros=[("dist", "")])
+                    epoch_prefix = f"{self.expanded_epoch}:" if self.expanded_epoch else ""
+                    evr = f"{epoch_prefix}{self.expanded_version}-{self.expanded_release}"
                     if isinstance(entry, str):
                         entry = [entry]
                     if timestamp is None:
