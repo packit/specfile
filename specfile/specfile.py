@@ -611,12 +611,11 @@ class Specfile:
                 if self.contains_autochangelog(section):
                     continue
                 if evr is None:
-                    evr = "%{?epoch:%{epoch}:}%{version}-%{release}"
+                    epoch_prefix = f"{self.expanded_epoch}:" if self.expanded_epoch else ""
+                    evr = f"{epoch_prefix}{self.expanded_version}-{self.expanded_release}"
                 with self.changelog(section) as changelog:
                     if changelog is None:
                         return
-                    epoch_prefix = f"{self.expanded_epoch}:" if self.expanded_epoch else ""
-                    evr = f"{epoch_prefix}{self.expanded_version}-{self.expanded_release}"
                     if isinstance(entry, str):
                         entry = [entry]
                     if timestamp is None:
