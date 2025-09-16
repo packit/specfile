@@ -620,6 +620,7 @@ class Specfile:
                 with self.changelog(section) as changelog:
                     if changelog is None:
                         return
+                    evr = self.expand(evr, extra_macros=[("dist", "")])
                     if isinstance(entry, str):
                         entry = [entry]
                     if timestamp is None:
