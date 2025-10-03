@@ -1,3 +1,7 @@
+# 0.37.1
+
+- We have solved a FutureWarning in our codebase. (#485)
+
 # 0.37.0
 
 - Added support for Elbrus E2K CPU architectures. (#484)
