@@ -611,7 +611,15 @@ class Specfile:
                 if self.contains_autochangelog(section):
                     continue
                 if evr is None:
-                    evr = "%{?epoch:%{epoch}:}%{version}-%{release}"
+                    with self.tags() as tags:
+                        try:
+                            evr = f"{tags.epoch.expanded_value}:"
+                        except AttributeError:
+                            evr = ""
+                        evr += f"{tags.version.expanded_value}-"
+                        evr += self.expand(
+                            tags.release.value, extra_macros=[("dist", "")]
+                        )
                 with self.changelog(section) as changelog:
                     if changelog is None:
                         return
