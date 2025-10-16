@@ -1,5 +1,9 @@
 # specfile
 
+[![CI][badge-build]][build]
+[![Documentation][docs-badge]][docs]
+[![License][badge-license]][license]
+
 Python library for parsing and manipulating RPM spec files. Main focus is on modifying existing spec files, any change should result in a minimal diff.
 
 ## Motivation
@@ -310,3 +314,11 @@ To override this, you would have to redefine the `%_target_cpu` system macro (or
 Here is a demo showcasing the `Specfile.update_tag()` method and its use cases:
 
 [![Demo of Specfile.update_tag() functionality](https://img.youtube.com/vi/yzMfBPdFXZY/0.jpg)](https://www.youtube.com/watch?v=yzMfBPdFXZY)
+
+[license]: ./LICENSE
+[badge-license]: https://img.shields.io/github/license/packit/specfile.svg
+[docs-badge]: https://img.shields.io/badge/documentation-3572A5
+[docs]: https://packit.dev/specfile/api/specfile
+[badge-build]: https://softwarefactory-project.io/zuul/api/tenant/packit-service/badge?project=packit/specfile&pipeline=check
+[build]: https://softwarefactory-project.io/zuul/t/packit-service/buildsets?project=packit%2Fspecfile&pipeline=check&skip=0
+
