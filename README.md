@@ -321,4 +321,3 @@ Here is a demo showcasing the `Specfile.update_tag()` method and its use cases:
 [docs]: https://packit.dev/specfile/api/specfile
 [badge-build]: https://softwarefactory-project.io/zuul/api/tenant/packit-service/badge?project=packit/specfile&pipeline=check
 [build]: https://softwarefactory-project.io/zuul/t/packit-service/buildsets?project=packit%2Fspecfile&pipeline=check&skip=0
-
