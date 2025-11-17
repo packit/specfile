@@ -1,3 +1,7 @@
+# 0.38.0
+
+- Correct EVR expansion. (#492)
+
 # 0.37.1
 
 - We have solved a FutureWarning in our codebase. (#485)
