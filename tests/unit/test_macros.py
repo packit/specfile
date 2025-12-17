@@ -114,3 +114,20 @@ def test_macros_define():
 def test_macros_reinit():
     Macros.reinit(MacroLevel.BUILTIN)
     assert all(m.level == MacroLevel.BUILTIN for m in Macros.dump())
+
+
+@pytest.mark.xfail(
+    rpm.__version__ <= "4.16.1.3",
+    reason="rpm <= 4.16.1.3 treats builtin macros specially and overriding them has no effect",
+)
+def test_macros_sideeffects():
+    rpm.reloadConfig()
+    rpm.addMacro("with_feature", "1")
+    assert rpm.expandMacro("%with_feature") == "1"
+    Macros.expand("%{expand:%global with_feature 0}", safe=False)
+    assert rpm.expandMacro("%with_feature") == "0"
+    rpm.reloadConfig()
+    rpm.addMacro("with_feature", "1")
+    assert rpm.expandMacro("%with_feature") == "1"
+    Macros.expand("%{expand:%global with_feature 0}", safe=True)
+    assert rpm.expandMacro("%with_feature") == "1"

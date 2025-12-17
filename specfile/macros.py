@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import collections
+import functools
 import re
 from enum import IntEnum
 from typing import List, Optional
@@ -131,12 +132,13 @@ class Macros:
         return cls._parse([line.decode() for line in stderr])
 
     @staticmethod
-    def expand(expression: str) -> str:
+    def expand(expression: str, safe: bool = True) -> str:
         """
         Expands an expression in the global context.
 
         Args:
             expression: Expression to expand.
+            safe: Whether to disable macro manipulation during expansion.
 
         Returns:
             Expanded expression.
@@ -144,11 +146,22 @@ class Macros:
         Raises:
             RPMException: If expansion error occurs.
         """
+        cleanups = []
+        if safe:
+            # override macros that can affect other macros
+            # this should avoid any side-effects caused by the expansion
+            for macro in ("global", "define", "undefine"):
+                rpm.addMacro(macro, "%{nil}")
+                cleanups.append(functools.partial(rpm.delMacro, macro))
         try:
-            with capture_stderr() as stderr:
-                return rpm.expandMacro(expression)
-        except rpm.error as e:
-            raise RPMException(stderr=stderr) from e
+            try:
+                with capture_stderr() as stderr:
+                    return rpm.expandMacro(expression)
+            except rpm.error as e:
+                raise RPMException(stderr=stderr) from e
+        finally:
+            while cleanups:
+                cleanups.pop(0)()
 
     @classmethod
     def remove(cls, macro: str) -> None:
@@ -169,7 +182,10 @@ class Macros:
         while retry < MAX_REMOVAL_RETRIES:
             rpm.delMacro(macro)
             try:
-                if cls.expand(f"%{{{macro}}}") == f"%{{{macro.replace('%%', '%')}}}":
+                if (
+                    cls.expand(f"%{{{macro}}}", safe=False)
+                    == f"%{{{macro.replace('%%', '%')}}}"
+                ):
                     break
             except RPMException:
                 # the macro can't be expanded, but it still exists
