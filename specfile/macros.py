@@ -27,6 +27,13 @@ class MacroLevel(IntEnum):
     OLDSPEC = -1
     GLOBAL = 0
 
+    @classmethod
+    def _missing_(cls, value: object) -> Optional["MacroLevel"]:
+        # ALT Linux uses old rpm 4.13.0.1 with a pushMacro(level - 1) bug.
+        if value == -14:
+            return cls.MACROFILES
+        return None
+
 
 class Macro(collections.abc.Hashable):
     """
