@@ -200,6 +200,7 @@ jobs:
       rawhide:
         fast_forward_merge_into:
           - fedora-branched
+          - eln
       epel-9: {}
   - <<: *propose_downstream
     packages: [specfile-epel8]
@@ -224,6 +225,7 @@ jobs:
       rawhide:
         fast_forward_merge_into:
           - fedora-branched
+          - eln
       epel-9: {}
   - <<: *pull_from_upstream
     packages: [specfile-epel8]
