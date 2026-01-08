@@ -1,6 +1,7 @@
 # 0.38.0
 
-- Correct EVR expansion. (#492)
+- A bug leading to incorrect EVR expansion has been fixed. (#492)
+- Prevented side-effects during condition evaluation that could occur when expanding macros that manipulate other macros, leading to misinterpreted validity of condition branches. (#499)
 
 # 0.37.1
 
