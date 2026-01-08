@@ -68,7 +68,7 @@ rm -rf specfile.egg-info
 
 
 %changelog
-* Fri Nov 07 2025 Packit Team <hello@packit.dev> - 0.38.0-1
+* Thu Jan 08 2026 Packit Team <hello@packit.dev> - 0.38.0-1
 - New upstream release 0.38.0
 
 * Fri Oct 03 2025 Packit Team <hello@packit.dev> - 0.37.1-1
