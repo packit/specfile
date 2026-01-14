@@ -226,6 +226,33 @@ def test_add_changelog_entry(
         assert sections.changelog[: len(result)] == result
 
 
+def test_add_changelog_entry_ignores_invalid_padding(specfile_factory, spec_minimal):
+    """Test that add_changelog_entry ignores entries with invalid day padding (issue #216)."""
+    spec = specfile_factory(spec_minimal)
+
+    # Simulate scipy scenario: malformed entry with space before double-digit day
+    with spec.sections() as sections:
+        sections.changelog.data = [
+            "* Mon Dec  11 2021 Author <email> - 0.5.1-5",  # INVALID
+            "- Initial version",
+            "",
+            "* Tue May 04 2020 Another <email> - 0.1-0",  # VALID (zero-padded)
+            "- First version",
+        ]
+
+    # Add new entry with single-digit day - should use zero-padding from valid entry
+    flexmock(specfile.specfile).should_receive("guess_packager").and_return(
+        "Test User <test@example.com>"
+    ).once()
+    spec.add_changelog_entry("test entry", timestamp=datetime.date(2024, 1, 5))
+
+    with spec.sections() as sections:
+        new_entry = sections.changelog[0]
+        # Should use zero-padding style "Jan 05", not space-padding "Jan  5"
+        assert "Jan 05" in new_entry
+        assert "Jan  5" not in new_entry
+
+
 @pytest.mark.parametrize(
     "version, release",
     [

@@ -641,9 +641,13 @@ class Specfile:
                     elif email is not None:
                         author += f" <{email}>"
                     if changelog:
-                        # try to preserve padding of day of month
+                        # compute day of month padding from the longest valid entry
+                        # incorrect padding is stripped; invalid entries are ignored
                         padding = max(
-                            (e.day_of_month_padding for e in reversed(changelog)),
+                            (
+                                e.sanitized_day_of_month_padding
+                                for e in reversed(changelog)
+                            ),
                             key=len,
                         )
                     else:
