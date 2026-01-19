@@ -189,6 +189,7 @@ jobs:
   - <<: *tests
     packages: [specfile-epel10]
     tmt_plan: "smoke|full"
+    use_internal_tf: true
     targets:
       - epel-10-all
 
