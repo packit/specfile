@@ -167,10 +167,14 @@ class ChangelogEntry:
         return m is not None
 
     @property
-    def day_of_month_padding(self) -> str:
-        """Padding of day of month in the entry header timestamp"""
+    def sanitized_day_of_month_padding(self) -> str:
+        """
+        Padding of day of month in the entry header timestamp. Nonsensical padding
+        (i.e. multiple spaces before double-digit day of month) is corrected.
+        """
         weekdays = "|".join(WEEKDAYS)
         months = "|".join(MONTHS)
+
         m = re.search(
             rf"""
             ({weekdays})                 # weekday
@@ -178,14 +182,18 @@ class ChangelogEntry:
             ({months})                   # month
             [ ]
             (?P<wsp>[ ]*)                # optional whitespace padding
-            ((?P<zp>0)?\d|[12]\d|3[01])  # possibly zero-padded day of month
+            (?P<zp>0)?                   # optional zero-padding
+            (?P<day>[12]\d|3[01]|[1-9])  # day of month (1-31)
             """,
             self.header,
             re.VERBOSE,
         )
         if not m:
             return ""
-        return m.group("wsp") + (m.group("zp") or "")
+        # remove extra padding for double-digit day numbers
+        whitespace_padding = "" if len(m.group("day")) == 2 else m.group("wsp")
+        zero_padding = m.group("zp") or ""
+        return whitespace_padding + zero_padding
 
     @property
     def style(self) -> ChangelogStyle:

@@ -92,12 +92,17 @@ def test_entry_has_extended_timestamp(header, extended):
         ),
         (
             "* Mon Oct  18 12:34:45 CEST 2021 Nikola Forró <nforro@redhat.com> - 0.2-1",
-            " ",
+            "",  # Invalid: double-digit day with space padding, returns ""
         ),
+        (
+            "* Mon Dec  11 2006 Author <email> - 1.0",
+            "",
+        ),  # Invalid: space before double-digit
+        ("* Invalid header", ""),  # Invalid: unparsable
     ],
 )
 def test_entry_day_of_month_padding(header, padding):
-    assert ChangelogEntry(header, [""]).day_of_month_padding == padding
+    assert ChangelogEntry(header, [""]).sanitized_day_of_month_padding == padding
 
 
 @pytest.mark.parametrize(
