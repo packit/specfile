@@ -452,9 +452,33 @@ def test_get_raw_section_data():
                 ],
                 "0.4-1",
             ),
+            ChangelogEntry.assemble(
+                datetime.date(2026, 2, 9),
+                "Nikola Forró <nforro@redhat.com>",
+                [
+                    "* whitespace day of month padding",
+                ],
+                "0.4-2",
+                day_of_month_padding=" ",
+            ),
+            ChangelogEntry.assemble(
+                datetime.date(2026, 2, 19),
+                "Nikola Forró <nforro@redhat.com>",
+                [
+                    "* whitespace day of month padding #2",
+                ],
+                "0.4-3",
+                day_of_month_padding=" ",
+            ),
         ]
     )
     assert changelog.get_raw_section_data() == [
+        "* Thu Feb 19 2026 Nikola Forró <nforro@redhat.com> - 0.4-3",
+        "* whitespace day of month padding #2",
+        "",
+        "* Mon Feb  9 2026 Nikola Forró <nforro@redhat.com> - 0.4-2",
+        "* whitespace day of month padding",
+        "",
         "* Fri Jan 27 2023 Nikola Forró <nforro@redhat.com> - 0.4-1",
         "",
         "* this is also a valid entry",
