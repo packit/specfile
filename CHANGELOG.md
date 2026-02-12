@@ -1,3 +1,7 @@
+# 0.39.0
+
+- Changelog entries that have incorrect padding set for a day of a month are now fixed if possible or ignored. (#508)
+
 # 0.38.0
 
 - A bug leading to incorrect EVR expansion has been fixed. (#492)
