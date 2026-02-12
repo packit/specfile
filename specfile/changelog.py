@@ -241,10 +241,10 @@ class ChangelogEntry:
             header = _OPENSUSE_CHANGELOG_SEPARATOR + "\n"
         header += f"{weekday} {month}"
 
-        if day_of_month_padding.endswith("0"):
-            header += f" {day_of_month_padding[:-1]}{timestamp.day:02}"
+        if day_of_month_padding:
+            header += f" {day_of_month_padding[:-1]}{timestamp.day:{day_of_month_padding[-1]}>2}"
         else:
-            header += f" {day_of_month_padding}{timestamp.day}"
+            header += f" {timestamp.day}"
 
         # convert to extended format for openSUSE style changelogs
         if style == ChangelogStyle.openSUSE and not isinstance(
