@@ -1,3 +1,7 @@
+# 0.39.1
+
+- Fixed whitespace padding of day of month in changelog entries. (#511)
+
 # 0.39.0
 
 - Changelog entries that have incorrect padding set for a day of a month are now fixed if possible or ignored. (#508)
