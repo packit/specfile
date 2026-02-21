@@ -190,7 +190,8 @@ jobs:
     packages: [specfile-epel10]
     tmt_plan: "smoke|full"
     targets:
-      - epel-10-all
+      rhel+epel-10-x86_64:
+        distros: [CentOS-Stream-10]
 
   - &propose_downstream
     job: propose_downstream
