@@ -25,8 +25,7 @@ from specfile.formatter import format_expression
             "func1('first argument', True, func2(kwarg={42: ['nested list item 1', "
             "'nested list item 2', 'nested list item 3']}), 0, indent='    ', "
             "spec=<rpm.spec object at 0x7fe1ae1a6b30>)",
-            textwrap.dedent(
-                """\
+            textwrap.dedent("""\
                 func1(
                     'first argument',
                     True,
@@ -42,8 +41,7 @@ from specfile.formatter import format_expression
                     0,
                     indent='    ',
                     spec=<rpm.spec object at 0x7fe1ae1a6b30>,
-                )"""
-            ),
+                )"""),
         ),
     ],
 )
