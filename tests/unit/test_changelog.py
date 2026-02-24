@@ -395,6 +395,150 @@ def test_create_opensuse_changelog_assemble(
     )
 
 
+@pytest.mark.parametrize(
+    "changelog_entry, expected_author, expected_timestamp",
+    [
+        # Standard Fedora/RPM style entries (basic date format)
+        (
+            ChangelogEntry(
+                "* Thu Jan 04 2007 Michael Schwendt <mschwendt@fedoraproject.org>", [""]
+            ),
+            "Michael Schwendt <mschwendt@fedoraproject.org>",
+            datetime.datetime(2007, 1, 4, 12, 0, 0, tzinfo=datetime.timezone.utc),
+        ),
+        (
+            ChangelogEntry(
+                "* Fri Jul 26 2024 Miroslav Suchý <msuchy@redhat.com> - ss981107-67",
+                [""],
+            ),
+            "Miroslav Suchý <msuchy@redhat.com>",
+            datetime.datetime(2024, 7, 26, 12, 0, 0, tzinfo=datetime.timezone.utc),
+        ),
+        (
+            ChangelogEntry(
+                "* Mon Jul 13 2020 Tom Stellard <tstellar@redhat.com> 4.0-0.4.pre2",
+                [""],
+            ),
+            "Tom Stellard <tstellar@redhat.com>",
+            datetime.datetime(2020, 7, 13, 12, 0, 0, tzinfo=datetime.timezone.utc),
+        ),
+        (
+            ChangelogEntry(
+                "* Thu Feb 04 2016 Marcin Zajaczkowski <mszpak ATT wp DOTT pl> - 1:0.9.10-6",
+                [""],
+            ),
+            "Marcin Zajaczkowski <mszpak ATT wp DOTT pl>",
+            datetime.datetime(2016, 2, 4, 12, 0, 0, tzinfo=datetime.timezone.utc),
+        ),
+        (
+            ChangelogEntry(
+                "* Mon Jan 03 2022 Fedora Kernel Team <kernel-team@fedoraproject.org> "
+                "[5.16-0.rc8.55]",
+                [""],
+            ),
+            "Fedora Kernel Team <kernel-team@fedoraproject.org>",
+            datetime.datetime(2022, 1, 3, 12, 0, 0, tzinfo=datetime.timezone.utc),
+        ),
+        (
+            ChangelogEntry(
+                "* Wed Jan 23 2002 Karsten Hopp <karsten@redhat.de> (4.6-1)", [""]
+            ),
+            "Karsten Hopp <karsten@redhat.de>",
+            datetime.datetime(2002, 1, 23, 12, 0, 0, tzinfo=datetime.timezone.utc),
+        ),
+        (
+            ChangelogEntry(
+                "* Thu Apr  9 2015 Jeffrey C. Ollie <jeff@ocjtech.us> - 13.3.2-1:", [""]
+            ),
+            "Jeffrey C. Ollie <jeff@ocjtech.us>",
+            datetime.datetime(2015, 4, 9, 12, 0, 0, tzinfo=datetime.timezone.utc),
+        ),
+        # Standard format with extended timestamp
+        (
+            ChangelogEntry(
+                "* Mon Oct 18 12:34:45 CEST 2021 Nikola Forró <nforro@redhat.com> - 0.2-1",
+                [""],
+            ),
+            "Nikola Forró <nforro@redhat.com>",
+            datetime.datetime(2021, 10, 18, 12, 34, 45, tzinfo=datetime.timezone.utc),
+        ),
+        (
+            ChangelogEntry(
+                "* Mon Feb 23 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org>"
+                " - 1.23-3.20081106gitbe42b4",
+                [""],
+            ),
+            "Fedora Release Engineering <rel-eng@lists.fedoraproject.org>",
+            datetime.datetime(2009, 2, 23, 12, 0, 0, tzinfo=datetime.timezone.utc),
+        ),
+        # Entry without EVR
+        (
+            ChangelogEntry("* Mon May 22 2023 Nikola Forró <nforro@redhat.com>", [""]),
+            "Nikola Forró <nforro@redhat.com>",
+            datetime.datetime(2023, 5, 22, 12, 0, 0, tzinfo=datetime.timezone.utc),
+        ),
+        # openSUSE/SUSE style entries (always extended format)
+        (
+            ChangelogEntry(
+                _OPENSUSE_CHANGELOG_SEPARATOR
+                + "\n"
+                + "Tue Dec 17 14:21:37 UTC 2024 - Dan Čermák <dan.cermak@cgc-instruments.com>",
+                [""],
+            ),
+            "Dan Čermák <dan.cermak@cgc-instruments.com>",
+            datetime.datetime(2024, 12, 17, 14, 21, 37, tzinfo=datetime.timezone.utc),
+        ),
+        (
+            ChangelogEntry(
+                _OPENSUSE_CHANGELOG_SEPARATOR
+                + "\n"
+                + "Mon Nov  4 17:47:23 UTC 2024 - Dan Čermák <dan.cermak@cgc-instruments.com>",
+                [""],
+            ),
+            "Dan Čermák <dan.cermak@cgc-instruments.com>",
+            datetime.datetime(2024, 11, 4, 17, 47, 23, tzinfo=datetime.timezone.utc),
+        ),
+        (
+            ChangelogEntry(
+                _OPENSUSE_CHANGELOG_SEPARATOR
+                + "\n"
+                + "Fri May 17 09:14:20 UTC 2024 - Dominique Leuenberger <dimstar@opensuse.org>",
+                [""],
+            ),
+            "Dominique Leuenberger <dimstar@opensuse.org>",
+            datetime.datetime(2024, 5, 17, 9, 14, 20, tzinfo=datetime.timezone.utc),
+        ),
+        (
+            ChangelogEntry(
+                _OPENSUSE_CHANGELOG_SEPARATOR
+                + "\n"
+                + "Mon Oct 10 13:27:24 UTC 2022 - Stephan Kulow <coolo@suse.com>",
+                [""],
+            ),
+            "Stephan Kulow <coolo@suse.com>",
+            datetime.datetime(2022, 10, 10, 13, 27, 24, tzinfo=datetime.timezone.utc),
+        ),
+        (
+            ChangelogEntry(
+                _OPENSUSE_CHANGELOG_SEPARATOR
+                + "\n"
+                + "Fri Jun 25 07:31:34 UTC 2021 - Dan Čermák <dcermak@suse.com>",
+                [""],
+            ),
+            "Dan Čermák <dcermak@suse.com>",
+            datetime.datetime(2021, 6, 25, 7, 31, 34, tzinfo=datetime.timezone.utc),
+        ),
+    ],
+)
+def test_author_timestamp(
+    changelog_entry: ChangelogEntry,
+    expected_author: str,
+    expected_timestamp: datetime.datetime,
+):
+    assert changelog_entry.author == expected_author
+    assert changelog_entry.timestamp == expected_timestamp
+
+
 def test_get_raw_section_data():
     tzinfo = datetime.timezone(datetime.timedelta(hours=2), name="CEST")
     changelog = Changelog(
