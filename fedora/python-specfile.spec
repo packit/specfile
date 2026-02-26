@@ -32,6 +32,10 @@ BuildRequires:  python3-devel
 BuildRequires:  git-core
 %endif
 
+# system-rpm-config pulls in packages containing SRPM macros
+# necessary for spec file preprocessing and parsing
+Recommends:     system-rpm-config
+
 
 %description
 %{desc}
