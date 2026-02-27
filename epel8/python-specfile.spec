@@ -29,6 +29,10 @@ BuildRequires:  %{py3_dist importlib-metadata dataclasses rpm typing-extensions}
 BuildRequires:  %{py3_dist flexmock pytest}
 BuildRequires:  git-core
 
+# system-rpm-config pulls in packages containing SRPM macros
+# necessary for spec file preprocessing and parsing
+Recommends:     system-rpm-config
+
 
 %description
 %{desc}
