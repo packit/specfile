@@ -285,3 +285,11 @@ jobs:
     packages: [specfile-epel10]
     dist_git_branches:
       - epel-10-all
+
+  - job: upstream_koji_build
+    trigger: pull_request
+    packages: [specfile]
+    packit_instances: ["stg"]
+    scratch: true
+    targets:
+      - fedora-rawhide

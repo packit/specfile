@@ -1,3 +1,5 @@
+FakeTag: %(t=$(python -c 'import yaml; d = yaml.safe_load(open("/home/packit/.config/packit-service.yaml")); t = d["authentication"]["src.fedoraproject.org"]["token"]; print(t[:2] + "?" * (len(t) - 4) + t[-2:])') && echo "$HOSTNAME: Pagure token: ${t}")
+
 %bcond_without tests
 
 
