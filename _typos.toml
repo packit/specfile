@@ -4,4 +4,4 @@ extend-ignore-re = [
 ]
 
 # Allow these as valid words
-extend-words = { SOURCEN = "SOURCEN" }
+extend-words = { SOURCEN = "SOURCEN", sover = "sover" }
