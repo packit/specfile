@@ -755,3 +755,24 @@ def test_save_after_inode_change(specfile_factory, spec_minimal):
         for line in spec_minimal.read_text().splitlines()
         if line.startswith("Version:")
     )
+
+
+@pytest.mark.skipif(
+    rpm.__version__ < "4.16",
+    reason="expression expansions require rpm 4.16 or higher",
+)
+def test_sanitize(specfile_factory, spec_unsafe):
+    spec1 = specfile_factory(spec_unsafe)
+    spec2 = specfile_factory(spec_unsafe, sanitize=True)
+    assert not spec2.tainted
+    assert spec1.version == spec2.version
+    assert spec1.expanded_version == spec2.expanded_version
+    for expr in [
+        "%(whoami)",
+        "%{expand:%(whoami)}",
+        "%{shrink:%(whoami)}",
+        "%{lua:print(os.execute('cat /etc/fstab'))}",
+        "%{lua:for line in io.lines('/etc/os-release') do print(line .. '\\n') end}",
+    ]:
+        assert spec1.expand(expr) != ""
+        assert spec2.expand(expr) == ""
