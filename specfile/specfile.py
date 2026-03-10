@@ -40,6 +40,7 @@ from specfile.macro_definitions import (
 )
 from specfile.macros import Macro, Macros
 from specfile.prep import Prep
+from specfile.sanitizer import Sanitizer
 from specfile.sections import Section, Sections
 from specfile.sourcelist import Sourcelist
 from specfile.sources import Patches, Sources
@@ -76,6 +77,7 @@ class Specfile:
         autosave: bool = False,
         macros: Optional[List[Tuple[str, Optional[str]]]] = None,
         force_parse: bool = False,
+        sanitize: bool = False,
     ) -> None:
         """
         Initializes a specfile object. You can specify either a path to the spec file,
@@ -93,6 +95,8 @@ class Specfile:
                 sources required to be present at parsing time are not available.
                 Such sources include sources referenced from shell expansions
                 in tag values and sources included using the _%include_ directive.
+            sanitize: Whether to remove potentially unsafe constructs such as shell expansions
+                and impure Lua macros before parsing and macro expansion.
         """
         # count mutually exclusive arguments
         if sum([file is not None, path is not None, content is not None]) > 1:
@@ -115,9 +119,10 @@ class Specfile:
                     "`sourcedir` is required when providing `content` or file object without a name"
                 )
         self.autosave = autosave
+        self.sanitize = sanitize
         self._lines, self._trailing_newline = self._read_lines(self._file)
         self._parser = SpecParser(Path(sourcedir), macros, force_parse)
-        self._parser.parse(str(self))
+        self._parse(str(self))
         self._dump_debug_info("After initial parsing")
 
     def __eq__(self, other: object) -> bool:
@@ -125,6 +130,7 @@ class Specfile:
             return NotImplemented
         return (
             self.autosave == other.autosave
+            and self.sanitize == other.sanitize
             and self.path == other.path
             and self._lines == other._lines
             and self._parser == other._parser
@@ -134,7 +140,7 @@ class Specfile:
     def __repr__(self) -> str:
         return (
             f"Specfile({self.path!r}, {self._parser.sourcedir!r}, {self.autosave!r}, "
-            f"{self._parser.macros!r}, {self._parser.force_parse!r})"
+            f"{self._parser.macros!r}, {self._parser.force_parse!r}, {self.sanitize!r})"
         )
 
     def __str__(self) -> str:
@@ -191,6 +197,18 @@ class Specfile:
             f"  {self._parser!r} @ 0x{id(self._parser):012x}\n"
             f"  {self._parser.spec!r} @ 0x{id(self._parser.spec):012x}"
         )
+
+    def _parse(
+        self,
+        content: str,
+        extra_macros: Optional[List[Tuple[str, Optional[str]]]] = None,
+    ) -> None:
+        removed_constructs = 0
+        if self.sanitize:
+            content, _, removed_constructs = Sanitizer.sanitize(content)
+        self._parser.parse(content, extra_macros)
+        if removed_constructs > 0:
+            self._parser.tainted = True
 
     @classmethod
     def _read_lines(cls, file: IO) -> Tuple[List[str], bool]:
@@ -256,14 +274,14 @@ class Specfile:
         sources required to be present at parsing time were not available
         and were replaced with dummy files.
         """
-        self._parser.parse(str(self))
+        self._parse(str(self))
         return self._parser.tainted
 
     @property
     def rpm_spec(self) -> rpm.spec:
         """Underlying `rpm.spec` instance."""
         self._dump_debug_info("`rpm_spec` property, before parsing")
-        self._parser.parse(str(self))
+        self._parse(str(self))
         self._dump_debug_info("`rpm_spec` property, after parsing")
         return self._parser.spec
 
@@ -306,7 +324,9 @@ class Specfile:
             Expanded expression.
         """
         if not skip_parsing or extra_macros is not None:
-            self._parser.parse(str(self), extra_macros)
+            self._parse(str(self), extra_macros)
+        if self.sanitize:
+            expression, _, _ = Sanitizer.sanitize(expression)
         return Macros.expand(expression)
 
     def get_active_macros(self) -> List[Macro]:
@@ -319,7 +339,7 @@ class Specfile:
         Returns:
             List of `Macro` objects.
         """
-        self._parser.parse(str(self))
+        self._parse(str(self))
         return Macros.dump()
 
     @ContextManager

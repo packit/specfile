@@ -23,6 +23,7 @@ from tests.constants import (
     SPEC_RPMAUTOSPEC,
     SPEC_SHELL_EXPANSIONS,
     SPEC_TRADITIONAL,
+    SPEC_UNSAFE,
     SPECFILE,
 )
 
@@ -136,6 +137,13 @@ def spec_conditionalized_changelog(tmp_path):
 def spec_conditionalized_version(tmp_path):
     specfile_path = tmp_path / SPECFILE
     shutil.copyfile(SPEC_CONDITIONALIZED_VERSION / SPECFILE, specfile_path)
+    return specfile_path
+
+
+@pytest.fixture(scope="function")
+def spec_unsafe(tmp_path):
+    specfile_path = tmp_path / SPECFILE
+    shutil.copyfile(SPEC_UNSAFE / SPECFILE, specfile_path)
     return specfile_path
 
 
