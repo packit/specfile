@@ -42,8 +42,8 @@ class StringLiteral(Node):
         return self.value == other.value
 
 
-class ShellExpansion(Node):
-    """Node representing shell expansion, e.g. _%(whoami)_."""
+class Expansion(Node):
+    """Abstract base class for expansion nodes."""
 
     def __init__(self, body: str) -> None:
         self.body = body
@@ -54,16 +54,20 @@ class ShellExpansion(Node):
         # don't have to reimplement __repr__()
         return f"{self.__class__.__name__}({self.body!r})"
 
-    def __str__(self) -> str:
-        return f"%({self.body})"
-
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.body == other.body
 
 
-class ExpressionExpansion(ShellExpansion):
+class ShellExpansion(Expansion):
+    """Node representing shell expansion, e.g. _%(whoami)_."""
+
+    def __str__(self) -> str:
+        return f"%({self.body})"
+
+
+class ExpressionExpansion(Expansion):
     """Node representing expression expansion, e.g. _%[1+1]_."""
 
     def __str__(self) -> str:
