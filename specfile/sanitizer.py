@@ -1092,5 +1092,10 @@ class Sanitizer:
                 i += 1
             return "".join(result)
 
-        sanitized = sanitize_nodes(ValueParser.parse(value))
+        try:
+            nodes = ValueParser.parse(value)
+        except Exception:
+            return "%{nil}", 0, 1
+        else:
+            sanitized = sanitize_nodes(nodes)
         return sanitized, converted, removed
