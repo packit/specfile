@@ -1,3 +1,8 @@
+# 0.40.0
+
+- `Specfile()` has a new `sanitize` option that enables best effort sanitization of potentially dangerous constructs such as shell expansions and unsafe Lua macros before they are passed to RPM for parsing. (#519)
+- Fixed incorrect parsing of nested macros. (#522)
+
 # 0.39.1
 
 - Fixed whitespace padding of day of month in changelog entries. (#511)
