@@ -8,12 +8,12 @@ from typing import Tuple
 
 from specfile.exceptions import UnterminatedMacroException
 from specfile.value_parser import (
-    BuiltinMacro,
     ConditionalMacroExpansion,
     EnclosedMacroSubstitution,
     ExpressionExpansion,
     MacroSubstitution,
     ShellExpansion,
+    SingleArgEnclosedMacroSubstitution,
     ValueParser,
 )
 
@@ -968,7 +968,12 @@ class Sanitizer:
             while i < len(nodes):
                 node = nodes[i]
                 if isinstance(
-                    node, (MacroSubstitution, EnclosedMacroSubstitution, BuiltinMacro)
+                    node,
+                    (
+                        MacroSubstitution,
+                        EnclosedMacroSubstitution,
+                        SingleArgEnclosedMacroSubstitution,
+                    ),
                 ) and node.name in ("include", "load", "uncompress"):
                     removed += 1
                     # %include/%load followed by whitespace and argument
@@ -1019,18 +1024,18 @@ class Sanitizer:
                     else:
                         converted += 1
                     result.append(replacement)
-                elif isinstance(node, BuiltinMacro):
+                elif isinstance(node, SingleArgEnclosedMacroSubstitution):
                     if not is_name_safe(node.name):
                         removed += 1
                         result.append("%{nil}")
                     elif node.name == "lua":
-                        if not cls.is_lua_safe(node.body):
+                        if not cls.is_lua_safe(node.arg):
                             removed += 1
                             result.append("%{nil}")
                         else:
                             result.append(str(node))
                     else:
-                        sanitized_body, c, r = cls.sanitize(node.body, _depth + 1)
+                        sanitized_body, c, r = cls.sanitize(node.arg, _depth + 1)
                         converted += c
                         removed += r
                         result.append(f"%{{{node.name}:{sanitized_body}}}")

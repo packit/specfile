@@ -5,12 +5,12 @@ import pytest
 from flexmock import flexmock
 
 from specfile.value_parser import (
-    BuiltinMacro,
     ConditionalMacroExpansion,
     EnclosedMacroSubstitution,
     Macros,
     MacroSubstitution,
     ShellExpansion,
+    SingleArgEnclosedMacroSubstitution,
     StringLiteral,
     ValueParser,
 )
@@ -50,11 +50,25 @@ from specfile.value_parser import (
         (
             '%{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(string.lower(ver))}',
             [
-                BuiltinMacro(
+                SingleArgEnclosedMacroSubstitution(
                     "lua",
                     'ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(string.lower(ver))',
                 )
             ],
+        ),
+        ("%{%{28}}", [StringLiteral("%{%{28}}")]),
+        (
+            "%{%{macro}}",
+            [
+                StringLiteral("%{"),
+                EnclosedMacroSubstitution("macro"),
+                StringLiteral("}"),
+            ],
+        ),
+        ("%{upper:%{name}}", [SingleArgEnclosedMacroSubstitution("upper", "%{name}")]),
+        (
+            "%{version_no_tilde %{quote:nil}}",
+            [EnclosedMacroSubstitution("version_no_tilde %{quote:nil}")],
         ),
     ],
 )
