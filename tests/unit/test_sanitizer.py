@@ -319,6 +319,10 @@ def test_pipe_to_tr(body, expected):
             "echo %{unversion} | sed 's/_/./g'",
             '%{lua:print((rpm.expand("%{unversion}"):gsub("_", ".")))}',
         ),
+        (
+            "echo 1.2.3-rc4 | sed 's/-/~/g'",
+            '%{lua:print((rpm.expand("%{quote:1.2.3-rc4}"):gsub("-", "~")))}',
+        ),
     ],
 )
 def test_pipe_to_sed(body, expected):
@@ -389,6 +393,10 @@ def test_pipe_to_awk(body, expected):
         (
             "sed 's/\\.//g' <<<%{version}",
             '%{lua:print((rpm.expand("%{version}"):gsub("%.", "")))}',
+        ),
+        (
+            "sed 's/-/~/g' <<<1.2.3-rc4",
+            '%{lua:print((rpm.expand("%{quote:1.2.3-rc4}"):gsub("-", "~")))}',
         ),
     ],
 )
