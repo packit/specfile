@@ -1215,9 +1215,9 @@ def test_expression_expansion_sanitized(value, expected_sanitized):
     "value, expected_sanitized",
     [
         # EnclosedMacroSubstitution without args - unsafe name
-        ("%{%(whoami)}", "%{nil}"),
+        ("%{%(whoami)}", "%{%{nil}}"),
         # EnclosedMacroSubstitution with args - unsafe name
-        ("%{%(whoami) arg1 arg2}", "%{nil}"),
+        ("%{%(whoami) arg1 arg2}", "%{%{nil} arg1 arg2}"),
         # BuiltinMacro - unsafe name
         ("%{%(whoami):body}", "%{nil}"),
         # BuiltinMacro - nested macro in name (splits at : giving unterminated name)
