@@ -250,7 +250,7 @@ class ValueParser:
             return i
 
         result: List[Node] = []
-        start = 0
+        start = start0 = 0
         offset = 0
         while start < len(value):
             try:
@@ -265,8 +265,6 @@ class ValueParser:
                 end = None
             if end is None:
                 break
-            if end > start:
-                result.append(StringLiteral(value[start:end]))
             start = end
             end = find_macro_end(start + 1)
             if end is None:
@@ -276,8 +274,17 @@ class ValueParser:
             elif value[start + 1] == "[":
                 result.append(ExpressionExpansion(value[start + 2 : end - 1]))
             elif value[start + 1] == "{":
-                if ":" in value[start:end]:
-                    condition, body = value[start + 2 : end - 1].split(":", maxsplit=1)
+                index, delimiter = next(
+                    (
+                        (i, c)
+                        for i, c in enumerate(value[start + 2 : end - 1])
+                        if c in " :}"
+                    ),
+                    (-1, None),
+                )
+                if delimiter == ":":
+                    condition = value[start + 2 : start + index + 2]
+                    body = value[start + index + 3 : end - 1]
                     tokens = re.split(r"^([?!]+)", condition, maxsplit=1)
                     prefix = "" if len(tokens) == 1 else tokens[1]
                     if "?" in prefix:
@@ -289,13 +296,24 @@ class ValueParser:
                             SingleArgEnclosedMacroSubstitution(condition, body)
                         )
                 else:
-                    result.append(EnclosedMacroSubstitution(value[start + 2 : end - 1]))
+                    body = value[start + 2 : end - 1]
+                    name = (
+                        value[start + 2 : start + index + 2]
+                        if delimiter is not None
+                        else body
+                    )
+                    if not re.match(r"[A-Za-z_]\w*$", name.lstrip("?!"), re.ASCII):
+                        start += 2
+                        continue
+                    result.append(EnclosedMacroSubstitution(body))
             else:
                 result.append(MacroSubstitution(value[start + 1 : end]))
-            start = end
+            if start > start0:
+                result.insert(-1, StringLiteral(value[start0:start]))
+            start = start0 = end
             offset = 0
-        if value[start:]:
-            result.append(StringLiteral(value[start:]))
+        if value[start0:]:
+            result.append(StringLiteral(value[start0:]))
         return result
 
     @classmethod

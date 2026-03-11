@@ -56,6 +56,20 @@ from specfile.value_parser import (
                 )
             ],
         ),
+        ("%{%{28}}", [StringLiteral("%{%{28}}")]),
+        (
+            "%{%{macro}}",
+            [
+                StringLiteral("%{"),
+                EnclosedMacroSubstitution("macro"),
+                StringLiteral("}"),
+            ],
+        ),
+        ("%{upper:%{name}}", [SingleArgEnclosedMacroSubstitution("upper", "%{name}")]),
+        (
+            "%{version_no_tilde %{quote:nil}}",
+            [EnclosedMacroSubstitution("version_no_tilde %{quote:nil}")],
+        ),
     ],
 )
 def test_parse(value, nodes):
