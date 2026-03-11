@@ -359,6 +359,12 @@ class Sanitizer:
                 return None
             return expr
 
+        def normalize_literal(expr):
+            expr = strip_quotes(expr.strip())
+            if not expr or re.search(r"[%{}]", expr):
+                return None
+            return f"%{{quote:{expr}}}"
+
         def is_safe_for_expand(s):
             return not re.search(r"%(\{\w+[\s:]|\(|\[)", s)
 
@@ -709,7 +715,7 @@ class Sanitizer:
         # --- echo EXPR | CMD (pipe pattern) ---
         m = _RE_PIPE.match(body)
         if m:
-            expr = normalize_macro(m.group(1))
+            expr = normalize_macro(m.group(1)) or normalize_literal(m.group(1))
             if expr is not None:
                 cmd = m.group(2).strip()
                 result = convert_string_op(expr, cmd)
@@ -720,7 +726,7 @@ class Sanitizer:
         m = _RE_HERESTRING.match(body)
         if m:
             cmd = m.group(1).strip()
-            expr = normalize_macro(m.group(2))
+            expr = normalize_macro(m.group(2)) or normalize_literal(m.group(2))
             if expr is not None:
                 result = convert_string_op(expr, cmd)
                 if result:
