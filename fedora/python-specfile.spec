@@ -7,7 +7,7 @@ Main focus is on modifying existing spec files, any change should result
 in a minimal diff.}
 
 
-%global base_version 0.39.1
+%global base_version 0.40.0
 #global prerelease   rc1
 
 %global package_version %{base_version}%{?prerelease:~%{prerelease}}
@@ -81,6 +81,9 @@ sed -i 's/setuptools_scm\[toml\]>=7/setuptools_scm[toml]/' pyproject.toml
 
 
 %changelog
+* Mon Mar 09 2026 Packit Team <hello@packit.dev> - 0.40.0-1
+- New upstream release 0.40.0
+
 * Sat Feb 14 2026 Packit Team <hello@packit.dev> - 0.39.1-1
 - New upstream release 0.39.1
 
