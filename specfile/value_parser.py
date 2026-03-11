@@ -129,6 +129,29 @@ class EnclosedMacroSubstitution(Node):
         )
 
 
+class SingleArgEnclosedMacroSubstitution(Node):
+    """
+    Node representing single-argument bracket-enclosed macro substitution,
+    e.g. _%{quote:Ancient Greek}_.
+    """
+
+    def __init__(self, name: str, arg: str) -> None:
+        self.name = name
+        self.arg = arg
+
+    @formatted
+    def __repr__(self) -> str:
+        return f"SingleArgEnclosedMacroSubstitution({self.name!r}, {self.arg!r})"
+
+    def __str__(self) -> str:
+        return f"%{{{self.name}:{self.arg}}}"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.name == other.name and self.arg == other.arg
+
+
 class ConditionalMacroExpansion(Node):
     """Node representing conditional macro expansion, e.g. _%{?prerel:0.}_."""
 
@@ -158,26 +181,6 @@ class ConditionalMacroExpansion(Node):
             and self.name == other.name
             and self.body == other.body
         )
-
-
-class BuiltinMacro(Node):
-    """Node representing built-in macro, e.g. _%{quote:Ancient Greek}_."""
-
-    def __init__(self, name: str, body: str) -> None:
-        self.name = name
-        self.body = body
-
-    @formatted
-    def __repr__(self) -> str:
-        return f"BuiltinMacro({self.name!r}, {self.body!r})"
-
-    def __str__(self) -> str:
-        return f"%{{{self.name}:{self.body}}}"
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, self.__class__):
-            return NotImplemented
-        return self.name == other.name and self.body == other.body
 
 
 class ValueParser:
@@ -282,7 +285,9 @@ class ValueParser:
                             ConditionalMacroExpansion(condition, cls.parse(body))
                         )
                     else:
-                        result.append(BuiltinMacro(condition, body))
+                        result.append(
+                            SingleArgEnclosedMacroSubstitution(condition, body)
+                        )
                 else:
                     result.append(EnclosedMacroSubstitution(value[start + 2 : end - 1]))
             else:
@@ -391,7 +396,14 @@ class ValueParser:
                 tokens.append(("c", "", node))
             elif isinstance(node, StringLiteral):
                 tokens.append(("v", node.value, ""))
-            elif isinstance(node, (ShellExpansion, ExpressionExpansion, BuiltinMacro)):
+            elif isinstance(
+                node,
+                (
+                    ShellExpansion,
+                    ExpressionExpansion,
+                    SingleArgEnclosedMacroSubstitution,
+                ),
+            ):
                 const = expand(str(node))
                 tokens.append(("c", const, str(node)))
             elif isinstance(node, MacroSubstitution):

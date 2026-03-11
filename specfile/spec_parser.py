@@ -21,7 +21,11 @@ from specfile.macros import Macros
 from specfile.sections import Section
 from specfile.tags import Tags
 from specfile.utils import get_filename_from_location
-from specfile.value_parser import BuiltinMacro, ShellExpansion, ValueParser
+from specfile.value_parser import (
+    ShellExpansion,
+    SingleArgEnclosedMacroSubstitution,
+    ValueParser,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -286,10 +290,13 @@ class SpecParser:
             # collect sources loaded using %{load:...}
             sources = set()
             for node in ValueParser.flatten(ValueParser.parse(content)):
-                if isinstance(node, BuiltinMacro) and node.name == "load":
+                if (
+                    isinstance(node, SingleArgEnclosedMacroSubstitution)
+                    and node.name == "load"
+                ):
                     # we can expand macros here because the first non-build parse,
                     # even though it failed, populated the macro context
-                    source = Path(Macros.expand(node.body))
+                    source = Path(Macros.expand(node.arg))
                     # ignore files outside of sourcedir
                     if source.parent.samefile(self.sourcedir):
                         sources.add(source.name)
