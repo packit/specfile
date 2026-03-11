@@ -323,6 +323,10 @@ def test_pipe_to_tr(body, expected):
             "echo 1.2.3-rc4 | sed 's/-/~/g'",
             '%{lua:print((rpm.expand("%{quote:1.2.3-rc4}"):gsub("-", "~")))}',
         ),
+        (
+            "echo %{version} | sed 's/\\\\./_/g'",
+            '%{lua:print((rpm.expand("%{version}"):gsub("%.", "_")))}',
+        ),
     ],
 )
 def test_pipe_to_sed(body, expected):
@@ -335,6 +339,15 @@ def test_chained_sed():
     ) == (
         '%{lua:local v=(rpm.expand("%{tag}"):gsub(".00$", "", 1))'
         ' print((v:gsub("%.", "")))}'
+    )
+
+
+def test_chained_sed_rpm_escaped():
+    assert Sanitizer.sanitize_shell_expansion(
+        "echo '%canonical_project_name' | sed --regexp-extended 's:-:_:g;s:\\\\.:_:g'"
+    ) == (
+        '%{lua:local v=(rpm.expand("%{canonical_project_name}"):gsub("-", "_"))'
+        ' print((v:gsub("%.", "_")))}'
     )
 
 

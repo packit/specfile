@@ -345,6 +345,29 @@ class Sanitizer:
             Sanitized shell expansion body, or %{nil} if sanitization is not possible.
         """
 
+        def unescape_quoted_backslashes(s):
+            # process backslashes inside quoted shell string literals
+            try:
+                lex = shlex.shlex(s, posix=False)
+                lex.whitespace_split = True
+                lex.commenters = ""
+                parts = []
+                for token in lex:
+                    if (
+                        len(token) >= 2
+                        and token[0] in ("'", '"')
+                        and token[-1] == token[0]
+                    ):
+                        inner = token[1:-1].replace("\\\\", "\\")
+                        parts.append(token[0] + inner + token[0])
+                    else:
+                        parts.append(token)
+                return " ".join(parts)
+            except ValueError:
+                return s
+
+        body = unescape_quoted_backslashes(body)
+
         def strip_quotes(s):
             s = s.strip()
             if len(s) >= 2 and s[0] in "'\"" and s[-1] == s[0]:
