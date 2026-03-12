@@ -1310,12 +1310,13 @@ def test_lua_unsafe_char_escape_bypass(code):
 
 def test_decode_lua_escapes_out_of_range():
     """Decimal escapes > 255 are truncated to fit in a byte, matching Lua behavior."""
-    from specfile.sanitizer import _decode_lua_escapes
-
-    assert _decode_lua_escapes(r"\300") == ","  # 300 % 256 == 44 == ','
-    assert _decode_lua_escapes(r"\256") == "\x00"  # 256 % 256 == 0
-    assert _decode_lua_escapes(r"\512") == "\x00"  # 512 % 256 == 0
-    assert _decode_lua_escapes(r"\293") == "%"  # 293 % 256 == 37 == '%'
+    # \293 decodes to chr(293 % 256) == chr(37) == '%', trailing '%' is unsafe
+    assert not Sanitizer.is_lua_safe(r'print("\293")')
+    # \300 decodes to chr(300 % 256) == chr(44) == ',', safe
+    assert Sanitizer.is_lua_safe(r'print("\300")')
+    # \256 and \512 decode to chr(0), safe
+    assert Sanitizer.is_lua_safe(r'print("\256")')
+    assert Sanitizer.is_lua_safe(r'print("\512")')
 
 
 def test_sanitize_depth_limit():

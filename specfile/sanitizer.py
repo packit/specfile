@@ -91,59 +91,6 @@ _RE_TEST_EMPTY = re.compile(
 _LUA_STRING_LITERAL_RE = re.compile(r'"(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\'')
 
 
-def _strip_lua_comments(code):
-    """Strip Lua comments while preserving string literals.
-
-    Processes code left-to-right so that ``--`` inside a quoted string
-    is never mistaken for a comment start.
-    """
-    result = []
-    i = 0
-    while i < len(code):
-        if code[i] in ('"', "'"):
-            quote = code[i]
-            result.append(code[i])
-            i += 1
-            while i < len(code) and code[i] != quote:
-                if code[i] == "\\" and i + 1 < len(code):
-                    result.append(code[i : i + 2])
-                    i += 2
-                else:
-                    result.append(code[i])
-                    i += 1
-            if i < len(code):
-                result.append(code[i])
-                i += 1
-        elif code[i : i + 2] == "--":
-            j = i + 2
-            if j < len(code) and code[j] == "[":
-                level = 0
-                k = j + 1
-                while k < len(code) and code[k] == "=":
-                    level += 1
-                    k += 1
-                if k < len(code) and code[k] == "[":
-                    close = "]" + "=" * level + "]"
-                    end = code.find(close, k + 1)
-                    if end != -1:
-                        i = end + len(close)
-                    else:
-                        i = len(code)
-                    result.append(" ")
-                    continue
-            end = code.find("\n", i)
-            if end != -1:
-                result.append(" ")
-                i = end
-            else:
-                result.append(" ")
-                i = len(code)
-        else:
-            result.append(code[i])
-            i += 1
-    return "".join(result)
-
-
 _UNSAFE_LUA_BRACKET_RE = re.compile(r"\[\s*(?![#\d])")
 
 _UNSAFE_LUA_STRING_CONTENT_RE = re.compile(
@@ -152,67 +99,6 @@ _UNSAFE_LUA_STRING_CONTENT_RE = re.compile(
 )
 
 _EXPRESSION_LUA_PREFIX_RE = re.compile(r"lua\s*:")
-
-
-def _decode_lua_escapes(s):
-    """Decode all Lua string escape sequences to their character values."""
-    _SIMPLE = {
-        "a": "\a",
-        "b": "\b",
-        "f": "\f",
-        "n": "\n",
-        "r": "\r",
-        "t": "\t",
-        "v": "\v",
-        "\\": "\\",
-        '"': '"',
-        "'": "'",
-    }
-    result = []
-    i = 0
-    while i < len(s):
-        if s[i] != "\\" or i + 1 >= len(s):
-            result.append(s[i])
-            i += 1
-            continue
-        c = s[i + 1]
-        if c in _SIMPLE:
-            result.append(_SIMPLE[c])
-            i += 2
-        elif c == "z":
-            i += 2
-            while i < len(s) and s[i] in " \t\n\r":
-                i += 1
-        elif c == "x" and i + 3 < len(s):
-            try:
-                result.append(chr(int(s[i + 2 : i + 4], 16)))
-                i += 4
-            except ValueError:
-                result.append(s[i])
-                i += 1
-        elif c == "u" and i + 2 < len(s) and s[i + 2] == "{":
-            end = s.find("}", i + 3)
-            if end != -1:
-                try:
-                    result.append(chr(int(s[i + 3 : end], 16)))
-                    i = end + 1
-                except (ValueError, OverflowError):
-                    result.append(s[i])
-                    i += 1
-            else:
-                result.append(s[i])
-                i += 1
-        elif c.isdigit():
-            j = i + 1
-            while j < len(s) and j < i + 4 and s[j].isdigit():
-                j += 1
-            num = int(s[i + 1 : j])
-            result.append(chr(num % 256))
-            i = j
-        else:
-            result.append(s[i])
-            i += 1
-    return "".join(result)
 
 
 _UNSAFE_LUA_IDENTIFIERS = frozenset(
@@ -890,6 +776,118 @@ class Sanitizer:
 
     @staticmethod
     def is_lua_safe(code):
+        def strip_lua_comments(code):
+            """Strip Lua comments while preserving string literals.
+
+            Processes code left-to-right so that ``--`` inside a quoted string
+            is never mistaken for a comment start.
+            """
+            result = []
+            i = 0
+            while i < len(code):
+                if code[i] in ('"', "'"):
+                    quote = code[i]
+                    result.append(code[i])
+                    i += 1
+                    while i < len(code) and code[i] != quote:
+                        if code[i] == "\\" and i + 1 < len(code):
+                            result.append(code[i : i + 2])
+                            i += 2
+                        else:
+                            result.append(code[i])
+                            i += 1
+                    if i < len(code):
+                        result.append(code[i])
+                        i += 1
+                elif code[i : i + 2] == "--":
+                    j = i + 2
+                    if j < len(code) and code[j] == "[":
+                        level = 0
+                        k = j + 1
+                        while k < len(code) and code[k] == "=":
+                            level += 1
+                            k += 1
+                        if k < len(code) and code[k] == "[":
+                            close = "]" + "=" * level + "]"
+                            end = code.find(close, k + 1)
+                            if end != -1:
+                                i = end + len(close)
+                            else:
+                                i = len(code)
+                            result.append(" ")
+                            continue
+                    end = code.find("\n", i)
+                    if end != -1:
+                        result.append(" ")
+                        i = end
+                    else:
+                        result.append(" ")
+                        i = len(code)
+                else:
+                    result.append(code[i])
+                    i += 1
+            return "".join(result)
+
+        def decode_lua_escapes(s):
+            """Decode all Lua string escape sequences to their character values."""
+            _SIMPLE = {
+                "a": "\a",
+                "b": "\b",
+                "f": "\f",
+                "n": "\n",
+                "r": "\r",
+                "t": "\t",
+                "v": "\v",
+                "\\": "\\",
+                '"': '"',
+                "'": "'",
+            }
+            result = []
+            i = 0
+            while i < len(s):
+                if s[i] != "\\" or i + 1 >= len(s):
+                    result.append(s[i])
+                    i += 1
+                    continue
+                c = s[i + 1]
+                if c in _SIMPLE:
+                    result.append(_SIMPLE[c])
+                    i += 2
+                elif c == "z":
+                    i += 2
+                    while i < len(s) and s[i] in " \t\n\r":
+                        i += 1
+                elif c == "x" and i + 3 < len(s):
+                    try:
+                        result.append(chr(int(s[i + 2 : i + 4], 16)))
+                        i += 4
+                    except ValueError:
+                        result.append(s[i])
+                        i += 1
+                elif c == "u" and i + 2 < len(s) and s[i + 2] == "{":
+                    end = s.find("}", i + 3)
+                    if end != -1:
+                        try:
+                            result.append(chr(int(s[i + 3 : end], 16)))
+                            i = end + 1
+                        except (ValueError, OverflowError):
+                            result.append(s[i])
+                            i += 1
+                    else:
+                        result.append(s[i])
+                        i += 1
+                elif c.isdigit():
+                    j = i + 1
+                    while j < len(s) and j < i + 4 and s[j].isdigit():
+                        j += 1
+                    num = int(s[i + 1 : j])
+                    result.append(chr(num % 256))
+                    i = j
+                else:
+                    result.append(s[i])
+                    i += 1
+            return "".join(result)
+
         def has_safe_format_specs(fmt):
             """
             Check that a format string only uses safe specifiers.
@@ -903,13 +901,13 @@ class Sanitizer:
             cleaned = _SAFE_FORMAT_SPEC_RE.sub("", expanded)
             return "%" not in cleaned
 
-        stripped = _strip_lua_comments(code)
+        stripped = strip_lua_comments(code)
         string_spans = []
         for m in _LUA_STRING_LITERAL_RE.finditer(stripped):
             content = m.group(0)[1:-1]
             if _UNSAFE_LUA_STRING_CONTENT_RE.search(content):
                 return False
-            decoded = _decode_lua_escapes(content)
+            decoded = decode_lua_escapes(content)
             if _UNSAFE_LUA_STRING_CONTENT_RE.search(decoded):
                 return False
             if decoded.endswith("%"):
