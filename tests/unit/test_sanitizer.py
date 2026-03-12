@@ -11,43 +11,43 @@ from specfile.sanitizer import Sanitizer
     [
         (
             "c=%{commit}; echo ${c:0:7}",
-            "%{sub %{commit}, 1, 7}",
+            "%{sub %{commit} 1 7}",
         ),
         (
             "c=%{commit};echo ${c:0:7}",
-            "%{sub %{commit}, 1, 7}",
+            "%{sub %{commit} 1 7}",
         ),
         (
             "c=%{commit0}; echo ${c:0:7}",
-            "%{sub %{commit0}, 1, 7}",
+            "%{sub %{commit0} 1 7}",
         ),
         (
             "foo=%{version}; echo ${foo:0:5}",
-            "%{sub %{version}, 1, 5}",
+            "%{sub %{version} 1 5}",
         ),
         (
             "foo=%{version}; echo ${foo:6}",
-            "%{sub %{version}, 7}",
+            "%{sub %{version} 7}",
         ),
         (
             "l=%{_lib}; echo ${l:3}",
-            "%{sub %{_lib}, 4}",
+            "%{sub %{_lib} 4}",
         ),
         (
             "c=%{version}; echo ${c:12:4}",
-            "%{sub %{version}, 13, 16}",
+            "%{sub %{version} 13 16}",
         ),
         (
             "c=%{commit}; echo ${c:0:%{commit_abbrev}}",
-            "%{sub %{commit}, 1, %{commit_abbrev}}",
+            "%{sub %{commit} 1 %{commit_abbrev}}",
         ),
         (
             'c="%{git_commit}"; echo "${c:0:8}"',
-            "%{sub %{git_commit}, 1, 8}",
+            "%{sub %{git_commit} 1 8}",
         ),
         (
             "n=%{modname}; echo ${n:0:1}",
-            "%{sub %{modname}, 1, 1}",
+            "%{sub %{modname} 1 1}",
         ),
     ],
 )
@@ -243,15 +243,15 @@ def test_pipe_to_cut(body, expected):
     [
         (
             "echo %{git_commit} | cut -c -8",
-            "%{sub %{git_commit}, 1, 8}",
+            "%{sub %{git_commit} 1 8}",
         ),
         (
             "echo %{gitcommit} | cut -c 1-8",
-            "%{sub %{gitcommit}, 1, 8}",
+            "%{sub %{gitcommit} 1 8}",
         ),
         (
             "echo %{snapshot_rev} | cut -c1-6",
-            "%{sub %{snapshot_rev}, 1, 6}",
+            "%{sub %{snapshot_rev} 1 6}",
         ),
     ],
 )
@@ -397,7 +397,7 @@ def test_pipe_to_awk(body, expected):
         ),
         (
             "cut -b -7 <<< %{emacscommit}",
-            "%{sub %{emacscommit}, 1, 7}",
+            "%{sub %{emacscommit} 1 7}",
         ),
         (
             "tr -d . <<< %{version}",
@@ -544,7 +544,7 @@ def test_empty_test():
 def test_printf_truncation():
     assert (
         Sanitizer.sanitize_shell_expansion("printf %%.7s %commit")
-        == "%{sub %{commit}, 1, 7}"
+        == "%{sub %{commit} 1 7}"
     )
 
 
@@ -585,7 +585,7 @@ def test_echo_concat(body, expected):
 def test_cut_bytes_with_macro_offset():
     assert (
         Sanitizer.sanitize_shell_expansion("cut -b %{rmprefix}- <<<'%{_bindir}'")
-        == "%{sub %{_bindir}, %{rmprefix}}"
+        == "%{sub %{_bindir} %{rmprefix}}"
     )
 
 
@@ -1310,12 +1310,13 @@ def test_lua_unsafe_char_escape_bypass(code):
 
 def test_decode_lua_escapes_out_of_range():
     """Decimal escapes > 255 are truncated to fit in a byte, matching Lua behavior."""
-    from specfile.sanitizer import _decode_lua_escapes
-
-    assert _decode_lua_escapes(r"\300") == ","  # 300 % 256 == 44 == ','
-    assert _decode_lua_escapes(r"\256") == "\x00"  # 256 % 256 == 0
-    assert _decode_lua_escapes(r"\512") == "\x00"  # 512 % 256 == 0
-    assert _decode_lua_escapes(r"\293") == "%"  # 293 % 256 == 37 == '%'
+    # \293 decodes to chr(293 % 256) == chr(37) == '%', trailing '%' is unsafe
+    assert not Sanitizer.is_lua_safe(r'print("\293")')
+    # \300 decodes to chr(300 % 256) == chr(44) == ',', safe
+    assert Sanitizer.is_lua_safe(r'print("\300")')
+    # \256 and \512 decode to chr(0), safe
+    assert Sanitizer.is_lua_safe(r'print("\256")')
+    assert Sanitizer.is_lua_safe(r'print("\512")')
 
 
 def test_sanitize_depth_limit():
