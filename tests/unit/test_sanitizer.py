@@ -11,43 +11,43 @@ from specfile.sanitizer import Sanitizer
     [
         (
             "c=%{commit}; echo ${c:0:7}",
-            "%{sub %{commit}, 1, 7}",
+            "%{sub %{commit} 1 7}",
         ),
         (
             "c=%{commit};echo ${c:0:7}",
-            "%{sub %{commit}, 1, 7}",
+            "%{sub %{commit} 1 7}",
         ),
         (
             "c=%{commit0}; echo ${c:0:7}",
-            "%{sub %{commit0}, 1, 7}",
+            "%{sub %{commit0} 1 7}",
         ),
         (
             "foo=%{version}; echo ${foo:0:5}",
-            "%{sub %{version}, 1, 5}",
+            "%{sub %{version} 1 5}",
         ),
         (
             "foo=%{version}; echo ${foo:6}",
-            "%{sub %{version}, 7}",
+            "%{sub %{version} 7}",
         ),
         (
             "l=%{_lib}; echo ${l:3}",
-            "%{sub %{_lib}, 4}",
+            "%{sub %{_lib} 4}",
         ),
         (
             "c=%{version}; echo ${c:12:4}",
-            "%{sub %{version}, 13, 16}",
+            "%{sub %{version} 13 16}",
         ),
         (
             "c=%{commit}; echo ${c:0:%{commit_abbrev}}",
-            "%{sub %{commit}, 1, %{commit_abbrev}}",
+            "%{sub %{commit} 1 %{commit_abbrev}}",
         ),
         (
             'c="%{git_commit}"; echo "${c:0:8}"',
-            "%{sub %{git_commit}, 1, 8}",
+            "%{sub %{git_commit} 1 8}",
         ),
         (
             "n=%{modname}; echo ${n:0:1}",
-            "%{sub %{modname}, 1, 1}",
+            "%{sub %{modname} 1 1}",
         ),
     ],
 )
@@ -243,15 +243,15 @@ def test_pipe_to_cut(body, expected):
     [
         (
             "echo %{git_commit} | cut -c -8",
-            "%{sub %{git_commit}, 1, 8}",
+            "%{sub %{git_commit} 1 8}",
         ),
         (
             "echo %{gitcommit} | cut -c 1-8",
-            "%{sub %{gitcommit}, 1, 8}",
+            "%{sub %{gitcommit} 1 8}",
         ),
         (
             "echo %{snapshot_rev} | cut -c1-6",
-            "%{sub %{snapshot_rev}, 1, 6}",
+            "%{sub %{snapshot_rev} 1 6}",
         ),
     ],
 )
@@ -397,7 +397,7 @@ def test_pipe_to_awk(body, expected):
         ),
         (
             "cut -b -7 <<< %{emacscommit}",
-            "%{sub %{emacscommit}, 1, 7}",
+            "%{sub %{emacscommit} 1 7}",
         ),
         (
             "tr -d . <<< %{version}",
@@ -544,7 +544,7 @@ def test_empty_test():
 def test_printf_truncation():
     assert (
         Sanitizer.sanitize_shell_expansion("printf %%.7s %commit")
-        == "%{sub %{commit}, 1, 7}"
+        == "%{sub %{commit} 1 7}"
     )
 
 
@@ -585,7 +585,7 @@ def test_echo_concat(body, expected):
 def test_cut_bytes_with_macro_offset():
     assert (
         Sanitizer.sanitize_shell_expansion("cut -b %{rmprefix}- <<<'%{_bindir}'")
-        == "%{sub %{_bindir}, %{rmprefix}}"
+        == "%{sub %{_bindir} %{rmprefix}}"
     )
 
 

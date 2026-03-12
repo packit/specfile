@@ -173,7 +173,7 @@ class Sanitizer:
         or Lua expressions. Covered patterns are:
 
         - Substring extraction:
-            `%(c=%{commit}; echo ${c:0:7})` → `%{sub %{commit}, 1, 7}`
+            `%(c=%{commit}; echo ${c:0:7})` → `%{sub %{commit} 1 7}`
         - Bash string replacement:
             `%(v=%{version}; echo ${v//./_})` → `%{lua:
                print((rpm.expand("%{version}"):gsub("%.", "_")))}`
@@ -217,7 +217,7 @@ class Sanitizer:
             `%(test "%{_libdir}" != "%{_prefix}/lib" && echo 1 || echo 0)` → `%{lua:
                print(rpm.expand("%{_libdir}") ~= rpm.expand("%{_prefix}/lib") and "1" or "0")}`
         - Printf truncation:
-            `%(printf %%.7s %commit)` → `%{sub %{commit}, 1, 7}`
+            `%(printf %%.7s %commit)` → `%{sub %{commit} 1 7}`
         - Printf float formatting:
             `%(LANG=C printf "%.4f" %{cpan_ver})` → `%{lua:
                print(string.format("%%.4f", tonumber(rpm.expand("%{cpan_ver}"))))}`
@@ -453,8 +453,8 @@ class Sanitizer:
                 mode, start, end, delim = cut
                 if mode == "bytes":
                     if end is not None:
-                        return f"%{{sub {expr}, {start}, {end}}}"
-                    return f"%{{sub {expr}, {start}}}"
+                        return f"%{{sub {expr} {start} {end}}}"
+                    return f"%{{sub {expr} {start}}}"
                 elif mode == "field":
                     return build_lua_field(expr, delim, start)
                 elif mode == "range":
@@ -586,14 +586,14 @@ class Sanitizer:
                 start = offset + 1
                 if length_raw is not None:
                     if length_raw.isdigit():
-                        return f"%{{sub {expr}, {start}, {offset + int(length_raw)}}}"
+                        return f"%{{sub {expr} {start} {offset + int(length_raw)}}}"
                     length_macro = normalize_macro(length_raw)
                     if length_macro is not None:
                         if offset == 0:
-                            return f"%{{sub {expr}, {start}, {length_macro}}}"
-                        return f"%{{sub {expr}, {start}, %[{length_macro} + {offset}]}}"
+                            return f"%{{sub {expr} {start} {length_macro}}}"
+                        return f"%{{sub {expr} {start} %[{length_macro} + {offset}]}}"
                 else:
-                    return f"%{{sub {expr}, {start}}}"
+                    return f"%{{sub {expr} {start}}}"
 
         # --- var=macro; echo ${var//PAT/REPL} → Lua gsub ---
         m = _RE_BASH_REPLACE.match(body)
@@ -736,13 +736,13 @@ class Sanitizer:
                     f' and "{lua_string_escape(a)}" or "{lua_string_escape(b)}")}}'
                 )
 
-        # --- printf %.Ns MACRO → %{sub MACRO, 1, N} ---
+        # --- printf %.Ns MACRO → %{sub MACRO 1 N} ---
         m = _RE_PRINTF_TRUNC.match(body)
         if m:
             n = int(m.group(1))
             expr = normalize_macro(m.group(2))
             if expr is not None:
-                return f"%{{sub {expr}, 1, {n}}}"
+                return f"%{{sub {expr} 1 {n}}}"
 
         # --- printf %.Nf MACRO → Lua string.format ---
         m = _RE_PRINTF_FLOAT.match(body)
