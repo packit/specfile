@@ -1,3 +1,7 @@
+# 0.40.1
+
+- Fixed issues related to introduced sanitization (#523, #524, #525).
+
 # 0.40.0
 
 - `Specfile()` has a new `sanitize` option that enables best effort sanitization of potentially dangerous constructs such as shell expansions and unsafe Lua macros before they are passed to RPM for parsing. (#519)
