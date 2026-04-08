@@ -4,7 +4,7 @@
 import collections
 import copy
 import re
-from typing import TYPE_CHECKING, List, Optional, Union, cast, overload
+from typing import TYPE_CHECKING, List, Optional, Union, overload
 
 from specfile.constants import (
     SCRIPT_SECTIONS,
@@ -173,7 +173,13 @@ class Sections(UserList[Section]):
             data = super().__getattribute__("data")
         except AttributeError:
             return False
-        return any(s.normalized_id == cast(str, id).lower() for s in data)
+        if isinstance(id, str):
+            id_lower = id.lower()
+            return any(
+                s.normalized_id == id_lower or s.normalized_name == id_lower
+                for s in data
+            )
+        return id in data
 
     def __getattr__(self, id: str) -> Section:
         if id not in self:
@@ -209,8 +215,9 @@ class Sections(UserList[Section]):
         return self.data[self.find(id)]
 
     def find(self, id: str) -> int:
+        id_lower = id.lower()
         for i, section in enumerate(self.data):
-            if section.normalized_id == id.lower():
+            if section.normalized_id == id_lower or section.normalized_name == id_lower:
                 return i
         raise ValueError
 

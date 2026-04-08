@@ -39,6 +39,23 @@ def test_get():
         sections.get("package foo")
 
 
+def test_contains_and_getattr():
+    sections = Sections(
+        [
+            Section("package"),
+            Section("package", Options([Token(TokenType.DEFAULT, "baz")]), " "),
+            Section("install", delimiter=" "),
+        ]
+    )
+    assert "package" in sections
+    assert "install" in sections
+    assert "install " in sections
+    assert sections.package == sections[0]
+    assert getattr(sections, "package baz") == sections[1]
+    assert sections.install == sections[-1]
+    assert getattr(sections, "install ") == sections[-1]
+
+
 @pytest.mark.parametrize(
     "id, existing, name, options, content",
     [
