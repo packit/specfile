@@ -106,7 +106,7 @@ class Specfile:
         if file is not None:
             self._file = file
         elif path is not None:
-            self._file = Path(path).open("r+", **self.ENCODING_ARGS)
+            self._file = Path(path).open("r", **self.ENCODING_ARGS)
         elif content is not None:
             self._file = StringIO(content)
         else:
@@ -224,7 +224,7 @@ class Specfile:
         if not self.path:
             return
         self._file.close()
-        self._file = self.path.open("r+", **self.ENCODING_ARGS)
+        self._file = self.path.open("r", **self.ENCODING_ARGS)
 
     @property
     def path(self) -> Optional[Path]:
@@ -239,7 +239,7 @@ class Specfile:
         path = Path(value)
         if path == self.path:
             return
-        self._file = path.open("r+", **self.ENCODING_ARGS)
+        self._file = path.open("r", **self.ENCODING_ARGS)
 
     @property
     def sourcedir(self) -> Path:
