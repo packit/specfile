@@ -1,3 +1,7 @@
+# 0.40.2
+
+- Trailing whitespaces at the end of specfile sections are now ignored during parsing. (#531)
+
 # 0.40.1
 
 - Fixed issues related to introduced sanitization (#523, #524, #525).
