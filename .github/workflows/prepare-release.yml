@@ -16,18 +16,18 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
         with:
           fetch-depth: 0
       - name: Prepare release content
-        uses: packit/prepare-release@v3
+        uses: packit/prepare-release@8e32a3a2fc5b1c33b5dca1620c073d5a7dffd5a5 # v3
         with:
           version: ${{ inputs.version }}
           specfiles: fedora/python-specfile.spec,epel8/python-specfile.spec,centos-integration-sig/python-specfile.spec
           prerelease_suffix_pattern: "([.\\-_]?)(a(lpha)?|b(eta)?|r?c|pre(view)?)([.\\-_]?\\d+)?"
           prerelease_suffix_macro: prerelease
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7
         with:
           labels: release
           commit-message: Release ${{ inputs.version }}
