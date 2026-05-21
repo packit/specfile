@@ -10,6 +10,7 @@ from flexmock import flexmock
 
 import specfile.specfile
 from specfile.exceptions import RPMException, SpecfileException
+from specfile.macro_definitions import CommentOutStyle, MacroDefinition
 from specfile.prep import AutopatchMacro, AutosetupMacro, PatchMacro, SetupMacro
 from specfile.sections import Section
 from specfile.specfile import Specfile, SpecParser
@@ -591,14 +592,14 @@ def test_parse_if_necessary(specfile_factory, spec_macros):
     spec2 = copy.deepcopy(spec1)
     flexmock(SpecParser).should_call("_do_parse").never()
     assert spec1.expanded_name == "test"
-    flexmock(SpecParser).should_call("_do_parse").once()
+    flexmock(SpecParser).should_call("_do_parse").twice()
     assert spec2.expanded_name == "test"
     assert spec2.expanded_version == "0.1.2~rc2"
-    flexmock(SpecParser).should_call("_do_parse").once()
+    flexmock(SpecParser).should_call("_do_parse").twice()
     assert spec1.expanded_version == "0.1.2~rc2"
     with spec1.macro_definitions() as md:
         md[0].body = "28"
-    flexmock(SpecParser).should_call("_do_parse").once()
+    flexmock(SpecParser).should_call("_do_parse").twice()
     assert spec1.expanded_name == "test"
     assert spec1.expanded_version == "28.1.2~rc2"
     flexmock(SpecParser).should_receive("id").and_return(12345)
@@ -776,3 +777,29 @@ def test_sanitize(specfile_factory, spec_unsafe):
     ]:
         assert spec1.expand(expr) != ""
         assert spec2.expand(expr) == ""
+
+
+def test_circular_expansion(specfile_factory, spec_macros):
+    spec = specfile_factory(spec_macros)
+    with spec.macro_definitions() as md:
+        md.release.body = "1"
+        md.insert(
+            md.find("release") + 1,
+            MacroDefinition(
+                "release_string",
+                "%{release}%{?dist}",
+                False,
+                False,
+                CommentOutStyle.DNL,
+                ("", " ", " ", ""),
+            ),
+        )
+    with spec.tags() as tags:
+        tags.release.value = "%{release_string}"
+    dist = spec.expand("%{?dist}")
+    with spec.tags() as tags:
+        assert tags.release.expanded_value == f"1{dist}"
+        assert tags.version.expanded_value == "0.1.2~rc2"
+    assert spec.expanded_release == "1"
+    with spec.sources() as sources:
+        assert "0.1.2~rc2" in sources[0].expanded_location
