@@ -637,8 +637,12 @@ class Specfile:
                         except AttributeError:
                             evr = ""
                         evr += f"{tags.version.expanded_value}-"
+                        release_value = tags.release.value
+                        self.expand(release_value, extra_macros=[("dist", "")])
+                        rpm.delMacro("release")
                         evr += self.expand(
-                            tags.release.value, extra_macros=[("dist", "")]
+                            release_value,
+                            skip_parsing=True,
                         )
                 with self.changelog(section) as changelog:
                     if changelog is None:
@@ -799,7 +803,10 @@ class Specfile:
     @property
     def expanded_release(self) -> str:
         """Release string without the dist suffix with macros expanded."""
-        return self.expand(self.release, extra_macros=[("dist", "")])
+        release = self.release
+        self.expand(release, extra_macros=[("dist", "")])
+        rpm.delMacro("release")
+        return self.expand(release, skip_parsing=True)
 
     def set_version_and_release(self, version: str, release: str = "1") -> None:
         """

@@ -16,6 +16,8 @@ from typing import (
     overload,
 )
 
+import rpm
+
 from specfile.conditions import process_conditions
 from specfile.constants import TAG_NAMES, TAGS_WITH_ARG
 from specfile.formatter import formatted
@@ -284,7 +286,20 @@ class Tag:
     def expanded_value(self) -> Optional[str]:
         """Value of the tag after expanding macros."""
         if self._context:
-            return self._context.expand(self.value)
+            # Ensure the macro context is up-to-date
+            self._context.expand("%{nil}")
+            # After parsing, RPM redefines tag macros (e.g. %{release}) to the
+            # expanded tag value, which can cause circular expansion when the
+            # tag value references the same macro indirectly. Pop RPM's
+            # definition to expose the user's original definition underneath.
+            rpm.delMacro(self.name.lower())
+            result = self._context.expand(self.value, skip_parsing=True)
+            # delMacro left the macro stack dirty, invalidate the parse cache
+            # so the next _parse call re-parses and restores tag macros
+            from specfile.spec_parser import SpecParser
+
+            SpecParser._last_parse_hash = None
+            return result
         return Macros.expand(self.value)
 
     def get_position(self, container: "Tags") -> int:
