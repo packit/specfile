@@ -1,3 +1,16 @@
+# 0.41.0
+
+- Fixed an issue where the value of a tag could have been incorrectly expanded if the spec file contained a macro definition shadowing the tag name, e.g.:
+
+```
+%global release 12
+%global release_string %{release}%{?dist}
+
+Release: %{release_string}
+```
+
+In this case, with `dist` being `.fc44`, `Specfile.expanded_release` returned `12.fc44.fc44` instead of `12.fc44`. (#539)
+
 # 0.40.2
 
 - Trailing whitespaces at the end of specfile sections are now ignored during parsing. (#531)
