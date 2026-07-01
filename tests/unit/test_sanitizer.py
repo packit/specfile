@@ -290,6 +290,10 @@ def test_pipe_to_cut_bytes(body, expected):
             "echo %{date} | tr -d -",
             '%{lua:print((rpm.expand("%{date}"):gsub("%-", "")))}',
         ),
+        (
+            "echo %{version} | tr '|' '.'",
+            '%{lua:print((rpm.expand("%{version}"):gsub("|", ".")))}',
+        ),
     ],
 )
 def test_pipe_to_tr(body, expected):
@@ -337,8 +341,10 @@ def test_chained_sed():
     assert Sanitizer.sanitize_shell_expansion(
         "echo %{tag} | sed -e 's|.00$||' | sed -e 's|\\.||g'"
     ) == (
-        '%{lua:local v=(rpm.expand("%{tag}"):gsub(".00$", "", 1))'
-        ' print((v:gsub("%.", "")))}'
+        '%{lua:local v=rpm.expand("%{tag}")'
+        ' v=(v:gsub(".00$", "", 1))'
+        ' v=(v:gsub("%.", ""))'
+        " print(v)}"
     )
 
 
@@ -349,6 +355,56 @@ def test_chained_sed_rpm_escaped():
         '%{lua:local v=(rpm.expand("%{canonical_project_name}"):gsub("-", "_"))'
         ' print((v:gsub("%.", "_")))}'
     )
+
+
+@pytest.mark.parametrize(
+    "body, expected",
+    [
+        (
+            "echo %{version} | cut -d. -f1 | cut -d~ -f1",
+            '%{lua:local v=rpm.expand("%{version}")'
+            ' do local t={} for f in v:gmatch("[^%.]+") do t[#t+1]=f end v=t[1] or "" end'
+            ' do local t={} for f in v:gmatch("[^~]+") do t[#t+1]=f end v=t[1] or "" end'
+            " print(v)}",
+        ),
+        (
+            "echo %{version} | cut -d. -f1 | tr A B",
+            '%{lua:local v=rpm.expand("%{version}")'
+            ' do local t={} for f in v:gmatch("[^%.]+") do t[#t+1]=f end v=t[1] or "" end'
+            ' v=(v:gsub("A", "B"))'
+            " print(v)}",
+        ),
+        (
+            "echo %{version} | tr '~' '.' | cut -d. -f1",
+            '%{lua:local v=rpm.expand("%{version}")'
+            ' v=(v:gsub("~", "."))'
+            ' do local t={} for f in v:gmatch("[^%.]+") do t[#t+1]=f end v=t[1] or "" end'
+            " print(v)}",
+        ),
+        (
+            "echo %{version} | cut -d. -f1 | unsupported_command",
+            "%{nil}",
+        ),
+    ],
+)
+def test_piped_commands(body, expected):
+    assert Sanitizer.sanitize_shell_expansion(body) == expected
+
+
+@pytest.mark.parametrize(
+    "body, expected",
+    [
+        (
+            "c=%{version}; echo $c | cut -d. -f1 | cut -d~ -f1",
+            '%{lua:local v=rpm.expand("%{version}")'
+            ' do local t={} for f in v:gmatch("[^%.]+") do t[#t+1]=f end v=t[1] or "" end'
+            ' do local t={} for f in v:gmatch("[^~]+") do t[#t+1]=f end v=t[1] or "" end'
+            " print(v)}",
+        ),
+    ],
+)
+def test_var_piped_commands(body, expected):
+    assert Sanitizer.sanitize_shell_expansion(body) == expected
 
 
 @pytest.mark.parametrize(
