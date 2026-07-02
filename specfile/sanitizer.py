@@ -446,7 +446,117 @@ class Sanitizer:
                 ordered = ordered.replace("-", "") + "-"
             return f"[{ordered}]"
 
+        def _stage_to_lua_fragment(stage):
+            """Convert a single pipeline stage to Lua code that transforms 'v'."""
+            cut = parse_cut(stage)
+            if cut:
+                mode, start, end, delim = cut
+                if mode == "bytes":
+                    return None
+                elif mode == "field":
+                    esc = lua_string_escape(lua_pattern_escape(delim))
+                    return (
+                        f"do local t={{}} "
+                        f'for f in v:gmatch("[^{esc}]+") do t[#t+1]=f end '
+                        f'v=t[{start}] or "" end'
+                    )
+                elif mode == "range":
+                    esc = lua_string_escape(lua_pattern_escape(delim))
+                    return (
+                        f"do local t={{}} "
+                        f'for f in v:gmatch("[^{esc}]+") do t[#t+1]=f end '
+                        f'v=table.concat(t,"{lua_string_escape(delim)}",'
+                        f"{start},math.min(#t,{end})) end"
+                    )
+            if _RE_TR_LOWER.match(stage):
+                return "v=v:lower()"
+            if _RE_TR_UPPER.match(stage):
+                return "v=v:upper()"
+            m = _RE_TR_DELETE.match(stage)
+            if m:
+                chars = m.group(1)
+                if len(chars) == 1:
+                    pat = lua_pattern_escape(chars)
+                else:
+                    pat = build_lua_char_class(chars)
+                return f'v=(v:gsub("{lua_string_escape(pat)}", ""))'
+            m = _RE_TR_DELETE_BARE.match(stage)
+            if m:
+                pat = lua_string_escape(lua_pattern_escape(m.group(1)))
+                return f'v=(v:gsub("{pat}", ""))'
+            m = _RE_TR_REPLACE.match(stage)
+            if m:
+                pat = lua_string_escape(lua_pattern_escape(m.group(1)))
+                repl = lua_string_escape(lua_gsub_repl_escape(m.group(2)))
+                return f'v=(v:gsub("{pat}", "{repl}"))'
+            m = _RE_AWK_F.match(stage)
+            if m:
+                delim = m.group(1)
+                print_args = m.group(2)
+                parts = _RE_AWK_FIELDS.findall(print_args)
+                if parts:
+                    if not all(is_safe_for_expand(sep) for _, sep in parts if sep):
+                        return None
+                    lua_parts = []
+                    for field_num, separator in parts:
+                        if field_num:
+                            lua_parts.append(f'(t[{field_num}] or "")')
+                        elif separator is not None:
+                            lua_parts.append(f'"{lua_string_escape(separator)}"')
+                    if lua_parts:
+                        lua_expr = " .. ".join(lua_parts)
+                        esc = lua_string_escape(lua_pattern_escape(delim))
+                        return (
+                            f"do local t={{}} "
+                            f'for f in v:gmatch("[^{esc}]+") do t[#t+1]=f end '
+                            f"v={lua_expr} end"
+                        )
+            substs = parse_sed_substs(stage)
+            if substs:
+                if all(is_safe_for_expand(repl) for _, repl, _ in substs):
+                    parts = []
+                    for pattern, repl, is_global in substs:
+                        esc_pat = lua_string_escape(sed_pattern_to_lua(pattern))
+                        esc_repl = lua_string_escape(lua_gsub_repl_escape(repl))
+                        count_arg = "" if is_global else ", 1"
+                        parts.append(
+                            f'v=(v:gsub("{esc_pat}", "{esc_repl}"{count_arg}))'
+                        )
+                    return " ".join(parts)
+            return None
+
         def convert_string_op(expr, cmd):
+            # Handle pipelines: split cmd into stages and compose Lua
+            try:
+                tokens = shlex.split(cmd, posix=False)
+            except ValueError:
+                tokens = None
+            if tokens:
+                stages = []
+                current = []
+                for token in tokens:
+                    if token == "|":
+                        if current:
+                            stages.append(" ".join(current))
+                            current = []
+                    else:
+                        current.append(token)
+                if current:
+                    stages.append(" ".join(current))
+                if len(stages) > 1:
+                    esc_expr = lua_string_escape(expr)
+                    fragments = []
+                    for stage in stages:
+                        fragment = _stage_to_lua_fragment(stage)
+                        if fragment is None:
+                            return None
+                        fragments.append(fragment)
+                    lua_code = f'local v=rpm.expand("{esc_expr}")'
+                    for fragment in fragments:
+                        lua_code += f" {fragment}"
+                    lua_code += " print(v)"
+                    return f"%{{lua:{lua_code}}}"
+
             # -- cut --
             cut = parse_cut(cmd)
             if cut:
