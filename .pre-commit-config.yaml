@@ -8,7 +8,7 @@ repos:
     hooks:
       - id: pyupgrade
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 26.5.0
+    rev: 26.5.1
     hooks:
       - id: black
   - repo: https://github.com/pre-commit/mirrors-prettier
@@ -40,12 +40,12 @@ repos:
           # https://github.com/PyCQA/pycodestyle/issues/373
           - --extend-ignore=E203
   - repo: https://github.com/PyCQA/isort
-    rev: 9.0.0a3
+    rev: 9.0.0b1
     hooks:
       - id: isort
         args: [--profile, black]
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v2.1.0
+    rev: v2.3.0
     hooks:
       - id: mypy
         args: [--show-error-codes, --ignore-missing-imports]
@@ -57,7 +57,7 @@ repos:
           # This file is overridden by a type stub
         exclude: "specfile/context_management.py"
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.73.0
+    rev: 1.76.0
     hooks:
       - id: tmt-lint
         # linting of the reverse-dependency tests requires internet access
@@ -70,7 +70,7 @@ repos:
           - https://github.com/packit/specfile.git
         stages: [manual, pre-push]
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.37.2
+    rev: 0.37.4
     hooks:
       - id: check-github-workflows
         args: ["--verbose"]
