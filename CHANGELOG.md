@@ -1,3 +1,7 @@
+# 0.41.1
+
+- Sanitize multi-pipe shell expansion. (#542)
+
 # 0.41.0
 
 - Fixed an issue where the value of a tag could have been incorrectly expanded if the spec file contained a macro definition shadowing the tag name, e.g.:
