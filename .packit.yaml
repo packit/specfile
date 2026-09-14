@@ -211,7 +211,6 @@ jobs:
     job: koji_build
     trigger: commit
     packages: [specfile]
-    packit_instances: ["stg"]
     allowed_pr_authors: ["packit-stg", "packit"]
     dist_git_branches:
       - epel-9
@@ -235,7 +234,6 @@ jobs:
     job: bodhi_update
     trigger: commit
     packages: [specfile]
-    packit_instances: ["stg"]
     allowed_builders: ["packit-stg", "packit"]
     dist_git_branches:
       - epel-9
