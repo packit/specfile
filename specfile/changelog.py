@@ -202,6 +202,77 @@ class ChangelogEntry:
             return ChangelogStyle.openSUSE
         return ChangelogStyle.standard
 
+    @property
+    def author(self) -> Optional[str]:
+        """The author of this changelog entry including their email."""
+        if self.style == ChangelogStyle.openSUSE:
+            # openSUSE format: "OPENSUSE_CHANGELOG_SEPARATOR\n$DATE - $AUTHOR <$EMAIL>"
+            # Extract everything after " - " from the actual header line (second line)
+            header_lines = self.header.split("\n")
+            if len(header_lines) > 1:
+                if len(date_author := header_lines[1].split("-", maxsplit=1)) > 1:
+                    return date_author[1].strip()
+        else:
+            # Standard format: "* $DATE $AUTHOR <$EMAIL> [- $EVR]"
+            header_without_asterisk = self.header.removeprefix("* ")
+
+            # Find the end of the date portion by looking for year (4 digits followed by space)
+            year_match = re.search(r"\d{4}\s+", header_without_asterisk)
+            if year_match:
+                author_and_evr = header_without_asterisk[year_match.end() :]
+
+                if not self.evr:
+                    return author_and_evr
+
+                if (gt_ind := author_and_evr.rfind(">")) > 0:
+                    return author_and_evr[: gt_ind + 1].strip()
+
+        return None
+
+    @property
+    def timestamp(self) -> datetime.datetime:
+        """The timestamp of this changelog entry."""
+        if self.style == ChangelogStyle.openSUSE:
+            # openSUSE format: "OPENSUSE_CHANGELOG_SEPARATOR\n$DATE - $AUTHOR <$EMAIL>"
+            # Date format: "Tue Dec 17 14:21:37 UTC 2024"
+            header_lines = self.header.split("\n")
+            if len(header_lines) > 1:
+                date_author_line = header_lines[1]  # Skip the separator line
+                # Extract date part before " - "
+                if " - " in date_author_line:
+                    date_part = date_author_line.split(" - ", maxsplit=1)[0].strip()
+                    # Parse openSUSE extended format: "Tue Dec 17 14:21:37 UTC 2024"
+                    return datetime.datetime.strptime(
+                        date_part, "%a %b %d %H:%M:%S %Z %Y"
+                    ).replace(tzinfo=datetime.timezone.utc)
+        else:
+            # Standard format: "* $DATE $AUTHOR <$EMAIL> [- $EVR]"
+            header_without_asterisk = self.header.removeprefix("* ")
+
+            # Extract date part - everything up to the year + space
+            year_match = re.search(r"\d{4}\s+", header_without_asterisk)
+            if year_match:
+                date_part = header_without_asterisk[: year_match.end()].strip()
+
+                # Handle extended format with time and timezone
+                if self.extended_timestamp:
+                    dt = datetime.datetime.strptime(
+                        date_part, "%a %b %d %H:%M:%S %Z %Y"
+                    )
+                    # Convert to UTC if not already
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=datetime.timezone.utc)
+                    return dt
+                else:
+                    # Basic format examples:
+                    # "Thu Jan 04 2007"
+                    # "Tue May 04 2021"
+                    # "Tue May  4 2021"
+                    dt = datetime.datetime.strptime(date_part, "%a %b %d %Y")
+                    return dt.replace(hour=12, tzinfo=datetime.timezone.utc)
+
+        raise ValueError(f"Could not parse date from {self.header}")
+
     @classmethod
     def assemble(
         cls,
