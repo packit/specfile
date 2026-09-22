@@ -163,6 +163,24 @@ jobs:
               dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
               %end
 
+  - job: tests
+    trigger: pull_request
+    packages: [specfile]
+    tmt_plan: "smoke"
+    identifier: container-test
+    skip_build: true
+    tf_extra_params:
+      environments:
+        - os: null
+        - kickstart:
+            post-install: |
+              %post --log=/dev/console
+              export TMT_PLUGIN_PROVISION_CONTAINER_IMAGE=centos:stream10
+              pwd
+              ls -la
+              exit 28
+              %end
+
   - &propose_downstream
     job: propose_downstream
     trigger: release
