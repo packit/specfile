@@ -15,6 +15,7 @@ from specfile.macro_definitions import CommentOutStyle, MacroDefinition
 from specfile.prep import AutopatchMacro, AutosetupMacro, PatchMacro, SetupMacro
 from specfile.sections import Section
 from specfile.specfile import Specfile, SpecParser
+from tests.constants import HAS_TZDB
 
 
 def test_parse(spec_multiple_sources):
@@ -285,6 +286,45 @@ def test_add_changelog_entry_ignores_invalid_padding(specfile_factory, spec_mini
         # Should use zero-padding style "Jan 05", not space-padding "Jan  5"
         assert "Jan 05" in new_entry
         assert "Jan  5" not in new_entry
+
+
+@pytest.mark.skipif(not HAS_TZDB, reason="timezone database not available")
+def test_changelog_timestamps_match_rpm(spec_minimal):
+    # RPM requires the newest entry first
+    timestamps = [
+        "Fri Dec 20 08:15:00 CET 2024",
+        "Wed Nov 20 23:45:59 BOGUS 2024",
+        "Mon Oct 21 12:34:45 CEST 2024",
+        "Wed Sep 18 06:05:04 PST8PDT 2024",
+        "Thu Aug 15 2024",
+        "Tue Jul 16 12:00:00 CET 2024",
+        # printed by `date +%Z` for timezones without an abbreviation
+        "Fri May 10 09:25:30 +03 2024",
+        "Wed Jan 03 01:02:03 UTC 2024",
+    ]
+    spec = Specfile(
+        spec_minimal,
+        macros=[("_changelog_trimage", "0"), ("_changelog_trimtime", "0")],
+    )
+    with spec.sections() as sections:
+        sections.changelog[:] = [
+            line
+            for t in timestamps
+            for line in (f"* {t} Nikola Forró <nforro@redhat.com>", "- entry", "")
+        ]
+
+    def to_unix(timestamp):
+        if not isinstance(timestamp, datetime.datetime):
+            # RPM represents dates as noon UTC
+            timestamp = datetime.datetime.combine(
+                timestamp, datetime.time(12), datetime.timezone.utc
+            )
+        return int(timestamp.timestamp())
+
+    with spec.changelog() as changelog:
+        assert [to_unix(e.timestamp) for e in reversed(changelog)] == list(
+            spec.rpm_spec.sourceHeader[rpm.RPMTAG_CHANGELOGTIME]
+        )
 
 
 @pytest.mark.parametrize(

@@ -15,6 +15,11 @@ from specfile.changelog import (
 )
 from specfile.sections import Section
 from specfile.utils import EVR
+from tests.constants import HAS_TZDB
+
+UTC = datetime.timezone.utc
+
+needs_tzdb = pytest.mark.skipif(not HAS_TZDB, reason="timezone database not available")
 
 
 @pytest.mark.parametrize(
@@ -411,6 +416,144 @@ def test_create_opensuse_changelog_assemble(
             append_newline=False,
         )
         == entry
+    )
+
+
+@pytest.mark.parametrize(
+    "header, author",
+    [
+        (
+            "* Thu Jan 04 2007 Michael Schwendt <mschwendt@fedoraproject.org>",
+            "Michael Schwendt <mschwendt@fedoraproject.org>",
+        ),
+        (
+            "* Fri Jul 26 2024 Miroslav Suchý <msuchy@redhat.com> - ss981107-67",
+            "Miroslav Suchý <msuchy@redhat.com>",
+        ),
+        (
+            "* Mon Jul 13 2020 Tom Stellard <tstellar@redhat.com> 4.0-0.4.pre2",
+            "Tom Stellard <tstellar@redhat.com>",
+        ),
+        (
+            "* Mon Jan 03 2022 Fedora Kernel Team <kernel-team@fedoraproject.org> "
+            "[5.16-0.rc8.55]",
+            "Fedora Kernel Team <kernel-team@fedoraproject.org>",
+        ),
+        (
+            "* Wed Jan 23 2002 Karsten Hopp <karsten@redhat.de> (4.6-1)",
+            "Karsten Hopp <karsten@redhat.de>",
+        ),
+        (
+            "* Thu Apr  9 2015 Jeffrey C. Ollie <jeff@ocjtech.us> - 13.3.2-1:",
+            "Jeffrey C. Ollie <jeff@ocjtech.us>",
+        ),
+        (
+            "* Thu Feb 04 2016 Marcin Zajaczkowski <mszpak ATT wp DOTT pl> - 1:0.9.10-6",
+            "Marcin Zajaczkowski <mszpak ATT wp DOTT pl>",
+        ),
+        (
+            "* Mon Oct 18 12:34:45 CEST 2021 Nikola Forró <nforro@redhat.com> - 0.2-1",
+            "Nikola Forró <nforro@redhat.com>",
+        ),
+        (
+            _OPENSUSE_CHANGELOG_SEPARATOR
+            + "\n"
+            + "Tue Dec 17 14:21:37 UTC 2024 - Dan Čermák <dcermak@suse.com>",
+            "Dan Čermák <dcermak@suse.com>",
+        ),
+        (
+            _OPENSUSE_CHANGELOG_SEPARATOR
+            + "\n"
+            + "Tue Dec 17 14:21:37 UTC 2024 - Dan Čermák",
+            "Dan Čermák",
+        ),
+        ("* Nikola Forró <nforro@redhat.com>", None),
+    ],
+)
+def test_entry_author(header, author):
+    assert ChangelogEntry(header, [""]).author == author
+
+
+@pytest.mark.parametrize(
+    "header, timestamp",
+    [
+        (
+            "* Tue May  4 2021 Nikola Forró <nforro@redhat.com> - 0.1-1",
+            datetime.date(2021, 5, 4),
+        ),
+        (
+            "* Mon Oct 18 12:34:45 UTC 2021 Nikola Forró <nforro@redhat.com> - 0.2-1",
+            datetime.datetime(2021, 10, 18, 12, 34, 45, tzinfo=UTC),
+        ),
+        # not in the timezone database, UTC like in RPM
+        pytest.param(
+            "* Mon Oct 18 12:34:45 CEST 2021 Nikola Forró <nforro@redhat.com> - 0.2-1",
+            datetime.datetime(2021, 10, 18, 12, 34, 45, tzinfo=UTC),
+            marks=needs_tzdb,
+        ),
+        # DST is never applied, like in RPM
+        pytest.param(
+            "* Tue Jul 16 12:00:00 CET 2024 Nikola Forró <nforro@redhat.com> - 0.3-1",
+            datetime.datetime(2024, 7, 16, 11, tzinfo=UTC),
+            marks=needs_tzdb,
+        ),
+        pytest.param(
+            _OPENSUSE_CHANGELOG_SEPARATOR
+            + "\n"
+            + "Tue Dec 17 14:21:37 EST 2024 - Dan Čermák <dcermak@suse.com>",
+            datetime.datetime(2024, 12, 17, 19, 21, 37, tzinfo=UTC),
+            marks=needs_tzdb,
+        ),
+        # must not escape the timezone database
+        pytest.param(
+            "* Tue Jul 16 12:00:00 ../../etc/passwd 2024 Nikola Forró - 0.3-1",
+            datetime.datetime(2024, 7, 16, 12, tzinfo=UTC),
+            marks=needs_tzdb,
+        ),
+        # neither the basic nor the extended format, RPM rejects it as well
+        ("* Mon Oct 18 12:34:45 2021 Nikola Forró <nforro@redhat.com> - 0.2-1", None),
+        ("* Wed Feb 31 2021 Nikola Forró <nforro@redhat.com> - 0.1-1", None),
+        ("* Nikola Forró <nforro@redhat.com>", None),
+        (_OPENSUSE_CHANGELOG_SEPARATOR, None),
+    ],
+)
+def test_entry_timestamp(header, timestamp):
+    assert ChangelogEntry(header, [""]).timestamp == timestamp
+
+
+@pytest.mark.parametrize(
+    "header, style",
+    [
+        (
+            "* Tue May  4 2021 Nikola Forró <nforro@redhat.com> - 0.1-1",
+            ChangelogStyle.standard,
+        ),
+        pytest.param(
+            "* Mon Oct 18 12:34:45 CET 2021 Nikola Forró <nforro@redhat.com> - 0.2-1",
+            ChangelogStyle.standard,
+            marks=needs_tzdb,
+        ),
+        (
+            _OPENSUSE_CHANGELOG_SEPARATOR
+            + "\n"
+            + "Tue Dec 17 14:21:37 UTC 2024 - Dan Čermák <dcermak@suse.com>",
+            ChangelogStyle.openSUSE,
+        ),
+    ],
+)
+def test_entry_assemble_roundtrip(header, style):
+    entry = ChangelogEntry(header, ["- entry"])
+    evr = entry.evr
+    assert (
+        ChangelogEntry.assemble(
+            entry.timestamp,
+            entry.author,
+            entry.content,
+            str(evr) if evr is not None else None,
+            day_of_month_padding=entry.sanitized_day_of_month_padding,
+            style=style,
+        ).header
+        == header
     )
 
 
