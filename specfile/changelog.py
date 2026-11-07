@@ -35,6 +35,35 @@ MONTHS = (
     "Dec",
 )
 
+# matches both the basic ("Tue May  4 2021") and the extended
+# ("Mon Oct 18 12:34:45 CEST 2021") timestamp format
+_TIMESTAMP_RE = re.compile(
+    rf"""
+    (?:{'|'.join(WEEKDAYS)})                # weekday
+    [ ]
+    (?P<month>{'|'.join(MONTHS)})           # month
+    [ ]
+    (?P<wsp>[ ]*)                           # optional whitespace padding
+    (?P<zp>0)?                              # optional zero padding
+    (?P<day>[12][0-9]|3[01]|[1-9])          # day of month
+    (?:                                     # optional time and timezone
+        [ ]
+        (?P<hour>[01][0-9]|2[0-3])          # hour
+        :
+        (?P<minute>[0-5][0-9])              # minute
+        :
+        (?P<second>[0-5][0-9])              # second
+        [ ]
+        (?P<timezone>\S+)                   # timezone
+    )?
+    [ ]
+    (?P<year>[0-9]{{4}})                    # year
+    (?!\S)
+    """,
+    re.VERBOSE,
+)
+
+
 _OPENSUSE_CHANGELOG_SEPARATOR = 67 * "-"
 
 
@@ -139,32 +168,21 @@ class ChangelogEntry:
         return evr
 
     @property
+    def _timestamp_line(self) -> str:
+        """Last line of the entry header without the leading _*_."""
+        # the first line of openSUSE-style headers is the separator
+        line = self.header.split("\n")[-1]
+        return line[1:].lstrip() if line.startswith("*") else line
+
+    @property
+    def _timestamp_match(self) -> Optional["re.Match[str]"]:
+        return _TIMESTAMP_RE.match(self._timestamp_line)
+
+    @property
     def extended_timestamp(self) -> bool:
         """Whether the timestamp present in the entry header is extended (date and time)."""
-        weekdays = "|".join(WEEKDAYS)
-        months = "|".join(MONTHS)
-        m = re.search(
-            rf"""
-            ({weekdays})     # weekday
-            [ ]
-            ({months})       # month
-            [ ]+
-            ([12]?\d|3[01])  # day of month
-            [ ]
-            ([01]\d|2[0-3])  # hour
-            :
-            ([0-5]\d)        # minute
-            :
-            ([0-5]\d)        # second
-            [ ]
-            \S+              # timezone
-            [ ]
-            \d{{4}}          # year
-            """,
-            self.header,
-            re.VERBOSE,
-        )
-        return m is not None
+        m = self._timestamp_match
+        return m is not None and m.group("hour") is not None
 
     @property
     def sanitized_day_of_month_padding(self) -> str:
@@ -172,22 +190,7 @@ class ChangelogEntry:
         Padding of day of month in the entry header timestamp. Nonsensical padding
         (i.e. multiple spaces before double-digit day of month) is corrected.
         """
-        weekdays = "|".join(WEEKDAYS)
-        months = "|".join(MONTHS)
-
-        m = re.search(
-            rf"""
-            ({weekdays})                 # weekday
-            [ ]
-            ({months})                   # month
-            [ ]
-            (?P<wsp>[ ]*)                # optional whitespace padding
-            (?P<zp>0)?                   # optional zero-padding
-            (?P<day>[12]\d|3[01]|[1-9])  # day of month (1-31)
-            """,
-            self.header,
-            re.VERBOSE,
-        )
+        m = self._timestamp_match
         if not m:
             return ""
         # remove extra padding for double-digit day numbers

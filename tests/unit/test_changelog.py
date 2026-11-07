@@ -74,6 +74,25 @@ def test_entry_evr(header, evr: Optional[EVR]):
             "* Mon Oct 18 12:34:45 CEST 2021 Nikola Forró <nforro@redhat.com> - 0.2-1",
             True,
         ),
+        (
+            "* Mon Oct 04 12:34:45 CEST 2021 Nikola Forró <nforro@redhat.com> - 0.2-1",
+            True,
+        ),
+        (
+            "*\tMon Oct 18 12:34:45 CEST 2021 Nikola Forró <nforro@redhat.com> - 0.2-1",
+            True,
+        ),
+        # RPM rejects anything preceding the timestamp
+        (
+            "* Some Text Mon Oct 18 12:34:45 CEST 2021 Nikola Forró <nforro@redhat.com>",
+            False,
+        ),
+        (
+            _OPENSUSE_CHANGELOG_SEPARATOR
+            + "\n"
+            + "Tue Dec 17 14:21:37 UTC 2024 - Dan Čermák <dcermak@suse.com>",
+            True,
+        ),
     ],
 )
 def test_entry_has_extended_timestamp(header, extended):

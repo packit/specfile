@@ -3,6 +3,7 @@
 
 import copy
 import datetime
+import types
 
 import pytest
 import rpm
@@ -225,6 +226,38 @@ def test_add_changelog_entry(
     spec.add_changelog_entry(entry, author, email, timestamp, evr)
     with spec.sections() as sections:
         assert sections.changelog[: len(result)] == result
+
+
+def test_add_changelog_entry_keeps_extended_timestamp(
+    specfile_factory, spec_minimal, monkeypatch
+):
+    class FrozenDatetime(datetime.datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2021, 10, 5, 12, 34, 56, tzinfo=datetime.timezone.utc)
+
+        def astimezone(self, tz=None):
+            # make the result independent of the local timezone
+            return self
+
+    monkeypatch.setattr(
+        specfile.specfile,
+        "datetime",
+        types.SimpleNamespace(datetime=FrozenDatetime, timezone=datetime.timezone),
+    )
+    spec = specfile_factory(spec_minimal)
+    with spec.sections() as sections:
+        sections.changelog[:] = [
+            "* Mon Oct 04 12:34:45 CEST 2021 Nikola Forró <nforro@redhat.com> - 0.1-1",
+            "- first version",
+        ]
+    spec.add_changelog_entry("- second version", author="Nikola Forró")
+    with spec.sections() as sections:
+        # slicing creates ChangeLog objects :-/
+        assert (sections.changelog[0], sections.changelog[1]) == (
+            "* Tue Oct 05 12:34:56 UTC 2021 Nikola Forró - 0.1-1",
+            "- second version",
+        )
 
 
 def test_add_changelog_entry_ignores_invalid_padding(specfile_factory, spec_minimal):
