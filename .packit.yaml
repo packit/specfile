@@ -136,10 +136,16 @@ jobs:
     job: tests
     trigger: pull_request
     packages: [specfile]
-    tmt_plan: "smoke|full|packit-integration"
+    tmt_plan: "smoke|full"
     targets:
       - fedora-all
       - epel-9
+      - epel-10-all
+  - <<: *tests
+    identifier: packit-integration
+    tmt_plan: packit-integration
+    targets:
+      - fedora-all
       - epel-10-all
   - <<: *tests
     identifier: performance
