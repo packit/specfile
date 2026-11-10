@@ -15,6 +15,7 @@ repos:
     rev: v4.0.0-alpha.8
     hooks:
       - id: prettier
+        language_version: 22.14.0
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
