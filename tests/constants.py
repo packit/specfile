@@ -1,7 +1,15 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
+import datetime
 from pathlib import Path
+
+from specfile.changelog import ChangelogEntry
+
+# requires zoneinfo (Python >= 3.9) and the system timezone database
+HAS_TZDB = ChangelogEntry(
+    "* Mon Jan 01 00:00:00 EST 2024", []
+).timestamp == datetime.datetime(2024, 1, 1, 5, tzinfo=datetime.timezone.utc)
 
 TESTS_DIR = Path(__file__).parent
 DATA_DIR = TESTS_DIR / "data"

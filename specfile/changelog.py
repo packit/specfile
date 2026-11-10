@@ -35,6 +35,71 @@ MONTHS = (
     "Dec",
 )
 
+# matches both the basic ("Tue May  4 2021") and the extended
+# ("Mon Oct 18 12:34:45 CEST 2021") timestamp format
+_TIMESTAMP_RE = re.compile(
+    rf"""
+    (?:{'|'.join(WEEKDAYS)})                # weekday
+    [ ]
+    (?P<month>{'|'.join(MONTHS)})           # month
+    [ ]
+    (?P<wsp>[ ]*)                           # optional whitespace padding
+    (?P<zp>0)?                              # optional zero padding
+    (?P<day>[12][0-9]|3[01]|[1-9])          # day of month
+    (?:                                     # optional time and timezone
+        [ ]
+        (?P<hour>[01][0-9]|2[0-3])          # hour
+        :
+        (?P<minute>[0-5][0-9])              # minute
+        :
+        (?P<second>[0-5][0-9])              # second
+        [ ]
+        (?P<timezone>\S+)                   # timezone
+    )?
+    [ ]
+    (?P<year>[0-9]{{4}})                    # year
+    (?!\S)
+    """,
+    re.VERBOSE,
+)
+
+
+def _get_tzinfo(name: str, timestamp: datetime.datetime) -> Optional[datetime.tzinfo]:
+    """
+    Resolves a timezone name in a similar way to how RPM does it: pass the name to libc, which
+    looks it up in the system timezone database. Unknown names (e.g. "CEST",
+    i.e. an abbreviation instead of a timezone identifier) are treated as UTC
+    and DST is never applied, because RPM calls `mktime()` with `tm_isdst` set
+    to 0.
+
+    Args:
+        name: Timezone name
+        timestamp: Naive timestamp the timezone applies to, the standard offset
+            of some timezones changed over time.
+
+    Returns:
+        Matching `tzinfo` object or None if the name can't be resolved reliably.
+    """
+    try:
+        from zoneinfo import ZoneInfo
+    except ImportError:
+        # Python < 3.9, better no timestamp than a wrong one
+        if name in ("UTC", "GMT"):
+            return datetime.timezone(datetime.timedelta(), name)
+        return None
+    try:
+        aware = timestamp.replace(tzinfo=ZoneInfo(name))
+    except (KeyError, ValueError, OSError):
+        # ZoneInfoNotFoundError is a subclass of KeyError, ValueError is raised
+        # for invalid keys (e.g. containing "..")
+        return datetime.timezone.utc
+    # utcoffset() and dst() are Optional as far as type checkers are concerned
+    offset = (aware.utcoffset() or datetime.timedelta()) - (
+        aware.dst() or datetime.timedelta()
+    )
+    return datetime.timezone(offset, name)
+
+
 _OPENSUSE_CHANGELOG_SEPARATOR = 67 * "-"
 
 
@@ -71,7 +136,7 @@ class ChangelogEntry:
             \d{4}                    # year
             \s+                      # whitespace
             .+                       # author
-            \s+                      # preceding whitespace
+            (?P<pre_wsp>\s+)         # preceding whitespace
             ((?P<sb>\[)|(?P<rb>\())? # optional opening bracket
             (?P<evr>\S+?)            # EVR
             (?(sb)\]|(?(rb)\)))      # matching closing bracket
@@ -120,7 +185,12 @@ class ChangelogEntry:
 
     @property
     def evr(self) -> Optional[EVR]:
-        """EVR (epoch, version, release) of the entry."""
+        """
+        EVR (epoch, version, release) of the entry.
+
+        Parsing is best effort, RPM doesn't impose any format on the text
+        following the timestamp.
+        """
         m = self._EVR_RE.match(self.header)
 
         if not m:
@@ -139,32 +209,21 @@ class ChangelogEntry:
         return evr
 
     @property
+    def _timestamp_line(self) -> str:
+        """Last line of the entry header without the leading _*_."""
+        # the first line of openSUSE-style headers is the separator
+        line = self.header.split("\n")[-1]
+        return line[1:].lstrip() if line.startswith("*") else line
+
+    @property
+    def _timestamp_match(self) -> Optional["re.Match[str]"]:
+        return _TIMESTAMP_RE.match(self._timestamp_line)
+
+    @property
     def extended_timestamp(self) -> bool:
         """Whether the timestamp present in the entry header is extended (date and time)."""
-        weekdays = "|".join(WEEKDAYS)
-        months = "|".join(MONTHS)
-        m = re.search(
-            rf"""
-            ({weekdays})     # weekday
-            [ ]
-            ({months})       # month
-            [ ]+
-            ([12]?\d|3[01])  # day of month
-            [ ]
-            ([01]\d|2[0-3])  # hour
-            :
-            ([0-5]\d)        # minute
-            :
-            ([0-5]\d)        # second
-            [ ]
-            \S+              # timezone
-            [ ]
-            \d{{4}}          # year
-            """,
-            self.header,
-            re.VERBOSE,
-        )
-        return m is not None
+        m = self._timestamp_match
+        return m is not None and m.group("hour") is not None
 
     @property
     def sanitized_day_of_month_padding(self) -> str:
@@ -172,22 +231,7 @@ class ChangelogEntry:
         Padding of day of month in the entry header timestamp. Nonsensical padding
         (i.e. multiple spaces before double-digit day of month) is corrected.
         """
-        weekdays = "|".join(WEEKDAYS)
-        months = "|".join(MONTHS)
-
-        m = re.search(
-            rf"""
-            ({weekdays})                 # weekday
-            [ ]
-            ({months})                   # month
-            [ ]
-            (?P<wsp>[ ]*)                # optional whitespace padding
-            (?P<zp>0)?                   # optional zero-padding
-            (?P<day>[12]\d|3[01]|[1-9])  # day of month (1-31)
-            """,
-            self.header,
-            re.VERBOSE,
-        )
+        m = self._timestamp_match
         if not m:
             return ""
         # remove extra padding for double-digit day numbers
@@ -201,6 +245,63 @@ class ChangelogEntry:
         if self.header.startswith(_OPENSUSE_CHANGELOG_SEPARATOR):
             return ChangelogStyle.openSUSE
         return ChangelogStyle.standard
+
+    @property
+    def author(self) -> Optional[str]:
+        """
+        Author of the entry, usually including their email.
+
+        Parsing is best effort, see `evr`. The last word of an entry
+        with neither an email nor an EVR is taken for an EVR.
+        """
+        line = self._timestamp_line
+        timestamp = _TIMESTAMP_RE.match(line)
+        if timestamp is None:
+            return None
+        evr = self._EVR_RE.match(line) if self.evr is not None else None
+        # strips the "-" separating the author from the timestamp (openSUSE style)
+        # or from the EVR
+        return line[timestamp.end() : evr.start("pre_wsp") if evr else None].strip(
+            " \t-"
+        )
+
+    @property
+    def timestamp(self) -> Optional[Union[datetime.datetime, datetime.date]]:
+        """
+        Timestamp of the entry, `date` for the basic format ("Tue May 4
+        2021"), timezone-aware `datetime` for the extended one ("Mon Oct 18
+        12:34:45 CET 2021"). `None` if it can't be parsed.
+
+        Timezones are resolved similarly to RPM:
+        - names missing in the system timezone database (e.g. "CEST" or "+03")
+          mean UTC
+        - DST is never applied
+        - CET is UTC+1 even in summer
+
+        Unlike RPM, POSIX TZ strings (e.g. "UTC+2") are not supported and mean
+        UTC as well.
+
+        Without `zoneinfo` (Python < 3.9) only "UTC" and "GMT" are resolved!
+        """
+        m = self._timestamp_match
+        if m is None:
+            return None
+        try:
+            timestamp = datetime.datetime(
+                int(m.group("year")),
+                MONTHS.index(m.group("month")) + 1,
+                int(m.group("day")),
+                int(m.group("hour") or 0),
+                int(m.group("minute") or 0),
+                int(m.group("second") or 0),
+            )
+        except ValueError:
+            # non-existent date, e.g. Feb 31
+            return None
+        if m.group("hour") is None:
+            return timestamp.date()
+        tzinfo = _get_tzinfo(m.group("timezone"), timestamp)
+        return timestamp.replace(tzinfo=tzinfo) if tzinfo else None
 
     @classmethod
     def assemble(
