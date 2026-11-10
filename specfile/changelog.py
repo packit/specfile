@@ -65,7 +65,8 @@ _TIMESTAMP_RE = re.compile(
 
 
 def _get_tzinfo(name: str, timestamp: datetime.datetime) -> Optional[datetime.tzinfo]:
-    """Resolves a timezone name as RPM does it: pass the name to libc, which
+    """
+    Resolves a timezone name in a similar way to how RPM does it: pass the name to libc, which
     looks it up in the system timezone database. Unknown names (e.g. "CEST",
     i.e. an abbreviation instead of a timezone identifier) are treated as UTC
     and DST is never applied, because RPM calls `mktime()` with `tm_isdst` set
@@ -78,7 +79,6 @@ def _get_tzinfo(name: str, timestamp: datetime.datetime) -> Optional[datetime.tz
 
     Returns:
         Matching `tzinfo` object or None if the name can't be resolved reliably.
-
     """
     try:
         from zoneinfo import ZoneInfo
@@ -267,7 +267,8 @@ class ChangelogEntry:
 
     @property
     def timestamp(self) -> Optional[Union[datetime.datetime, datetime.date]]:
-        """Timestamp of the entry, `date` for the basic format ("Tue May 4
+        """
+        Timestamp of the entry, `date` for the basic format ("Tue May 4
         2021"), timezone-aware `datetime` for the extended one ("Mon Oct 18
         12:34:45 CET 2021"). `None` if it can't be parsed.
 
@@ -278,10 +279,9 @@ class ChangelogEntry:
         - CET is UTC+1 even in summer
 
         Unlike RPM, POSIX TZ strings (e.g. "UTC+2") are not supported and mean
-        UTC as well
+        UTC as well.
 
         Without `zoneinfo` (Python < 3.9) only "UTC" and "GMT" are resolved!
-
         """
         m = self._timestamp_match
         if m is None:
