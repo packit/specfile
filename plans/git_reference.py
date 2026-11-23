@@ -19,14 +19,16 @@ with main_node as data:
     )
 
 
-# Set discover of packit integration tests to the current main
-packit_node = tree.find("/plans/packit-integration")
-with packit_node as data:
-    data["discover"]["ref"] = (
-        subprocess.check_output(
-            ["git", "ls-remote", "https://github.com/packit/packit", "main"]
-        )
-        .decode()
-        .strip()
-        .split()[0]
+# Set all Packit plan imports to the current main
+packit_ref = (
+    subprocess.check_output(
+        ["git", "ls-remote", "https://github.com/packit/packit", "main"]
     )
+    .decode()
+    .strip()
+    .split()[0]
+)
+for plan in ("tests", "requre"):
+    packit_node = tree.find(f"/plans/packit-integration/{plan}")
+    with packit_node as data:
+        data["plan"]["import"]["ref"] = packit_ref
