@@ -1,3 +1,7 @@
+# 0.42.0
+
+- Added support for parsing author and timestamp from changelog entries. (#482)
+
 # 0.41.1
 
 - Sanitize multi-pipe shell expansion. (#542)
