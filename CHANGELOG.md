@@ -1,3 +1,7 @@
+# 0.42.1
+
+- Updated `plans/git_reference.py` to match the current state of TMT metadata. (#550)
+
 # 0.42.0
 
 - Added support for parsing author and timestamp from changelog entries. (#482)
