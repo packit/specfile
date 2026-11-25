@@ -879,12 +879,6 @@ class Specfile:
             Updated value. Can be equal to the original value.
         """
 
-        def expand(s):
-            result = self.expand(s, skip_parsing=getattr(expand, "skip_parsing", False))
-            # parse only once
-            expand.skip_parsing = True
-            return result
-
         @dataclass
         class Entity:
             name: str
@@ -911,7 +905,7 @@ class Specfile:
                         md.body,
                         type(md),
                         md.get_position(macro_definitions),
-                        md.commented_out or not expand(md.body),
+                        md.commented_out,
                     )
                     for md in macro_definitions
                     if md.valid

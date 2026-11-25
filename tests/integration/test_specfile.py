@@ -876,3 +876,12 @@ def test_circular_expansion(specfile_factory, spec_macros):
     assert spec.expanded_release == "1"
     with spec.sources() as sources:
         assert "0.1.2~rc2" in sources[0].expanded_location
+
+
+@pytest.mark.parametrize("directive", ["%global", "%define"])
+def test_update_version_recursive_macro(specfile_factory, spec_minimal, directive):
+    spec = specfile_factory(spec_minimal)
+    with spec.lines() as lines:
+        lines.insert(0, f'{directive} cflags "-O3 %{{cflags}}"')
+    spec.update_version("0.2")
+    assert spec.version == "0.2"
